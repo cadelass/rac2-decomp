@@ -65,6 +65,7 @@ the placement rules are in `tools/fcheck.py`'s docstring; its tests are
 
 | Function | Size | Status and remaining differences |
 | --- | ---: | ---: |
+| [`func_L04_003F9320`](levels/func_L04_003F9320.c) | 1016 | 31 October 2026 USA v1.01: 1012/1016 bytes, no match, own unit with `-frac2-qcopy -frac2-zero-ti-por -g`. The shot spawner: calls, constants, both branches and the sprite loop follow retail; the stack slot of the Quad `from` (placed after the spark vectors at purge_addressof) and some register roles differ. See source. |
 | [`func_L04_003FB990`](levels/func_L04_003FB990.c) | 1008 | 31 October 2026 USA v1.01: 996/1008 bytes, no match. The blast: flow, calls, constants and the shared 0x30-byte buffer follow retail; two register pairs and two spill slots are swapped, and retail aligns its loop heads with nops. See source. |
 | [`func_L05_00420360`](levels/func_L05_00420360.c) | 1064 | 30 October: 1064/1064 bytes, no match. Saved FP constants, 0x8710/one GPR roles, text lifetime and outgoing arguments. See source for profile and release coverage. |
 | [`func_L00_00411B30`](levels/func_L00_00411B30.c) | 1044 | 31 October 2026 USA v1.01: 1044/1044 bytes, no match, own unit with `-frac2-qcopy -fno-gcse`. The table's `lui` hoisted alone (gcse gives it but then reuses `slot + 0x20` through a copy), the second quad copy's address registers and the hit setup's store order. See source. |
