@@ -30,7 +30,9 @@ python3 tools/todo.py --min 1001            # large: for Opus
 ```
 
 It puts the functions with the most places first: a level function shared by all 27 levels
-counts once in the progress, but one match removes it from 27 programs.
+counts once in the progress, but one match removes it from 27 programs. Add
+`--skip-nonmatching` to leave out the functions that already have an attempt in
+`nonmatching/` (not counting `nonmatching/functional/`).
 
 ## Before any model: tools
 

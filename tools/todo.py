@@ -6,12 +6,17 @@ The functions still to match, to pick work by size (docs/AGENT_WORKFLOW.md).
   python3 tools/todo.py --max 400          # functions of at most 400 bytes
   python3 tools/todo.py --min 401 --max 1000 --limit 40
   python3 tools/todo.py --min 1001 --kind shared
+  python3 tools/todo.py --max 400 --skip-nonmatching   # leave out retained near misses
 
 Lists the functions that are INCLUDE_ASM lines in src/, with their size, how many programs
 have them (a level function shared by 27 levels is worth 27 placements) and their file. The
 ones with the most places come first, then the smallest. Needs no game data.
+--skip-nonmatching leaves out the functions that already have an attempt in nonmatching/
+(a file named after the function, with or without a suffix); the C in nonmatching/functional/
+is written for the native port, not as an attempt, and does not count.
 """
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -21,6 +26,18 @@ import levels  # noqa: E402
 import progress  # noqa: E402
 
 TIERS = (("small (Haiku)", 0, 400), ("medium (Sonnet)", 401, 1000), ("large (Opus)", 1001, 1 << 30))
+DRAFT = re.compile(r"(func_(?:L\d\d_)?[0-9A-F]{8})(?:-[^/]*)?\.c")
+
+
+def nonmatching() -> set[str]:
+    """The functions with a retained attempt in nonmatching/, outside functional/."""
+    names = set()
+    for path in (ROOT / "nonmatching").rglob("*.c"):
+        if "functional" not in path.relative_to(ROOT / "nonmatching").parts:
+            match = DRAFT.fullmatch(path.name)
+            if match:
+                names.add(match.group(1))
+    return names
 
 
 def todo() -> list[tuple[str, int, int, str, str]]:
@@ -47,8 +64,13 @@ def main() -> None:
     ap.add_argument("--max", type=int, default=None, help="greatest size in bytes")
     ap.add_argument("--kind", choices=("boot", "shared", "level"), help="only this kind")
     ap.add_argument("--limit", type=int, default=50, help="how many to list (default 50)")
+    ap.add_argument("--skip-nonmatching", action="store_true",
+                    help="leave out functions that already have an attempt in nonmatching/")
     args = ap.parse_args()
     rows = todo()
+    if args.skip_nonmatching:
+        drafted = nonmatching()
+        rows = [r for r in rows if r[0] not in drafted]
     if args.max is None and args.min == 0 and not args.kind:
         print(f"{len(rows)} functions without C, {sum(r[1] for r in rows):,} bytes")
         for label, lo, hi in TIERS:

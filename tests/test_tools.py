@@ -616,6 +616,24 @@ class Todo(unittest.TestCase):
             if kind == "boot":
                 self.assertEqual(size, sizes[name])
 
+    def test_nonmatching_names_drafts_but_not_functional_c(self):
+        import todo
+        drafted = todo.nonmatching()
+        self.assertTrue(drafted)
+        for name in drafted:
+            self.assertRegex(name, r"^func_(L\d\d_)?[0-9A-F]{8}$")
+        for match in ("func_00345B78-g8.c", "func_L00_002D23C0-form-01.c", "func_0034F048.c"):
+            self.assertIsNotNone(todo.DRAFT.fullmatch(match))
+        for other in ("func_0034F048.c.orig", "ApplyGsDisplayEnv.c", "README.md"):
+            self.assertIsNone(todo.DRAFT.fullmatch(other))
+        functional = {todo.DRAFT.fullmatch(p.name).group(1)
+                      for p in (ROOT / "nonmatching/functional").glob("func_*.c")
+                      if todo.DRAFT.fullmatch(p.name)}
+        elsewhere = {todo.DRAFT.fullmatch(p.name).group(1)
+                     for p in (ROOT / "nonmatching").rglob("func_*.c")
+                     if "functional" not in p.parts and todo.DRAFT.fullmatch(p.name)}
+        self.assertFalse((functional - elsewhere) & drafted)
+
     def test_tiers_cover_every_size(self):
         import todo
         self.assertEqual(todo.TIERS[0][1], 0)
