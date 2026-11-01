@@ -212,9 +212,259 @@ void func_00310D78(char *o0, char *o1)
     Ffc961fca_FUN_00283738(o0 + 192, b0, o0 + 192);
 }
 
-INCLUDE_ASM("asm/game", func_00310E98);
+/* func_00310E98 is in 0030F7B0-update.c. */
 
-INCLUDE_ASM("asm/game", func_003116E8);
+/* func_003116E8: per-frame update of ground-attached crates and their stacks, after RAC1's
+ * ground_attached_update (OpenRAC/rac1-decomp, GPL-3.0); RAC2 adds class 0x200 and drops iCC.
+ * The group==255 path passes the uninitialized member slot, as retail and RAC1 do. */
+extern int func_002A77E0(int);
+extern void func_0029F338(void *);
+extern void func_00282CC0(void *,void *,void *);
+typedef struct SupportMoby SupportMoby;
+typedef struct SupportVars SupportVars;
+typedef struct { float x, y, z, w; } __attribute__((aligned(16))) SupportVector;
+struct SupportMoby {
+    char pad0[0x10];
+    SupportVector position;
+    unsigned char state, group;
+    char pad22[0x30-0x22];
+    unsigned char update_distance;
+    char pad31[5];
+    unsigned short occlusion;
+    char pad38[0x68-0x38];
+    SupportVars *vars;
+    char pad6C[0xAA-0x6C];
+    short oclass;
+    unsigned short model;
+    char padAE[2];
+    unsigned char mission;
+    char padB1[0xE0-0xB1];
+    SupportVector offset;
+    float rotation[3];
+};
+struct SupportVars {
+    char pad0[0xA0];
+    SupportMoby *above, *support;
+    int padA8;
+    int flags;
+    float height;
+    char padB4[0xC0-0xB4];
+    int route_index;
+    unsigned short model;
+    short hC6;
+    int padC8, iCC;
+    SupportVector link_pos, link_rot;
+    SupportMoby *standing_on;
+    float stack_level;
+    int death_count;
+};
+typedef struct {
+    char pad0[0x18];
+    SupportMoby *moby;
+    char pad1C[0x28-0x1C];
+    float point_z;
+} SupportHit;
+typedef struct { int pad[3], state; } SupportPathEntry;
+typedef struct { int count, pad[3]; SupportPathEntry entries[1]; } SupportPath;
+extern int D_001A73E0[] MACRO_ADDR;
+extern char D_001BAF80[];
+#define HIT (*(SupportHit *)D_001BAF80)
+extern SupportPath *D_001F1700[];
+extern float func_00283B98(float,float);
+extern int func_002761F8(void *,void *,int,void *,int);
+extern int func_002ABB78(void *);
+extern char *func_002AD0B0(void *);
+extern void func_002AD5F8(void *,void *,void *,void *,void *,void *);
+extern int func_002A8600(void *,int,int,int);
+extern int func_002A86E8(void *,void *,int,int);
+extern void func_00282A28(void);
+extern float func_00282E48(void *,void *);
+void func_003116E8(SupportMoby *moby) {
+    SupportVector probe_top;
+    SupportVector probe_bottom;
+    SupportVector probe_up;
+    SupportVector probe_down;
+    SupportMoby *member;
+    SupportMoby *other;
+    SupportVars *vars;
+    SupportVars *below_vars;
+    SupportVector *src1, *src2, *src3, *src4;
+    SupportPath *route;
+    s32 group, flags_before, i, member_flags;
+    SupportMoby *below;
+
+    vars = moby->vars;
+    group = moby->group;
+    vars->flags |= 4;
+    if (group == 0xFF) {
+        if (moby->oclass == 0x1F4 && func_002A77E0(2) != 0 && moby->rotation[0] == 0.0f && moby->rotation[1] == 0.0f) {
+            moby->rotation[2] = func_00283B98(moby->rotation[2], 1.5707964897155762f);
+        }
+        if ((moby->oclass == 0x1F5 || moby->oclass == 0x200) && moby->mission != 0xFF && D_001A73E0[moby->mission] < vars->death_count) {
+            func_0029F338(moby);
+            return;
+        }
+        flags_before = vars->flags;
+        vars->model = moby->model;
+        vars->height = 1.0f;
+        vars->flags = flags_before | 1;
+        src1 = &moby->position;
+        qcopy_nc(&probe_top, src1);
+        qcopy_nc(&probe_bottom, src1);
+        probe_top.z += 0.5f;
+        probe_bottom.z = 0.1f;
+        if (func_002761F8(&probe_top, &probe_bottom, 2, 0, 0) == 0) {
+            vars->support = 0;
+            return;
+        }
+        if (HIT.moby == 0) {
+            moby->position.z = HIT.point_z;
+            vars->support = 0;
+            return;
+        }
+        if (func_002ABB78(HIT.moby) != 0) return;
+        vars->support = 0;
+        vars->flags |= 8;
+        if (func_002AD0B0(HIT.moby) != 0) {
+            if (moby != 0) moby->occlusion = 0x7F80;
+            func_002AD5F8(member, HIT.moby, &moby->position, &moby->rotation[0], &vars->link_pos, &vars->link_rot);
+            vars->stack_level = 0;
+            vars->standing_on = HIT.moby;
+        }
+        return;
+    }
+
+    func_002A8600(&moby, group, 0, 0);
+    while (moby != 0) {
+        vars = moby->vars;
+        if (func_002ABB78(moby) != 0) {
+            if (moby->oclass == 0x1F4 && func_002A77E0(2) != 0 && moby->rotation[0] == 0.0f && moby->rotation[1] == 0.0f) {
+                moby->rotation[2] = func_00283B98(moby->rotation[2], 1.5707964897155762f);
+            }
+            if ((moby->oclass == 0x1F5 || moby->oclass == 0x200) && moby->mission != 0xFF && D_001A73E0[moby->mission] < vars->death_count) {
+                func_0029F338(moby);
+            } else {
+                member_flags = vars->flags;
+                vars->model = moby->model;
+                vars->height = 1.0f;
+                vars->flags = member_flags | 1;
+                src2 = &moby->position;
+                qcopy_nc(&probe_top, src2);
+                qcopy_nc(&probe_bottom, src2);
+                probe_top.z += 0.5f;
+                probe_bottom.z = 0.1f;
+                if (func_002761F8(&probe_top, &probe_bottom, 2, 0, 0) == 0) {
+                    vars->support = 0;
+                } else {
+                    if (HIT.moby == 0) {
+                        moby->position.z = HIT.point_z;
+                        vars->support = 0;
+                    } else if (func_002ABB78(HIT.moby) == 0 && (u16)(HIT.moby->oclass - 0x128) >= 2) {
+                        vars->support = 0;
+                        moby->update_distance = 0xFF;
+                        vars->flags |= 8;
+                    } else if (HIT.moby->vars == 0) {
+                        vars->support = 0;
+                    } else if (HIT.moby->group != moby->group) {
+                        vars->support = 0;
+                    } else if (func_002ABB78(HIT.moby) != 0) {
+                        vars->support = HIT.moby;
+                        src3 = &moby->position;
+                        below = HIT.moby;
+                        qcopy_nc(src3, &below->position);
+                        func_00282CC0(src3, src3, &below->offset);
+                        vars = HIT.moby->vars;
+                        if (func_002ABB78(moby) != 0) {
+                            vars->above = moby;
+                        } else {
+                            func_00282A28();
+                            vars->above = 0;
+                        }
+                    } else {
+                        vars->support = 0;
+                        moby->position.z = HIT.point_z;
+                    }
+                }
+            }
+        }
+        func_002A86E8(&moby, moby, 0, 0);
+    }
+
+    func_002A8600(&member, group, 0, 0);
+    while (member != 0) {
+        vars = member->vars;
+        if (func_002ABB78(member) != 0 && vars->support == 0) {
+            src4 = &member->position;
+            qcopy_nc(&probe_up, src4);
+            qcopy_nc(&probe_down, src4);
+            probe_up.z += vars->height * 0.5f;
+            probe_down.z = 0.1f;
+            if (func_002761F8(&probe_up, &probe_down, 2, moby, 0) != 0) {
+                if (HIT.moby != 0 && func_002AD0B0(HIT.moby) != 0) {
+                    if (moby != 0) moby->occlusion = 0x7F80;
+                    func_002AD5F8(member, HIT.moby, &member->position, &member->rotation[0], &vars->link_pos, &vars->link_rot);
+                    vars->stack_level = 0;
+                    vars->standing_on = HIT.moby;
+                    vars->flags |= 8;
+                }
+            }
+            for (moby = member; moby != 0; moby = vars->above) {
+                vars = moby->vars;
+                if (vars->support != 0) below_vars = vars->support->vars;
+                else below_vars = 0;
+                if (below_vars != 0) {
+                    if (below_vars->standing_on != 0) {
+                        moby->update_distance = 0xFF;
+                        vars->flags |= 8;
+                        qcopy_nc(&vars->link_pos, &below_vars->link_pos);
+                        qcopy_nc(&vars->link_rot, &below_vars->link_rot);
+                        vars->standing_on = below_vars->standing_on;
+                        vars->stack_level = below_vars->stack_level + 1.0f;
+                    }
+                }
+                if ((vars->hC6 != 0 || (moby->oclass == 0x1F5 || moby->oclass == 0x200)) && vars->above != 0 && vars->route_index != -1) {
+                    route = D_001F1700[vars->route_index];
+                    if (route->count == 0) {
+                        vars->route_index = -1;
+                    } else {
+                        s32 entry_state = route->entries[0].state;
+                        if (entry_state == 1 || entry_state == 3) {
+                            vars->route_index = -1;
+                        } else if (entry_state == 0x111) {
+                            vars->route_index = -1;
+                        } else if ((u32)(entry_state - 0x11) < 0x100) {
+                            if (entry_state - 0x10 >= route->count) {
+                                vars->route_index = -1;
+                            } else {
+                                route->entries[0].state = entry_state + 1;
+                            }
+                        } else {
+                            route->entries[0].state = 0x11;
+                            for (i = 0; i < D_001F1700[vars->route_index]->count; i++) {
+                                D_001F1700[vars->route_index]->entries[i].state = 0;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        func_002A86E8(&member, member, 0, 0);
+    }
+
+    func_002A8600(&moby, group, 0, 0);
+    while (moby != 0) {
+        if (func_002ABB78(moby) != 0) {
+            func_002A86E8(&other, moby, 0, 0);
+            while (other != 0) {
+                if (func_002ABB78(other) != 0) {
+                    func_00282E48(&moby->position, &other->position);
+                }
+                func_002A86E8(&other, other, 0, 0);
+            }
+        }
+        func_002A86E8(&moby, moby, 0, 0);
+    }
+}
 
 /* func_00311F70 is in 0030F7B0-loot-g8.c. */
 
