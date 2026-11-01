@@ -409,7 +409,7 @@ int func_L09_003EA058(char *object, int index) {
     return func_L09_003E9E60(object, buf, f);
 }
 
-INCLUDE_ASM("asm/levels", func_L09_003EA108);
+/* func_L09_003EA108 is in L09_003EA108-qcopy.c. */
 
 int func_L09_003EA2D0(char *object, int index, int value)
 {
@@ -551,7 +551,7 @@ void func_L09_003F74A8(char *p)
     *(int *)(s + 152) = *(int *)(v + 16);
 }
 
-INCLUDE_ASM("asm/levels", func_L09_003F7518);
+/* func_L09_003F7518 is in L09_003F7518-g8.c. */
 
 void func_L09_003F7788(char *object, char *target)
 {

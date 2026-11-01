@@ -1951,7 +1951,10 @@ src/levels/shared/L00_003D3DE0-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16 -fno-
 src/levels/shared/L00_003D40D8-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L05_00379FA0-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/shared/L00_004240D8-g8-dbg.c	-O2 -G8 -ffunction-sections -g -fstrict-aliasing
+src/levels/shared/L12_00407DE8-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/shared/L12_00424078-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L00_0033F678-spline.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L09_003EA108-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/shared/L02_003C43F0-ring-g8.c	-O2 -G8 -ffunction-sections -g
 src/game/00336A78-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
 src/levels/shared/L00_0032A530-g.c	-O2 -G0 -ffunction-sections -g
@@ -1963,6 +1966,8 @@ src/levels/shared/L00_003EB8E8-g8.c	-O2 -G8 -ffunction-sections -g
 src/game/00345358-input-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L00_0037E898-trail-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/shared/L00_003F8E08-burst-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -fno-sched-interblock
+src/levels/shared/L05_0042BB10-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/shared/L05_00442560-q.c	-O2 -G0 -ffunction-sections -frac2-qcopy
 src/levels/shared/L02_003C9ED0-nsr.c	-O2 -G0 -ffunction-sections -fno-strength-reduce -fno-sched-interblock
 src/game/002B50E0.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/002B41A8.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
@@ -2000,6 +2005,7 @@ src/game/0032EB28-ai-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/shared/L00_00407E38-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/game/0032EB28-wander-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/shared/L00_003FFA70-wander-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L06_00402570.c	-O2 -G0 -ffunction-sections -g
 src/core/00119BF8.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/levels/shared/L04_0040F8F0-route.c	-O2 -G0 -ffunction-sections -g
 src/levels/shared/L00_003AA708-g.c	-O2 -G0 -ffunction-sections -g

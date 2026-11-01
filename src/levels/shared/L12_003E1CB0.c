@@ -208,7 +208,7 @@ void func_L12_00400B28(s32 a0, s32 a1, s32 a2, s32 a3) {
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L12_00407DE8);
+/* func_L12_00407DE8 is defined in L12_00407DE8-qcopy.c. */
 
 INCLUDE_ASM("asm/levels", func_L12_00408050);
 
@@ -249,9 +249,9 @@ void func_L12_0041A730(s32 a0) {
     } while (*p++ >= 0);
 }
 
-INCLUDE_ASM("asm/levels", func_L12_00424078);
+/* func_L12_00424078 is defined in L12_00424078-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L12_00426C08);
+/* func_L12_00426C08 is defined in L12_00426C08-g8.c. */
 
 /* func_L12_004277F0 is defined in L12_004277F0-g8.c. */
 
@@ -317,7 +317,7 @@ void func_L12_00427DD0(char *obj) {
 
 /* func_L12_004281D8 is defined in L12_003E1CB0-g8.c (it reads the colour pair through $gp). */
 
-INCLUDE_ASM("asm/levels", func_L12_00429A50);
+/* func_L12_00429A50 is defined in L12_00429A50-g8.c. */
 
 /* func_L12_00429D60 is defined in L12_003E1CB0-g8.c. */
 
