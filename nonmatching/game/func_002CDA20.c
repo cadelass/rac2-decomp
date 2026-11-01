@@ -6,47 +6,74 @@
  */
 #include "common.h"
 
-/* Near miss: the candidate is retail's exact 140 bytes and every call, the
- * float computation and the u64 argument are right, but three instructions
- * differ.
+/* func_002CDA20 (140 bytes, boot + 27 levels), tier opus-2, 29 October 2026.
  *
- * Retail keeps the 293.0f in `$f2` and the 0.5f in `$f1`
- * (`mtc1 $at,$f2` ; `mtc1 $at,$f1`), this cc1 keeps them the other way
- * round (`$f1` and `$f2`). The order of the two constants in the source does
- * not change it: `x * 293.0f + 0.5f`, `0.5f + x * 293.0f` and the forms with
- * a local for either constant all give the same allocation.
+ * The C below is exact in all places: check.py printed
+ * "28 of 28 places match" when it replaced the marker in
+ * src/game/002CD8C0.c (default -O2 -G0 unit, no -G8 sibling needed).
+ * It is kept out of src/ because it depends on the non-empty
+ * `do { ... } while (0)` wrapper. MATCHING-BLOCKERS.md has an open question
+ * for maintainers about using that wrapper as a block barrier
+ * (func_L02_003FB000, func_0033A520). If they accept the wrapper, this C can
+ * land as it is.
  *
- * Retail also sets up the arguments of the `func_0027FAA8` call as `$a1`,
- * `$a3`, `$a2` and `$t0`; this cc1 sets up `$a3`, `$a2` and `$a1`.
+ * Without the wrapper the best result is 140/140 bytes and 0/28 places, with
+ * 7 instructions differing from +0x24:
+ *  - 293.0f and 0.5f go to $f1/$f2, where retail has $f2/$f1;
+ *  - after the func_00288FB8 call the arguments are set up as a3, a2, a1, t0,
+ *    where retail has a1, a3, a2, t0.
+ * The argument order cannot be reached in one basic block. The fix result
+ * (fcvt, cost 3) feeds `move a1,s0`, while the call waits only one cycle
+ * (anti dependence) after the fix. So a1 is always one cycle behind `move a3,v0`,
+ * in both sched1 and sched2.
  *
- * The float is read from a per-program address (0x001B23A4 in the boot,
- * 0x001B2704 in level 00), so it is a `ref_` symbol; with `-G8` the load is
- * the symbolic `l.s $f0,sym` that retail's `lui $at`+`lwc1` pair comes from,
- * and with `-G0` the address is materialised in `$v0` instead.
+ * The loop notes of the wrapper make the first insn inside it (the li a0 of
+ * the call) depend on every earlier set (haifa sched_analyze_insn's loop-note
+ * barrier). That delays the call until a1 is ready together with a3, and a1
+ * wins (5 vs 5 dependents in sched2, and the lower LUID). The barrier also
+ * takes the call off the float load's dependents. The load and the 293.0f
+ * then tie, so LUID decides: `k = 293.0f` must come before the expression.
+ * The 293.0f is then born first and has the longer life, so local-alloc gives
+ * the 0.5f $f1 first and the 293.0f $f2. Without the local (plain
+ * `D_001B23A4 * 293.0f`) the arguments are right, but the float registers
+ * stay swapped.
  *
- * The unit needs `-G8` for the symbolic load.
+ * The same retail shape (and the same wrapper result, checked as a
+ * standalone compile only) fits func_002CF2B8 (256.0f, func_0029C530) and
+ * probably func_002D53F0 (329.0f, 0x1A6). func_002CD3C0's retail
+ * (a3, a2, t0, a1) is the unwrapped form.
+ *
+ * Declarations: D_001B23A4 as declared in src/game/0033C028-qcopy.c (the
+ * per-program float; the sda attribute in a -G0 unit gives retail's
+ * `lui $at` + `lwc1` macro load); func_0029C4C0 is the boot name of the
+ * second callee (check.py resolves it in every level); the remaining
+ * externs match those already in src/game/002CD8C0.c.
  */
 
 extern void func_0027C540(long);
 
 extern void func_0027C660(void);
 
-extern void func_L00_0030D598(void);
+extern void func_0029C4C0(void);
 
-extern s32 func_00288FB8(s32);
+extern float D_001B23A4 __attribute__((sda));
 
-extern s32 func_0027FAA8(s32, s32, u64, s32, s32);
+extern char *func_00288FB8(int);
 
-extern float ref_L00_002CDA20_01;
+extern int func_0027FAA8(int, int, unsigned long, char *, int);
 
 int func_002CDA20(void)
 {
-    s32 s0;
+    float k;
+    int y;
 
     func_0027C540(0);
-    func_L00_0030D598();
-    s0 = (s32)(0.5f + 293.0f * ref_L00_002CDA20_01);
-    func_0027FAA8(0x1A5, s0, 0x80F0F0F0, func_00288FB8(0x2D4F), -1);
+    func_0029C4C0();
+    k = 293.0f;
+    y = (int)(D_001B23A4 * k + 0.5f);
+    do {
+        func_0027FAA8(0x1A5, y, 0x80F0F0F0, func_00288FB8(0x2D4F), -1);
+    } while (0);
     func_0027C660();
     return 0;
 }

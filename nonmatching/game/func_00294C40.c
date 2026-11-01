@@ -1,83 +1,110 @@
 #include "include_asm.h"
 
+/* func_00294C40 (boot 0x00294C40, 320 bytes, 28 places): opus-1, Claude Opus 5.5.
+ * Best check.py: 320/320 bytes, 0/28 places, 38 of 80 rows differ.  Default profile
+ * (-O2 -G0 -ffunction-sections), compiled in place in src/game/00294BC8.c.
+ *
+ * The body is RAC1 load_texture_file (src/game/map.c, types TexSlot and TexDesc)
+ * with TEX0 built term by term, as in RAC1's effect texture code in draw.c.  The two
+ * globals are incomplete `sda` arrays, which gives retail's tied macro load and
+ * `lui $at; sw`.  This wording gives the frame, stack slots, record stores, the
+ * register of every TEX0 accumulator and the width and palette terms.
+ *
+ * What still differs: local-alloc serves the height term's group
+ * (`daddu; dsll 30`) before the clutSize group (`lw 0x14($sp); addiu 0x20`), so the
+ * height term takes $a1 and clutSize $a2.  Retail has height $a2, clutSize $a1 and
+ * 0x1300000 in $a1.  The 0x1300000 constant then falls to $t0, and that pushes the
+ * constant 1, count, tbp and cbp one register along (retail t0, t2, t3, t4).  The
+ * remaining order differences (the `sllv`/`addu` of the cursor) look like sched2's
+ * anti-dependence on $t0, which retail reuses for the final value, so they should
+ * follow once the allocation is right.  In sched1's order the two groups are close:
+ * height spans 9 insns, clutSize 10, both 4 refs.
+ *
+ * Tried without getting closer: first scheduler off (70 rows differ), -fno-gcse,
+ * -fno-expensive-optimizations, -fno-strength-reduce, -fno-regmove,
+ * -mno-split-addresses, one shared term variable, moving the cursor, count and pix
+ * statements, a separate variable for each term, and computing the height term
+ * earlier (worse).
+ */
 extern int func_00282A18(int);
 
-extern int D_001A72D0;
+extern int D_001A72D0[] __attribute__((sda));
 
-extern int D_001B15FC;
+extern int D_001B15FC[] __attribute__((sda));
 
-extern char D_001B9340[];
+typedef struct {
+    int addr;
+    short unk4;
+    short cbp;
+    int unk8;
+    unsigned char tw;
+    unsigned char th;
+    short tbp;
+} TexSlot;
 
-/* Near miss for func_00294C40 (boot 0x00294C40, 320 bytes, 28 places: boot and 27
- * levels).  Best local check: 292 bytes, `func_00294C40: 0 of 28 places match`.
- *
- * Retail body: builds a 16-byte texture record in the 64-entry table
- * D_001B9340 (index D_001B15FC), appends nothing when full, and returns a packed
- * 64-bit descriptor.  n0 = func_00282A18(object[8]) (log2 width), n1 =
- * func_00282A18(object[0xC]) (log2 height), old = the VRAM cursor D_001A72D0.
- * The descriptor is
- *   ((u64)(old >> 8) << 37) | ((u64)((old + 0x400) >> 8)) |
- *   ((u64)n1 << 30) | ((u64)n0 << 26) | 0x130 |
- *   ((u64)(1 << max(n0 - 6, 0)) << 14) | (1ULL << 34) | (1ULL << 63)
- * and the cursor becomes old + 0x400 + (1 << (n0 + n1)).  The record is
- * +0 object+0x20, +4 0, +6 old>>8, +8 object+0x420, +0xC n0, +0xD n1,
- * +0xE (old+0x400)>>8.
- *
- * This draft recovers all of that; the first observed difference is the stack
- * frame: 292 bytes with a 0x30 frame and values in $s1/$s2, against retail's
- * 320 bytes, 0x70 frame and a single saved $s0.  Retail keeps its five locals in
- * memory: ptr[2] at sp+0/sp+4, off (0x400) at sp+0x14, n[2] at sp+0x4C/0x50, and
- * reloads n0/n1 with lbu for the record bytes.  This draft already declares
- * ptr[2] and n[2] as arrays (which moved the frame from 0x20 to 0x30 and put n at
- * sp+0x10/0x14) but the 0x38-byte gap to retail's n slots is unexplained: the
- * offsets imply another 0x38 bytes of locals that no retail instruction touches.
- *
- * Current-master aggregate experiment: one local struct with ptr[2] at +0/+4,
- * off at +0x14 and n[2] at +0x4C/+0x50 compiled to 300 bytes, 0 of 28 places.
- * It grew the 292-byte baseline but changed the record stores and still did not
- * reach retail's 320-byte body. The unexplained frame gap alone is therefore not
- * enough; reopen only with a source-shape hypothesis that also accounts for the
- * remaining descriptor and record instruction differences.
- */
-long long func_00294C40(char *object)
+extern TexSlot D_001B9340[];
+
+typedef struct {
+    char *clut;
+    char *pix;
+    char pad08[0xC];
+    int clutSize;
+    char pad18[0x34];
+    int tw;
+    int th;
+    char pad54[0xC];
+} TexDesc;
+
+/* Loads a 256-colour texture file p (width at +8, height at +0xC, CLUT at +0x20,
+   pixels after it): the CLUT and the pixels take the next VRAM space, the texture
+   is queued in the 64-entry upload table and its GS TEX0 value returned. */
+long long func_00294C40(char *p)
 {
-    int off = 0x400;
-    char *ptr[2];
-    int n[2];
-    int old;
+    TexDesc t;
+    int w;
+    int cbp;
+    int tbp;
+    int addr;
     int count;
-    int shift;
-    int size;
-    unsigned long long tag;
-    char *rec;
+    long long reg;
+    long long tex;
+    long long width_bits;
+    long long palette_bits;
 
-    ptr[0] = object + 0x20;
-    n[0] = func_00282A18(*(int *)(object + 8));
-    n[1] = func_00282A18(*(int *)(object + 0xC));
-    old = D_001A72D0;
-    count = D_001B15FC;
-    shift = n[0] - 6;
-    if (shift < 0)
-        shift = 0;
-    size = 1 << (n[0] + n[1]);
-    tag = ((unsigned long long)(old >> 8) << 37) |
-          ((unsigned long long)((old + 0x400) >> 8)) |
-          ((unsigned long long)n[1] << 30) |
-          ((unsigned long long)n[0] << 26) | 0x130 |
-          ((unsigned long long)(1 << shift) << 14) |
-          (1ULL << 34) | (1ULL << 63);
-    D_001A72D0 = old + 0x400 + size;
-    ptr[1] = object + off + 0x20;
-    if (count < 0x40) {
-        rec = D_001B9340 + count * 16;
-        *(int *)(rec + 0) = (int)ptr[0];
-        *(unsigned short *)(rec + 4) = 0;
-        *(unsigned short *)(rec + 6) = (unsigned short)(old >> 8);
-        *(int *)(rec + 8) = (int)ptr[1];
-        *(unsigned char *)(rec + 0xC) = n[0];
-        *(unsigned char *)(rec + 0xD) = n[1];
-        *(unsigned short *)(rec + 0xE) = (unsigned short)((old + 0x400) >> 8);
-        D_001B15FC = count + 1;
+    t.clut = p + 0x20;
+    t.clutSize = 0x400;
+    t.tw = func_00282A18(*(int *)(p + 8));
+    t.th = func_00282A18(*(int *)(p + 0xC));
+    addr = D_001A72D0[0];
+    cbp = addr >> 8;
+    addr += 0x400;
+    tbp = addr >> 8;
+    D_001A72D0[0] = addr + (1 << (t.tw + t.th));
+    w = t.tw - 6;
+    if (w < 0) {
+        w = 0;
     }
-    return tag;
+    w = 1 << w;
+    tex = (long long)tbp | ((long long)w << 14);
+    width_bits = (long long)t.tw << 26;
+    width_bits |= 0x1300000;
+    tex |= width_bits;
+    tex |= (long long)t.th << 30;
+    palette_bits = (long long)cbp << 37;
+    palette_bits |= (long long)1 << 34;
+    tex |= palette_bits;
+    reg = tex | ((long long)4 << 61);
+    t.pix = p + 0x20 + t.clutSize;
+    count = D_001B15FC[0];
+    if (count < 0x40) {
+        D_001B9340[count].addr = (int)t.clut;
+        D_001B9340[count].cbp = cbp;
+        D_001B9340[count].unk4 = 0;
+        D_001B9340[count].unk8 = (int)t.pix;
+        D_001B9340[count].tw = t.tw;
+        D_001B9340[count].th = t.th;
+        D_001B9340[count].tbp = tbp;
+        D_001B15FC[0] = count + 1;
+    }
+    return reg;
 }
