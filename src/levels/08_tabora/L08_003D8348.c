@@ -187,7 +187,7 @@ void func_L08_003D8A28(Ent *a0)
 
 /* func_L08_003D8AB0 uses -fno-gcse in L08_003D8AB0.c. */
 
-INCLUDE_ASM("asm/levels", func_L08_003D8CA8);
+/* func_L08_003D8CA8 is matched in its own unit, src/levels/08_tabora/L08_003D8CA8.c (-g). */
 
 extern void func_002B60B0(u8 *, float, float, float, float);
 extern int func_00282948(void *);
@@ -342,11 +342,11 @@ void func_L08_003D9798(char *object)
 }
 
 
-INCLUDE_ASM("asm/levels", func_L08_003D9F68);
+/* func_L08_003D9F68 is defined in L08_003D9F68-g8.c. */
 
 /* func_L08_003F6D30 is defined in L08_003F6D30-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L08_003F6E18);
+/* func_L08_003F6E18 is defined in L08_003F6E18-g8.c. */
 
 
 
@@ -419,7 +419,68 @@ void func_L08_003F7A48(u8 *object) {
 }
 
 
-INCLUDE_ASM("asm/levels", func_L08_0040E9B8);
+extern void func_002A7750(void *, s32, s32);
+extern u8 D_001A7B00[] __attribute__((sda));
+extern u8 D_L08_001BFD00[];
+extern s32 D_L08_001A8F00[] __attribute__((sda));
+extern s32 D_L08_001B2700[] __attribute__((sda));
+extern u8 *D_L08_001B2ACC[] __attribute__((sda));
+extern s32 func_002ACBC8(void *, s32);
+extern s32 func_00288AA0(void *, s32);
+extern s32 func_00288BE8(void *);
+extern void func_L01_003CEB00(u8 *);
+extern s32 func_002F5D10(void);
+extern void func_L00_002B9D60(u8 *, u8 *, s32, s32);
+extern void func_00288308(s32);
+extern void func_002B0A18(s32, s32);
+extern void func_0029B3E0(s32, s32);
+
+void func_L08_0040E9B8(u8 *self) {
+    u8 *st = *(u8 **)(self + 0x68);
+    u8 *ent;
+
+    switch (self[0x20]) {
+    case 0:
+        if (D_001A7B00[13] != 0) {
+            func_0029F338(self);
+            break;
+        }
+        *(float *)(self + 0x18) = *(float *)(self + 0x18) + 0.75f;
+        *(float *)(self + 0x2C) = *(float *)(*(u8 **)(self + 0x24) + 0x24) * 1.5f;
+        func_002A7750(self, 1, -1);
+        break;
+    case 1:
+        *(float *)(self + 0xF8) = func_00283B98(*(float *)(self + 0xF8), 0.07853982597589493f);
+        if (func_002ACBC8(D_00189EA0, *(s32 *)(st + 4)) != 0) {
+            if (func_00288AA0(D_L08_001BFD00, 0x5B) != 0) {
+                func_00288BE8(D_L08_001BFD00);
+                self[0x20] = 2;
+            }
+        }
+        if (self[0x31] != 0)
+            func_L01_003CEB00(self);
+        break;
+    case 2:
+        D_L08_001B2700[10] = 1;
+        if (D_L08_001A8F00[0] == 2) {
+            self[0x31] = 0;
+            *(u16 *)(self + 0x34) |= 1;
+        }
+        if (func_002F5D10() != 0)
+            break;
+        D_L08_001B2700[10] = 0;
+        self[0x31] = 1;
+        ent = D_L08_001B2ACC[0];
+        *(u16 *)(self + 0x34) &= 0xFFFE;
+        ent += *(s32 *)(st + 8) * 0x80;
+        func_L00_002B9D60(ent + 0x30, ent + 0x70, 0, 1);
+        func_00288308(0x15);
+        func_002B0A18(0x122B, -1);
+        func_0029B3E0(0, -1);
+        func_0029F338(self);
+        break;
+    }
+}
 
 /* func_L08_0040F9D0 is matched in its own unit, src/levels/shared/L08_0040F9D0-qcopy.c (-frac2-qcopy -frac2-qcopy-barrier). */
 
@@ -581,7 +642,61 @@ void func_L08_00422B60(Ent *a0)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L08_00422B98);
+extern char D_L08_001BFF60[];
+extern void func_00282CF0(void *, void *, void *);
+extern char *D_L08_001FE7BC;
+extern char *D_L08_001B29DC[] __attribute__((sda));
+extern void func_L01_00337A60(void *, void *, void *, int);
+extern int func_L01_003165E8(void *, int, int, int, int);
+extern float func_002A89A8(void *, int, float);
+
+void func_L08_00422B98(Ent *object) {
+    char *state = object->f68;
+
+    if (!func_L01_003165E8(state + 0x160, *(int *)(state + 0x1A8), -1, -1, -1)) {
+        if ((func_001163B0() & 1) || *(int *)(state + 0x144) == 2 || *(short *)(state + 0x1BC)) {
+            if (*(int *)(state + 0x184) == -1 || (func_001163B0() & 1)) {
+                qcopy(state + 0x160, state + 0x150);
+            } else {
+                *(float *)(state + 0x160) = func_00283180(func_002A7878(-3.1415927f, 3.1415927f)) * 3.0f;
+                {
+                    float y = func_00283198(func_002A7878(-3.1415927f, 3.1415927f)) * 3.0f;
+                    int handle = *(int *)(state + 0x184);
+                    char *entry = D_L08_001B29DC[0];
+                    *(float *)(state + 0x168) = 0;
+                    *(float *)(state + 0x164) = y;
+                    func_00282CC0(state + 0x160, state + 0x160, entry + (handle << 8) + 0x10);
+                }
+            }
+            *(float *)(state + 0x168) += 1.7f;
+        } else {
+            *(float *)(state + 0x160) = func_00283180(func_002A7878(-3.1415927f, 3.1415927f)) * 1.2f;
+            {
+                float y = func_00283198(func_002A7878(-3.1415927f, 3.1415927f)) * 1.2f;
+                *(float *)(state + 0x168) = 0;
+                *(float *)(state + 0x164) = y;
+                func_00282CC0(state + 0x160, state + 0x160, D_00189EA0);
+            }
+            *(float *)(state + 0x168) += 1.7f;
+        }
+        if (*(short *)(state + 0x1BC) && func_00282E80(state + 0x160, D_00189EA0) < 3.0f) {
+            float offset = func_002A7878(3.0f, 5.0f);
+            float value = *(float *)(state + 0x160);
+            *(float *)(state + 0x160) = (func_001163B0() & 1) ? value - offset : value + offset;
+            offset = func_002A7878(3.0f, 5.0f);
+            value = *(float *)(state + 0x164);
+            *(float *)(state + 0x164) = (func_001163B0() & 1) ? value - offset : value + offset;
+        }
+    } else if (*(int *)(state + 0x1A8) == -1) {
+        func_L01_00337A60(state + 0x160, state + 0x160, D_L08_001FE7BC + 0x10, *(int *)D_L08_001FE7BC);
+    }
+    if (func_002761F8((char *)object + 0x10, state + 0x160, 2, object, 0)) {
+        func_00282CF0(state + 0x160, D_L08_001BFF60, state + 0x160);
+        func_00282F20(state + 0x160, state + 0x160, 2.0f);
+        func_00282CC0(state + 0x160, state + 0x160, D_L08_001BFF60);
+    }
+    *(float *)(state + 0x168) = func_002A89A8(state + 0x160, 0, 4.0f) + 1.7f;
+}
 
 /* the swing angle is folded into the moby's frame and the subobject is ticked */
 void func_L08_00422EE0(Ent *a0)

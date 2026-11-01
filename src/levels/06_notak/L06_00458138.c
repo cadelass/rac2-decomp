@@ -217,7 +217,7 @@ void func_L06_00458F30(char *a0)
     func_L06_00459620(a0);
 }
 
-INCLUDE_ASM("asm/levels", func_L06_00459020);
+/* func_L06_00459020 is defined in L06_00458138-ribbon-g8.c. */
 
 /* func_L06_00459620 is defined in L06_00458138-render-g8.c. */
 
@@ -320,7 +320,60 @@ void func_L06_00459C38(unsigned char *a0)
 
 /* func_L06_00459D08 is defined in L06_00458138-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L06_00459EC0);
+extern int func_002A8AF0(void *, void *, int);
+extern int func_002761F8(void *, void *, int, void *, int);
+extern int func_00277258(void *, int, void *, float);
+extern float func_00283248(float, float);
+
+/* Sweeps for a free heading when a sweep is pending, else (or when none is free) faces the
+   target. The found block before the sweep is what puts the flag test's fallback on its own
+   branch: its store goes into the sweep's branch-likely slot, leaving that branch behind. */
+void func_L06_00459EC0(char *obj, char *st)
+{
+    float dir[3];
+    char *p;
+    float ang;
+    float step;
+    float total;
+
+    if (*(int *)(st + 0x124) != 0)
+        goto search;
+    goto fallback;
+found:
+    *(float *)(st + 0x12C) = ang;
+    return;
+search:
+    dir[0] = func_00283180(*(float *)(obj + 0xF8)) * 5.2f;
+    dir[1] = func_00283198(*(float *)(obj + 0xF8)) * 5.2f;
+    dir[2] = 0.0f;
+    func_00282CC0(dir, dir, obj + 0x10);
+    p = *(char **)(st + 0x118);
+    if (func_002A8AF0(dir, p + 0x10, *(int *)p) != 0 &&
+        func_002761F8(obj + 0x10, dir, 0x24, obj, 0) == 0 &&
+        func_00277258(dir, 0x24, obj, 1.5f) == 0)
+        return;
+    step = func_00282C48(*(float *)(st + 0x130));
+    ang = *(float *)(obj + 0xF8);
+    total = 0.0f;
+    do {
+        ang = func_00283B98(ang, *(float *)(st + 0x130));
+        dir[0] = func_00283180(ang) * 5.2f;
+        dir[1] = func_00283198(ang) * 5.2f;
+        dir[2] = 0.0f;
+        func_00282CC0(dir, dir, obj + 0x10);
+        p = *(char **)(st + 0x118);
+        if (func_002A8AF0(dir, p + 0x10, *(int *)p) == 0 ||
+            func_002761F8(obj + 0x10, dir, 0x24, obj, 0) != 0 ||
+            func_00277258(dir, 0x24, obj, 1.5f) != 0) {
+            total += step;
+            continue;
+        }
+        goto found;
+    } while (total < 6.283186f);
+fallback:
+    *(float *)(st + 0x12C) = func_00283248(*(float *)(st + 0xE0) - *(float *)(obj + 0x10),
+                                         *(float *)(st + 0xE4) - *(float *)(obj + 0x14));
+}
 
 void func_L06_0045A0D0(char *a0, char *a1, float f, float g, float h)
 {
@@ -360,7 +413,36 @@ int func_L06_0045A1B0(char *a0, char *a1, float p1, float p2, float p3, float p4
     return r;
 }
 
-INCLUDE_ASM("asm/levels", func_L06_0045A2D8);
+extern float func_0029F530(char *);
+extern void func_002A8C00(void *, char *, int, void *, float);
+extern int func_00277F48(void *, float, int, char *, void *);
+extern void *D_L06_001BFC98;
+
+/* Runs the shared pickup test: when the object is in the given state and the draw is inside the window, aims at the target and, on a hit with the expected tag, hands over to the next state. */
+void func_L06_0045A2D8(char *obj, float lo, char *self, float hi, int kind, int sub, float scale, float reach, float range,
+                       int anim, int link, int next, void *tag)
+{
+    float dir[4] __attribute__((aligned(16)));
+    char aim[0x30] __attribute__((aligned(16)));
+    float probe[4] __attribute__((aligned(16)));
+    float roll = func_0029F530(obj);
+    char *vec;
+
+    if (*(u8 *)(obj + 0x20) == kind && *(u8 *)(obj + 0x42) == sub && lo < roll && roll < hi) {
+        vec = self + 0xC0;
+        func_00282F20((char *)dir, vec, scale);
+        dir[2] = 1.0f;
+        func_002A8C00(aim, obj, 1, dir, reach);
+        func_003514C8(obj, 0, probe);
+        if (func_00277F48(probe, range, 0x21, obj, aim) != 0 && D_L06_001BFC98 == tag) {
+            func_00282D30(vec, vec, -1.0f);
+            *(float *)(self + 0xC8) = -0.05f;
+            if (*(u8 *)(obj + 0x43) != anim)
+                func_002A7470(obj, anim, link, 5);
+            *(u8 *)(obj + 0x20) = next;
+        }
+    }
+}
 
 extern void func_003514C8(void *, int, void *);
 
@@ -405,8 +487,6 @@ int func_L06_0045A500(char *a0, int a1, int a2)
     }
     return 0;
 }
-
-INCLUDE_ASM("asm/levels", func_L06_0045A5B0);
 
 void func_L06_0045BD38(char *a0)
 {
@@ -631,7 +711,7 @@ void func_L06_00464900(char *a0)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L06_004649F0);
+/* func_L06_004649F0 is defined in L06_004649F0-g8.c. */
 
 /* func_L06_00464F40 is defined in L06_00464F40-g8.c. */
 

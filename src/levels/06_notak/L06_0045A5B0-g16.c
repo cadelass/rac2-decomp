@@ -1,21 +1,6 @@
-/* Opus big29 handoff, 2026-10-26: func_L06_0045A5B0 (6,024 bytes, level 06, one place).
- * Profile: -O2 -G16 -Wa,-G16 -ffunction-sections -ffast-math, in its own unit (L06_0045A5B0-g16.c).
- * The two $gp tables are the 3x3 state-transition table pair indexed nw + old * 3, declared at
- * their real 9 bytes; -G16 -Wa,-G16 lets that size take retail's addiu $gp form (the -G32/-G64
- * precedent in docs/COMPILER-NOTES.md), replacing big26's fabricated 8-byte sizes.
- * Status: 1506/1506 instructions; tools/check.py in a trial unit reports the first difference at
- * +0x1518; 1499 instructions are equal at the same address. Only the func_002ABBB8 argument setup
- * in case 14 differs (7 words):
- *   - a1 = s6 + 0xC0 is scheduled before a0 = self. Instrumented sched1 (ready-list priorities):
- *     both have priority 3 and one dependent; the tie goes to INSN_REG_WEIGHT, and s6 dies at the
- *     a1 add while self stays live for func_0029F338, so the add wins. Retail has a0 first.
- *   - lui 0x81/ori (stack word 0x810001) issues before the 1.0f f15 constant; retail the reverse.
- * What closed the rest: one hp load per arm (gives the 2AB8C0/2A8AF0 argument order), a three-step
- * f20 computation, the Hero union for case 5, the known func_002ABBB8 prototype, a float-first
- * func_002A7CA0 prototype (callers' setup order; same registers as the definition), (u8) of the
- * int return for the 0xBC compare, &v70 written at each use, and the nested call in case 4 split.
- * qzero_nc changes nothing here.
- */
+/* -G16 -Wa,-G16 lets the two 9-byte state-transition tables (nw + old * 3) take retail's $gp form.
+ * Both func_0029F338(self); return; tails are written out: jump2 cross-jumps them after sched2, and
+ * until then the second a0 set in case 14's block gives a0 = self its extra dependent. */
 #include "common.h"
 #define NULL ((void *)0)
 typedef int Quad __attribute__((mode(TI)));
@@ -26,9 +11,9 @@ extern char D_00189E20[];
 extern char D_00189EA0[];
 extern u8 *D_0018C0B0 __attribute__((nosda));
 extern s16 D_0018A16C __attribute__((nosda));
-extern int D_001B2348[] __attribute__((sda));
-extern int D_001B2FB8[] __attribute__((sda));
-extern u8 D_001BFCA0[];
+extern int D_L06_001B2348[] __attribute__((sda));
+extern int D_L06_001B2FB8[] __attribute__((sda));
+extern u8 D_L06_001BFCA0[];
 extern char D_L06_001B1A68[], D_L06_001B1AA0[];
 extern u8 *D_L06_001B281C __attribute__((sda));
 extern int D_L06_001B2FB0 __attribute__((sda));
@@ -104,7 +89,8 @@ void func_L06_0045A5B0(u8 *self) {
         if (B(self, 0x20) == 0) {
             if (func_L06_00459D08(self, s6) != 0) {
                 func_0026FEB8(D_L06_001B1A68, H(self, 0xB2));
-                goto kill;
+                func_0029F338(self);
+                return;
             }
             goto check;
         }
@@ -165,19 +151,19 @@ void func_L06_0045A5B0(u8 *self) {
                 f20 *= 2.0f;
             }
             p1 = self + 0x10;
-            if (func_00282E80(p1, D_001BFCA0) > 0.5f) {
-                f21 = func_00282E80(p1, D_001BFCA0) * 2.0f;
+            if (func_00282E80(p1, D_L06_001BFCA0) > 0.5f) {
+                f21 = func_00282E80(p1, D_L06_001BFCA0) * 2.0f;
             } else {
                 f21 = 1.0f;
             }
-            if (D_001B2348[0] % 45 == H(self, 0xB2) && func_002A77E0(2) == 0) {
-                func_002FD1B8(D_L06_001B2FB0, D_001B2FB8[0], 1, F(self, 0x10), F(self, 0x14), f21, f20);
+            if (D_L06_001B2348[0] % 45 == H(self, 0xB2) && func_002A77E0(2) == 0) {
+                func_002FD1B8(D_L06_001B2FB0, D_L06_001B2FB8[0], 1, F(self, 0x10), F(self, 0x14), f21, f20);
             }
-            if (D_001B2348[0] % ((func_001163B0() & 7) + 0x14) == 0) {
+            if (D_L06_001B2348[0] % ((func_001163B0() & 7) + 0x14) == 0) {
                 f22 = func_002A7878(1.5f, 2.4000001f);
                 v70.f[0] += func_002A7878(-0.150000006f, 0.150000006f);
                 v70.f[1] += func_002A7878(-0.150000006f, 0.150000006f);
-                v70.f[2] = func_002A90F8(D_001BFCA0, NULL);
+                v70.f[2] = func_002A90F8(D_L06_001BFCA0, NULL);
                 func_002C19D8(v70.f, NULL, -1, f22, 5250.0f);
             }
         }
@@ -491,7 +477,6 @@ void func_L06_0045A5B0(u8 *self) {
         case 14:
             if (func_L06_0035EA68(self, s6 + 0x60) & (B(self, 0x60) & 2)) {
                 func_002ABBB8(self, s6 + 0xC0, NULL, 0.0f, 0.0f, 3, 3, 5, 2.0f, 1.0f, 4.0f, 1.0f, -1, 7.0f, 0, 1, -1, 0, 0x810001);
-            kill:
                 func_0029F338(self);
                 return;
             }
