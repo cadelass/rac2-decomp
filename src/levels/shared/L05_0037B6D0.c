@@ -66,6 +66,37 @@ extern void func_306AD8(void *, void *, void *);
 
 extern void func_306630(void *, void *, void *);
 
+typedef struct {
+    float f[38];
+    int timer;
+    char *owner;
+    int active;
+    int pad;
+    int dying;
+    int pad2;
+} Record233560;
+extern Record233560 D_L05_00233560[24];
+extern void func_L00_003F26C8(char *, char *);
+extern float func_002A7878(float, float);
+extern void func_00281EB8(void *, int, int, int, float, float, float);
+
+extern void func_00282CC0(void *, void *, void *);
+extern float func_00283B98(float, float);
+extern float func_00283180(float);
+extern float func_00283198(float);
+extern void func_00282CF0(void *, void *, void *);
+extern void func_00282D08(void *, void *, void *, float);
+extern int func_00282948(void *);
+
+typedef unsigned int Quad37DA58 __attribute__((mode(TI)));
+extern char D_L05_001B96C0[];
+extern void func_00282F20(void *, void *, float);
+extern void func_002ACEC0(void *, void *, void *, float);
+extern char *func_002C2210(void *, int, float, float, int, int, int, void *, int, float);
+extern float func_002A78D8(float, float);
+extern int func_002A77E0(int);
+extern int func_00283CF0(float);
+
 /* looks up an object, then sets flags, arms a stored value and calls one of two helper pairs before building a timer */
 void func_L05_0037B6D0(char *obj)
 {
@@ -277,18 +308,123 @@ void func_L05_0037D6E8(void)
 
 
 
-INCLUDE_ASM("asm/levels", func_L05_0037DA58);
+/* Emits count pairs of particles at position, jittering it each time; each pair drifts at a random
+   angle around the flattened direction from position to the camera, and rises at a random speed. */
+void func_L05_0037DA58(float *position, int count, int color, int duration)
+{
+    float velocity[4], point[4], direction[4], axis[4], half[4];
+    float size, angle;
+    int sign, i;
+    char *particle;
+    *(Quad37DA58 *)axis = 0;
+    axis[2] = 1.0f;
+    axis[3] = 1.0f;
+    func_00282CF0(direction, D_L05_001B96C0, position);
+    func_00282F20(half, direction, 0.5f);
+    direction[2] = 0;
+    for (i = 0; i < count; i++) {
+        size = func_002A7878(0.5f, 2.0f);
+        sign = func_002A77E0(2);
+        if (!sign) --sign;
+        angle = func_002A7878(-1.0471977f, 1.0471977f);
+        func_002ACEC0(velocity, direction, axis, angle);
+        func_00282F20(velocity, velocity, func_002A7878(0.05f, 3.0f) * (1.0f/60.0f));
+        velocity[2] = func_002A7878(1.0f, 5.0f) * (1.0f/60.0f);
+        func_00282CC0(point, position, half);
+        position[0] += func_002A78D8(0, 0.15f);
+        position[1] += func_002A78D8(0, 0.15f);
+        position[2] += func_002A78D8(0, 0.15f);
+        particle = func_002C2210(position, duration, size * 0.1f, size, color, 0, sign, velocity, 0, 0.002f);
+        if (particle) {
+            particle[2] = D_L05_001FF240[0x61][6];
+            particle[9] = func_00283CF0(4.0f) + 0x70;
+        }
+        particle = func_002C2210(position, duration, size * 0.07f, size * 0.7f, 0x7f7f7f7f, 1, -sign, velocity, 0, 0.002f);
+        if (particle) {
+            particle[2] = D_L05_001FF240[0x61][6];
+            particle[9] = func_00283CF0(4.0f) + 0x70;
+        }
+    }
+}
 
-INCLUDE_ASM("asm/levels", func_L05_003979B0);
+/* func_L05_003979B0 is in L05_003979B0-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L05_00397B30);
 
 /* func_L05_00397F48 is in L05_00397F48-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L05_00398018);
+/* Walks the twenty-four records, and for each one the object owns updates it and, while it is
+   not active, lays the three colours over its vector. */
+void func_L05_00398018(char *arg0)
+{
+    int i;
+    for (i = 0; i < 24; i++) {
+        Record233560 *rec = &D_L05_00233560[i];
+        float *pos = &rec->f[12];
+        if (rec->owner == arg0) {
+            func_L00_003F26C8(arg0, (char *)rec);
+            if (rec->active == 0) {
+                func_00281EB8(pos, 0x31, 0x3F0000FF, 1, func_002A7878(0.065f, 0.1f) * 5.0f, 1.25f, 0.0f);
+                func_00281EB8(pos, 0x31, 0x5F7F7F7F, 1, func_002A7878(0.0325f, 0.06f) * 5.0f, 1.24f, 0.0f);
+                func_00281EB8(pos, 0xB, 0x1000003F, 1, func_002A7878(0.07f, 0.15f) * 5.0f, 1.23f, 0.0f);
+            }
+        }
+    }
+}
 
 
-INCLUDE_ASM("asm/levels", func_L05_00398618);
+/* Walks the twenty-four records: for each one the object owns, jitters its position, moves it to
+   the object carrying its offset along, steps its six angles (faster while active), rebuilds its two
+   vectors and interpolates between position and end; both timers then retire the record. */
+void func_L05_00398618(char *obj)
+{
+    float delta[4] __attribute__((aligned(16)));
+    int i;
+    char *state = *(char **)(obj + 0x68);
+    for (i = 0; i < 24; i++) {
+        Record233560 *r = &D_L05_00233560[i];
+        if (r->owner == obj) {
+            Record233560 *p = r;
+            float *end = &p->f[16];
+            float *pos = &p->f[8];
+            p->f[8] += func_002A7878(-0.1f, 0.1f);
+            p->f[9] += func_002A7878(-0.1f, 0.1f);
+            p->f[10] += func_002A7878(-0.1f, 0.1f);
+            func_00282CF0(delta, end, pos);
+            qcopy(pos, obj + 0x10);
+            func_00282CC0(end, pos, delta);
+            if (p->active) {
+                p->f[20] = func_00283B98(p->f[20], p->f[23] * 100.0f);
+                p->f[21] = func_00283B98(p->f[21], p->f[24] * 100.0f);
+                p->f[22] = func_00283B98(p->f[22], p->f[25] * 100.0f);
+                p->f[29] = func_00283B98(p->f[29], p->f[32] * 100.0f);
+                p->f[30] = func_00283B98(p->f[30], p->f[33] * 100.0f);
+                p->f[31] = func_00283B98(p->f[31], p->f[34] * 100.0f);
+            } else {
+                p->f[20] = func_00283B98(p->f[20], p->f[23] * 50.0f);
+                p->f[21] = func_00283B98(p->f[21], p->f[24] * 50.0f);
+                p->f[22] = func_00283B98(p->f[22], p->f[25] * 50.0f);
+                p->f[29] = func_00283B98(p->f[29], p->f[32] * 50.0f);
+                p->f[30] = func_00283B98(p->f[30], p->f[33] * 50.0f);
+                p->f[31] = func_00283B98(p->f[31], p->f[34] * 50.0f);
+            }
+            p->f[0] = func_00283180(p->f[20]) * p->f[26];
+            p->f[1] = func_00283198(p->f[21]) * p->f[27];
+            p->f[2] = -func_00283198(p->f[22]) * p->f[28];
+            p->f[4] = func_00283180(p->f[29]) * p->f[35];
+            p->f[5] = func_00283198(p->f[30]) * p->f[36];
+            p->f[6] = -func_00283198(p->f[31]) * p->f[37];
+            if (*(int *)(state + 0x24))
+                func_00282D08(&p->f[12], &p->f[8], &p->f[16], 0.55f);
+            else
+                func_00282D08(&p->f[12], &p->f[8], &p->f[16], 0.4f);
+            if (func_00282948(&p->active)) {
+                if (p->dying == 0) p->dying = 1;
+                if (func_00282948(&p->timer)) p->owner = 0;
+            }
+        }
+    }
+}
 
 /* func_L05_00398A38 is in L05_00398A38.c. */
 
@@ -422,7 +558,7 @@ int func_L05_003CFC28(int a0)
 
 /* func_L05_003CFCF0 is in L05_003CFCF0-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L05_003CFF90);
+/* func_L05_003CFF90 is in L05_003CFF90.c. */
 
 extern int D_L05_00221D10[];
 
@@ -625,10 +761,11 @@ void func_L05_003D19F0(char *object)
     *(int *)(s1 + 0x268) = 0x3C;
 }
 
-INCLUDE_ASM("asm/levels", func_L05_003D1AB8);
+/* func_L05_003D1AB8 is in L05_003D1AB8-g8.c. */
 
 
 
 INCLUDE_ASM("asm/levels", func_L05_003D2048);
 
-INCLUDE_ASM("asm/levels", func_L05_003D2618);
+/* func_L05_003D2618 is in L05_003D2618-g8.c. */
+
