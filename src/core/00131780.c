@@ -194,14 +194,9 @@ INCLUDE_ASM("asm/core", func_00131CB0);
 
 INCLUDE_ASM("asm/core", func_00131D98);
 
-INCLUDE_ASM("asm/core", func_00132028);
+/* func_00132028 is in its own -g8 unit. */
 
-INCLUDE_ASM("asm/core", func_001326D8);
-
-
-
-INCLUDE_ASM("asm/core", func_00132318);
-
+/* func_00132318 and func_001326D8 are in 00132318-g8.c. */
 
 INCLUDE_ASM("asm/core", func_001325E0);
 

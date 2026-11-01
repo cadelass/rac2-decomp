@@ -318,7 +318,119 @@ void func_001296A0(MpegDecoderC *d, int bx, int by, int mb_type, int motion_type
     }
 }
 
-INCLUDE_ASM("asm/core", func_00129DA8);
+void func_00129DA8(MpegDecoderC *d, MpegRefImageC *ref, int sfield, int dfield,
+                   int yofs, int h, int bx, int by, int dx, int dy, int fieldpred,
+                   int avg) {
+    MpegMcFetchC *ye;
+    MpegMcFetchC *ce;
+    int n;
+    u8 *buf;
+    u8 *cbuf;
+    int x, y, xm, ym, xr;
+    int cxm, cym, cxr;
+    int cdx, cdy;
+    int cyofs;
+    int xh, yh;
+    int k;
+    int ch;
+    u8 *work;
+    int yidx;
+    int mb;
+    u8 *base;
+
+    work = d->work;
+    x = (dx >> 1) + bx;
+    n = d->mc[d->cur].n;
+    ye = &d->mc[d->cur].y[n];
+    ce = &d->mc[d->cur].c[n];
+    if (fieldpred) {
+        y = ((dy >> 1) * 2 + yofs) + (by + sfield);
+    } else {
+        y = ((dy >> 1) + yofs) + (by + sfield);
+    }
+    xm = x >> 4;
+    ym = y >> 4;
+    mb = xm * ref->width + ym;
+    xr = x - xm * 16;
+    y = y - ym * 16;
+    ye->x = xr;
+    ye->addr = work + (dfield + yofs) * 32;
+    yh = dy & 1;
+    xh = dx & 1;
+    if (yh) {
+        if (y + (h << fieldpred) > 15) {
+            k = (16 >> fieldpred) - (y >> fieldpred) - 1;
+            ye->n0 = k;
+            ye->n1 = h - k;
+        } else {
+            ye->n0 = h;
+            ye->n1 = 0;
+        }
+    } else {
+        if (y + (h << fieldpred) > 16) {
+            k = (16 >> fieldpred) - (y >> fieldpred);
+            ye->n0 = k;
+            ye->n1 = h - k;
+        } else {
+            ye->n0 = h;
+            ye->n1 = 0;
+        }
+    }
+    buf = d->mc[d->cur].buf + n * 0x600;
+    ye->p0 = buf + y * 16;
+    ye->p1 = buf + (y * 16 + 0x300);
+    ye->step = 16 << fieldpred;
+    yidx = (avg << 2) | xh << 1 | yh;
+    avg <<= 2;
+
+    cdx = dx / 2;
+    cdy = dy / 2;
+    ch = h >> 1;
+    cyofs = yofs >> 1;
+    x = (cdx >> 1) + (bx >> 1);
+    if (fieldpred) {
+        y = ((cdy >> 1) * 2 + cyofs) + ((by >> 1) + sfield);
+    } else {
+        y = ((cdy >> 1) + cyofs) + ((by >> 1) + sfield);
+    }
+    xh = cdx & 1;
+    cxm = x >> 3;
+    cym = y >> 3;
+    cxr = x - cxm * 8;
+    y = y - cym * 8;
+    yh = cdy & 1;
+    ce->x = cxr;
+    ce->addr = work + ((dfield + cyofs) * 16 + 0x200);
+    if (yh) {
+        if (y + (ch << fieldpred) > 7) {
+            k = (8 >> fieldpred) - (y >> fieldpred) - 1;
+            ce->n0 = k;
+            ce->n1 = ch - k;
+        } else {
+            ce->n0 = ch;
+            ce->n1 = 0;
+        }
+    } else {
+        if (y + (ch << fieldpred) > 8) {
+            k = (8 >> fieldpred) - (y >> fieldpred);
+            ce->n0 = k;
+            ce->n1 = ch - k;
+        } else {
+            ce->n0 = ch;
+            ce->n1 = 0;
+        }
+    }
+    cbuf = ((cxm - xm) * 2 + (cym - ym)) * 0x180 + buf;
+    base = ref->base;
+    ce->p0 = cbuf + (y * 8 + 0x100);
+    ce->p1 = cbuf + (y * 8 + 0x400);
+    ce->step = 8 << fieldpred;
+    d->mc[d->cur].yfunc[n] = D_00137ED0[yidx];
+    d->mc[d->cur].yref[n] = base + mb * 0x180;
+    d->mc[d->cur].cref[n] = base + (mb + ref->width) * 0x180;
+    d->mc[d->cur].cfunc[n] = D_00137EF0[avg | xh << 1 | yh];
+    d->mc[d->cur].n++;
+}
 
 extern void r1_func_0012C468(void *, void *);
 extern void r1_func_00127318(int, int);

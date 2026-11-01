@@ -19,7 +19,7 @@ int func_00133490(int value)
     return func_00132C48(0x36, 4, payload);
 }
 
-INCLUDE_ASM("asm/core", func_001334B8);
+/* func_001334B8 is matched in src/core/001334B8-g8.c. */
 
 /* func_00133580 is matched in src/core/00133580-g8.c. */
 

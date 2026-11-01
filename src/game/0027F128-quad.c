@@ -1,10 +1,3 @@
-/* Complete manual reconstruction; NOT MATCHING and never linked.
-   Tested profile: -O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
-   Actual final-source coverage: us: 0/28 placements, 972 compiled bytes; us2: 0/28 placements, 972 compiled bytes; pal: 0/28 placements, 972 compiled bytes.
-   972/976 bytes. With the qcopy profiles, the frame and almost the whole instruction sequence agree. The y-coordinate destination copy (retail daddu v1,s1) is coalesced away; adding a separate pointer created an extra induction variable instead. Color-store order was repaired without a barrier.
-   Reopen only with: A measured source alias/lifetime or qualified compiler coalescing mechanism that preserves the real y-destination copy without artificial dependencies.
-*/
-
 #include "include_asm.h"
 typedef unsigned char u8;
 typedef unsigned long u64;
@@ -30,6 +23,9 @@ extern void func_002830C0(void *, void *, void *);
 extern void func_00280B90(void *, int, int);
 extern void func_0027C768(int, float *, float *);
 
+/* Draws a camera-facing quad, then redraws it with texture coordinates from its projected
+   corners. Assigning through value leaves one store after the join, its address computed
+   before the branch: that is retail's copy of the y cursor. */
 void func_002820D0(UiVector *position, int alpha, float **uv,
                    float size, float inset, float distance)
 {
@@ -53,7 +49,7 @@ void func_002820D0(UiVector *position, int alpha, float **uv,
     func_00281DE8((QuadPacket *)&packet, 59, 5, 128);
     color = (alpha << 24) | 0x808080;
     packet.uv[0][0] = 0.0f;
-    packet.colors[1] = packet.colors[2] = packet.colors[3] = packet.colors[0] = color;
+    packet.colors[0] = packet.colors[1] = packet.colors[2] = packet.colors[3] = color;
     packet.uv[0][1] = 0.0f;
     packet.uv[1][0] = 0.0f;
     packet.uv[1][1] = 1.0f;
@@ -80,19 +76,14 @@ void func_002820D0(UiVector *position, int alpha, float **uv,
         }
     } else {
         for (i = 0; i < 4; i++) {
-            float *vertical = &packet.uv[i][1];
-            func_0027C768((int)&packet.vertices[i], &packet.uv[i][0], vertical);
+            func_0027C768((int)&packet.vertices[i], &packet.uv[i][0], &packet.uv[i][1]);
             if (i >> 1)
                 packet.uv[i][0] -= inset;
             else
                 packet.uv[i][0] += inset;
             {
                 float value = packet.uv[i][1];
-                if (i & 1)
-                    value -= inset;
-                else
-                    value += inset;
-                *vertical = value;
+                packet.uv[i][1] = value = (i & 1) ? value - inset : value + inset;
             }
             if (packet.uv[i][0] > 1.0f)
                 packet.uv[i][0] = 1.0f;

@@ -357,7 +357,87 @@ void func_0026F808(void)
 /* func_0026F810 is in 0026EA00-actuator.c (jump table and float pool). */
 
 
-INCLUDE_ASM("asm/game", func_0026FC78);
+extern int func_0011AEA0(int);
+extern int func_001244B8(int, int);
+
+/* Uploads a PIF image (header arg0, CLUT at +0x20 of 0x200 bytes when +0x14 is set, else
+   0x400, then w * h pixels) to GS memory: the 16x16 CLUT to block cbp >> 8 and the pixels
+   as PSMT8H to tbp >> 8 with a buffer width of w / 64 (at least 1), then writes the
+   matching TEX0 plus 1, 0 to arg1 (rac1's LoadPifAsPSMT8H). */
+typedef struct {
+    long q[12];
+} GsLoadImage26FC78 __attribute__((aligned(16)));
+
+typedef struct {
+    void *clut;
+    void *image;
+    int unk08[3];
+    int clutSize;
+    int imageSize;
+    int unk1C[4];
+    int tbp;
+    int unk30[3];
+    int tbw;
+    int unk40[3];
+    int tw;
+    int th;
+} PifTex26FC78;
+
+typedef struct {
+    char unk00[8];
+    int w;
+    int h;
+    int unk10;
+    int psm;
+} PifHeader26FC78;
+
+extern void func_00282A60(void *, int, int);
+extern int func_00282A18(int);
+extern int func_00126288(GsLoadImage26FC78 *, short, short, short, short, short, short, short);
+extern int func_001265B0(GsLoadImage26FC78 *, void *);
+
+void func_0026FC78(char *arg0, unsigned long long *out, int tbp, int cbp)
+{
+    PifTex26FC78 d;
+    GsLoadImage26FC78 li;
+    PifHeader26FC78 *pif = (PifHeader26FC78 *)arg0;
+    int c;
+
+    func_00282A60(&d, 0, sizeof(d));
+    d.clut = (char *)pif + 0x20;
+    if (pif->psm == 0) {
+        d.clutSize = 0x400;
+    } else {
+        d.clutSize = 0x200;
+    }
+    c = cbp >> 8;
+    d.tw = func_00282A18(pif->w);
+    d.th = func_00282A18(pif->h);
+    d.image = (char *)pif + (d.clutSize + 0x20);
+    d.imageSize = pif->w * pif->h;
+    func_00126288(&li, c, 1, pif->psm, 0, 0, 16, 16);
+    func_0011AEA0(0);
+    func_001265B0(&li, d.clut);
+    func_001244B8(0, 0);
+    d.tbw = pif->w >> 6;
+    if (d.tbw <= 0) {
+        d.tbw = 1;
+    }
+    d.tbp = tbp >> 8;
+    func_00126288(&li, d.tbp, d.tbw, 0x1B, 0, 0, pif->w, pif->h);
+    func_0011AEA0(0);
+    func_001265B0(&li, d.image);
+    func_001244B8(0, 0);
+    /* The TEX0 layout, with no zero fields. Retail's groups are this flat chain's without
+       fold's flattening of four or more operands of one type, which the changes of
+       signedness keep it from doing. */
+    out[0] = (unsigned long)((long)((unsigned long)d.tbp | ((unsigned long)d.tbw << 14)
+           | ((unsigned long)0x1B << 20) | ((unsigned long)d.tw << 26))
+           | ((long)d.th << 30) | ((long)1 << 34) | ((long)c << 37))
+           | ((unsigned long)pif->psm << 51) | ((unsigned long)4 << 61);
+    out[1] = 1;
+    out[2] = 0;
+}
 
 typedef struct { char pad[0x32C]; int base; int offset; int count; } Table26FE48;
 extern Table26FE48 D_0014B540;
@@ -723,6 +803,7 @@ void func_00272280(void)
     }
 }
 
+/* func_00272CB0 is in 0026EA00-target.c (-g for its nop pair before div.s). */
 
 INCLUDE_ASM("asm/game", func_00272540);
 
@@ -802,7 +883,6 @@ void func_002725E0(void)
 
 
 
-INCLUDE_ASM("asm/game", func_00272CB0);
 
 
 

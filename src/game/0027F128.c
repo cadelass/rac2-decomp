@@ -16,6 +16,14 @@ typedef float f32;
 
 typedef int TI128 __attribute__((mode(TI)));
 
+extern short D_001A65EE;
+extern void func_00285030(int width, int height, int address, int mode);
+extern void func_0027B2F8(int width, int height, float scale, float a, float b, float c, float d);
+
+typedef struct { u8 pad[0x10]; float *result; u32 threshold; u8 gap[4]; int flags; short x, y, w, h; u8 tail[8]; } CopyRegion;
+
+extern CopyRegion D_001B8A10[];
+
 extern s32 D_001A7B90;
 
 extern s32 D_001A7BB8 __attribute__((sda));
@@ -109,7 +117,7 @@ void func_0027F5B8(int x, int y, u64 style, u8 *text, int length)
 
 
 
-INCLUDE_ASM("asm/game", func_0027F640);
+/* func_0027F640 -- see src/game/0027F128-font-g8.c (built with -G8). */
 
 
 /* func_0027F980 is matched in 0027F980.c. */
@@ -155,9 +163,28 @@ void func_002802E0(unsigned short *a0,s32 a1,s32 a2,s32 a3,s32 a4,s32 a5,s32 a6,
 }
 
 
-INCLUDE_ASM("asm/game", func_00280328);
+/* func_00280328 -- see src/game/0027F128-packet-g8.c (built with -G8). */
 
-INCLUDE_ASM("asm/game", func_00280510);
+void func_00280510(int width, int height, int use_saved, float scale) {
+    int address;
+
+    if (use_saved) {
+        address = D_001A65EE << 13;
+    } else {
+        int shift = width + height;
+        if (shift > 16) shift = 16;
+        address = 0x3FF000 - (4 << shift);
+        address = (address >> 13) << 13;
+    }
+    func_00285030(width, height, address, 0);
+    func_0027B2F8(1 << width, 1 << height, scale, 0.0f, 524288.0f, 255.0f, 0.0f);
+    if (use_saved) {
+        func_002FC560(0x47, 0UL);
+    } else {
+        func_002FC560(0x47, 0x30000UL);
+    }
+    func_002FC560(0x42, 0x8000000044UL);
+}
 
 extern void func_00284EA8(void);
 extern void func_0027A9F0(void);
@@ -173,7 +200,18 @@ void func_00280600(void) {
 
 INCLUDE_ASM("asm/game", func_00280660);
 
-INCLUDE_ASM("asm/game", func_00280670);
+/* The share of a region's pixels whose low 24 bits do not exceed the region's threshold. */
+void func_00280670(u32 *pixels, int index) {
+    CopyRegion *region = &D_001B8A10[index];
+    s32 total = region->w * region->h;
+    s32 count = 0;
+    s32 i;
+
+    for (i = 0; i < total; i++) {
+        if ((pixels[i] & 0xFFFFFF) > region->threshold) count++;
+    }
+    *(&D_001B8A10[index])->result = (float)(total - count) / (float)total;
+}
 
 INCLUDE_ASM("asm/game", func_00280710);
 
@@ -240,11 +278,6 @@ void func_002820A0(void) {
 void func_002820C8(void)
 {
 }
-
-INCLUDE_ASM("asm/game", func_002820D0);
-
-
-INCLUDE_ASM("asm/game", func_002824B8);
 
 INCLUDE_ASM("asm/game", func_00282848);
 
