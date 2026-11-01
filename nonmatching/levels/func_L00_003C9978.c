@@ -1,16 +1,50 @@
-/* Retained nonmatching C (Opus big37), measured 26 October 2026.
- * Profile: -O2 -G0 -ffunction-sections -ffast-math -frac2-zero-ti-por.
- * us 0/27, us2 0/27, pal catalogue absent. 2792/2800 bytes, about 60 instructions differ.
- * Frame, locals (0x00-0x7F, one spill at 0x7C) and control flow agree. Main residual: the
- * PRE'd addresses at the head of state 1 are allocated in another order, so this C spills
- * &spark (sp+0x74) where retail spills &self->m[2] and keeps &spark in $fp; that also
- * hoists the hit loop's constant 5 into $fp (retail hoists only 3). All these pseudos
- * have one reference, so global.c ranks them by allocno number (a tie).
- * Kept: one shared `i` for the state-0, trail and empty loops (retail's $s2), a goto
- * target-search loop (retail's unrotated test), the speed limit as a variable,
- * flip before spin, kind before count.
- * Reopen: an order of the state-1 address expressions that numbers &self->m[2] after
- * the timer addresses.
+/* Retained nonmatching C (opus-1, Claude Opus 5.5 xhigh), measured 31 October 2026 on v2/c05.
+ * Profile (own unit, e.g. src/levels/shared/L00_003C9978.c, one cflags line):
+ *   -O2 -G0 -ffunction-sections -ffast-math -frac2-zero-ti-por -frac2-hazard-labels
+ * -frac2-hazard-labels is required: retail's beqz at 003CA070 lands on the mtc1 hazard nop.
+ * Best check.py with allowed C (this file): us 0/27, us2 0/27, pal not in catalogue;
+ * 2792/2800 bytes, 394 of 700 rows, most of them a two-instruction shift.
+ *
+ * EXACT-SIZE FORM, NOT ALLOWED (do { } while (0), worker guide): 2800/2800 bytes, 0/27, 143 of
+ * 700 rows. In the code below, open `do {` right after `dist = func_00282E48(&self->pos, &saved);`
+ * and close `} while (0);` right after `vars->spark = spark;`. It is not retail's form: it adds a
+ * .p2align nop before the then-block label (retail's label is at 003CA224, not 8-aligned).
+ * Wrapping the goto search instead, `do { i = 0; goto test; ... } while (0);`, is 2792/2800,
+ * 221 rows: state-1 head, the spill and the hit loop all match, but the argument order at
+ * the func_00277F48 call changes (a1 leaves the delay slot).
+ *
+ * WHY RETAIL DIFFERS (measured with tools/regalloc.py and cc1 dumps):
+ * - Allocation order is floor_log2(refs) * refs / live_length. &spark is 7 refs over 354 (14/354),
+ *   below the hoisted constants 3 (3/52), 5 (3/54) and 0x500000000000 (3/58), so 5 takes $fp and
+ *   &spark is spilled. Retail has $fp = &spark, &self->m[2] spilled at sp+0x7C, 3 in $s7, and 5
+ *   and the mask rematerialised inside the hit loop. Refs weigh by loop-note depth, so one extra
+ *   weighted ref (8 refs, 24/354) yields exactly that; both wrappers above show it.
+ * - PRE inserts all ten addresses at five sites: state 0's loop head (dead), the target test,
+ *   the locked test, the second target test, and before the search's entry jump. The last site
+ *   of the stack addresses survives as a self-copy (2 refs) and of &self->m[2] is deleted (0 refs),
+ *   so a loop note covering it lifts &spark and not &self->m[2]. Probable retail shape.
+ * - A plain for gives retail's odd layout (i++, then test, then body, with backward fail branches):
+ *     for (i = 0; i < n; i++) { Moby *m = D_L00_001C3280[i];
+ *         if ((mode & 0x1000) && oclass != 0xA7E && m != D_0018C0B0 && m->cls->kind == 5) {
+ *             vars->target = m; break; } }
+ *   expand_end_loop rotates everything up to the last exit within 30 insns; this has exactly 30.
+ *   One more insn, or `if (...) continue;`, rotates only the first test (blez, hoisting, givs).
+ *   BLOCKER: cc1 then duplicates the exit code ahead of the loop (blez plus a first-iteration
+ *   copy, 2808 bytes), where retail enters with `b test`. The duplication happened at 29 and at
+ *   30 insns, so no count in the rotation window avoids it. A nested empty do/while stops the
+ *   last-exit scan. Same family as func_00305438 in docs/MATCHING-BLOCKERS.md.
+ *   With duplication blocked, PRE's last site would sit after LOOP_BEG, which should also make
+ *   the loop phony for loop.c (retail hoists nothing there). Not reproduced: that is the reopen.
+ *
+ * STILL DIFFERENT in every form: lbu 0x7B before mov.s at 003CA064; flip++ uses $v1 in retail;
+ * callback is `lui $v0; a1 = self; jal; addiu $a0` in retail (a1 set first); and without a barrier
+ * after dist, -1.0f gets $f1 because the store to info and the load of vars->spark are ordered,
+ * which puts the constant on the longest chain (retail: mov.s, a0, lui, mtc1 $f0, nop, swc1).
+ *
+ * Kept here because each measurably fixed a row: the flag read into one variable for FF0 and FF4
+ * (`lui $v0; lw $v0`), and D_L00_001ADB2C read before the timer store (sw in the beqz delay slot;
+ * only that lui still differs, $a0 against retail's $v0). Tried, no gain: ternary for lim (2832
+ * bytes), int timers[3] (frame 0xF0), (s16) cast and a local class pointer (no extra insn).
  */
 
 #include "common.h"
@@ -159,6 +193,7 @@ void func_L00_003C9978(Moby_003C9978 *self)
     int life;
     int spark;
     int trail_timer;
+    int fast_trail;
     Vars_003C9978 *vars;
     int i;
 
@@ -282,6 +317,8 @@ void func_L00_003C9978(Moby_003C9978 *self)
         if (vars->target != 0) {
             float *health = func_002AB1F0(vars->target);
             float lim;
+            int n;
+
 
             func_L00_003252A8(vars->target, &info, 1);
             if (health != 0 && D_L00_001A8FF0 == 0) {
@@ -300,7 +337,10 @@ void func_L00_003C9978(Moby_003C9978 *self)
                 lim = 1.5f;
             if (dist < lim)
                 dist = 0.0f;
-            if (D_L00_001A8FF0 == 0 && D_L00_001A8FF4 == 0 && D_0018A168 == 0) {
+            n = D_L00_001A8FF0;
+            if (n == 0)
+                n = D_L00_001A8FF4;
+            if (n == 0 && D_0018A168 == 0) {
                 info.v.b.y += func_00283198(vars->wobble) * (dist * 0.749f < 0.749f ? dist * 0.749f : 0.749f);
                 info.v.b.x -= func_00283180(vars->wobble) * (dist * 0.751f < 0.751f ? dist * 0.751f : 0.751f);
                 info.v.b.z += (func_00283198(vars->wobble_z) + 1.0f) * (dist * 0.5f < 0.5f ? dist * 0.5f : 0.5f);
@@ -322,8 +362,9 @@ void func_L00_003C9978(Moby_003C9978 *self)
         vars->spark = spark;
         vars->wobble = func_00283B98(vars->wobble, func_002A7878(0.01f, 0.1f));
         vars->wobble_z = func_00283BE0(vars->wobble_z, func_002A7878(0.025f, 0.25f));
+        fast_trail = D_L00_001ADB2C;
         trail_timer = vars->trail_timer;
-        if (D_L00_001ADB2C != 0) {
+        if (fast_trail != 0) {
             for (i = 3; i > 0; i--) {
                 qcopy(&vars->trail[i], &vars->trail[i - 1]);
                 func_00300190(&vars->trail[i], &vars->trail[i]);

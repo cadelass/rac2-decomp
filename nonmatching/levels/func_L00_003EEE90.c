@@ -1,9 +1,24 @@
-/* Nonmatching C: Initialize the effect pools, apply area damage and advance its timed fade states.
- * Tested profile: -O2 -G8 -ffunction-sections.
- * Measured US size: 1344 bytes; retail: 1360 bytes.
- * Placement checks: US and US2: 0/27 each; PAL: absent from the catalogue.
- * Remaining: Pool clearing direction, pointer lifetimes and scalar-global allocation differ.
- * Reopen with independent pool-clear and alias-reload evidence; preserve the complete 48-byte damage request and avoid inferring a whole pool extent.
+/* GPT-6.1 Sol (high effort), bounded retry, 29 October 2026; not linked.
+ * Profile: -O2 -G8 -ffunction-sections, current pinned upstream compiler.
+ * USA v1.01 and USA v2.00: 1360/1360 bytes, 0/27 placements each.
+ * Six non-relocated words differ
+ * in level 00: +0x58/+0x5c/+0x64 (first call's position register preference),
+ * +0x2c0/+0x2c4 (normalization-constant copy scheduling), and +0x35c (damage
+ * table field offset). The table base relocation is also folded by +0x74;
+ * equal size and this diagnostic word count are not matching or link credit.
+ * Relative to the earlier 1356-byte draft, a Hero union view, a plain TI impulse
+ * assignment, a separate guarded countdown and the hit pointer initialized
+ * inside its guard restore the retail saved registers and hit-loop entry.
+ * Initialization in field order and request writes kind/enabled/active/impulse.w
+ * restore the state and request store sequences. Remaining lifetime/scheduling
+ * differences need independent evidence; no synthetic accesses were introduced.
+ * -fno-rerun-loop-opt and -fno-strength-reduce tie on the earlier same-size
+ * variant; -mno-split-addresses (1348) and -fno-gcse (1352) regress. A typed
+ * object view ties; initializing position before the owner guard regresses.
+ * Earlier evidence retained: retail reloads the declaration-wide volatile pool
+ * pointer on every clear iteration at 003EEFBC; the pool extent stays unknown.
+ * The complete 48-byte request preserves retail's normalization before its first
+ * fill. Native behavior is unverified. All declarations needed follow.
  */
 #include "common.h"
 
@@ -30,15 +45,17 @@ typedef struct {
     int damage, handle;
 } EffectState;
 
-extern char *D_L00_001B2BB4 __attribute__((sda));
+extern char *D_L00_001B2BB4;
 extern char *D_L00_001B2BB8;
-extern int *D_L00_001B2BBC;
+extern int *volatile D_L00_001B2BBC;
 extern char *D_L00_001C3280[];
-extern char *D_0018C0B0;
-extern unsigned char D_00139592;
-extern unsigned char D_L00_00262570[];
-extern float D_L00_001B8DE0;
-extern int D_L00_001B8DE8, D_L00_001B8DEC;
+typedef union { unsigned char b[0x2600]; char *ptr[0x980]; } Hero;
+extern Hero D_00189E20;
+extern unsigned char D_00139568[];
+typedef struct { unsigned char pad[0x74]; float damage; unsigned char tail[0x68]; } EffectDamage;
+extern EffectDamage D_L00_00262570[];
+typedef struct { char pad[0x160]; float light; int unknown; int timer, active; } EffectCamera;
+extern EffectCamera D_L00_001B8C80;
 extern float D_L00_001B0830 __attribute__((sda)), D_L00_001B0834 __attribute__((sda));
 
 extern int func_002B4038(int, int);
@@ -71,24 +88,25 @@ void func_L00_003EEE90(char *object)
     DamageRequest request;
     int created;
     EffectState *state = *(EffectState **)(object + 0x68);
-    Vector *position = (Vector *)(object + 0x10);
+    Vector *position;
     char *record;
     char **hit;
-    int count, i;
+    int count, remaining, i;
     float progress, fade;
 
     if (*(unsigned char *)(object + 0x20) != 0 &&
         func_002B4038(*(short *)(object + 0xaa), state->handle) == 0)
         goto destroy;
+    position = (Vector *)(object + 0x10);
     func_00300190(position, position);
     switch (*(unsigned char *)(object + 0x20)) {
     case 0:
         *(unsigned char *)(object + 0x20) = 1;
         state->angle = 0.0f;
+        state->timer = 20;
         state->angular_velocity = 0.66666669f;
         state->alpha = 127;
         state->damage = 111;
-        state->timer = 20;
         state->handle = func_L00_00329E90(object, 0, &created);
         D_L00_001B2BB4 = func_L00_0032A088(*(short *)(object + 0xaa), state->handle);
         D_L00_001B2BB8 = (char *)func_L00_003EEE20((int)(D_L00_001B2BB4 + 0x50));
@@ -110,9 +128,9 @@ void func_L00_003EEE90(char *object)
         qcopy(&light_position, &initial_position);
         light_position.v[3] = 2.0f;
         if (func_00283DB8(&light_position, 100.0f) != -1) {
-            D_L00_001B8DE0 = 0.44999999f;
-            D_L00_001B8DE8 = 40;
-            D_L00_001B8DEC = 0;
+            D_L00_001B8C80.light = 0.44999999f;
+            D_L00_001B8C80.timer = 40;
+            D_L00_001B8C80.active = 0;
         }
     case 1:
         state->damage -= 5;
@@ -121,11 +139,13 @@ void func_L00_003EEE90(char *object)
         progress = func_00283CE0(state->timer);
         progress /= func_00283CE0(20);
         count = func_00277F48(position, 0, object, 0, (1.0f - progress) * 6.0f + 0.001f);
+        if (count > 0) {
         hit = D_L00_001C3280;
-        while (count > 0) {
+        remaining = count;
+        do {
             if ((func_002AB1F0((unsigned char *)*hit) != 0 ||
                  (*(unsigned short *)(*hit + 0x34) & 0x4000) != 0) &&
-                *hit != D_0018C0B0 && *(short *)(*hit + 0xaa) != 0xa5a) {
+                *hit != D_00189E20.ptr[0x2290 / 4] && *(short *)(*hit + 0xaa) != 0xa5a) {
                 func_00282CF0(&normal, (Vector *)(*hit + 0x10), position);
                 func_00282F20(&normal, &normal, 1.0f);
 
@@ -133,19 +153,19 @@ void func_L00_003EEE90(char *object)
                  * native C execution is undefined and unverified. */
                 func_00282F20(&request.impulse, &request.impulse, 1.0f);
                 func_002A8C00((char *)&request, (int)object, 0x830000,
-                             *(float *)(D_L00_00262570 + D_00139592 * 0xe0 + 0x74),
+                             D_L00_00262570[D_00139568[0x2a]].damage,
                              (Quad16 *)&normal);
-                qcopy(&request.impulse, &normal);
-                request.impulse.v[3] = 5627.9248f;
-                request.enabled = 5;
+                request.impulse.word = normal.word;
                 request.kind = 3;
-                request.object_class = *(unsigned short *)(*hit + 0xaa);
+                request.enabled = 5;
                 request.active = 1;
+                request.impulse.v[3] = 5627.9248f;
+                request.object_class = *(unsigned short *)(*hit + 0xaa);
                 func_002A8E20(*hit, &request);
                 func_0032D758(*hit, 42, *(int *)(object + 0xb8));
             }
-            --count;
             ++hit;
+        } while (--remaining != 0);
         }
         if (func_00282948(&state->timer) != 0) {
             *(unsigned char *)(object + 0x20) = 2;

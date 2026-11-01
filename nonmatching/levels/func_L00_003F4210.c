@@ -1,19 +1,38 @@
-/* Bounded manual reconstruction, 2026-10-25; not linked.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * 2368/2392 bytes; us: 0/27 placements; us2: 0/27 placements; pal: absent from catalogue.
- * Out-of-range globals use absolute addressing. The request, 12-byte color scratch and full vectors
- * retain their real extents. The scalar damping subtraction/addition sequence is preserved.
- * Allocation, address sharing and branch scheduling differ.
- * Reopen with original local lifetime or qualified helper ABI evidence; retain truthful absolute
- * addressing even when the body grows.
- * Prior complete variants and diagnostic dumps are preserved privately.
- * No candidate or linked-build credit is claimed.
+/* GPT-6.1 Sol (high effort), bounded follow-up, 2026-10-29; not linked.
+ * Pinned profile: -O2 -G8 -ffunction-sections -frac2-qcopy
+ * -frac2-qcopy-barrier -g -frac2-hazard-labels.
+ * USA v1.01: 2392/2392 bytes, 0/27 places. Level 00 has one differing
+ * non-relocation instruction at +0x5D0 (0x003F47E0): ours multiplies
+ * f1 = f1 * f0; retail multiplies f1 = f0 * f1. No linked credit.
+ * Other releases not checked. Original retained draft was 2384/2392 here.
+ *
+ * Improvements: a real QuadWord local separates the particle position load
+ * and store instead of selecting the grouped memory-to-memory primitive.
+ * Loop-local third/life_range/one/life_min reproduce the hoisted FP constants.
+ * The collision record's owner/position/normal fields share its measured base.
+ * A separate live-hit count and loop count reproduce the damaged-object walk.
+ * Sequential packed-color assignments recover the retail OR tree. Separate
+ * speed subtraction and ratio statements plus -g reproduce both division pads
+ * and the final FP allocation; hazard-labels fixes two branch targets.
+ * The particle helper's matched definition in src/game/002BDCE8.c takes an
+ * int colour: the older draft's long declaration caused its call mismatch.
+ * Explosion integer/FP interleaving preserves both EE argument banks and stack.
+ *
+ * Remaining multiplication: damping = speed * damping and damping = damping * speed
+ * tie at the reversed operand order.
+ * A distinct w local with velocity.w *= damping instead uses f0 for the
+ * result, compare and store (three differences); a direct length-call product
+ * changes six instructions. Neither source preserves another use of speed.
+ * -g alone tied before splitting divisions into their own statements;
+ * -mno-split-addresses and -fno-force-mem were worse. Boolean materialization
+ * adds four words. Structured and common-label conditionals tie. Do not repeat
+ * these without new allocation or source evidence. Keep actual scratch extents.
+ * All required declarations are below; no compiler or assembly changes used.
  */
 #include "common.h"
 
 typedef unsigned int QuadWord __attribute__((mode(TI)));
 typedef union { QuadWord word; float v[4]; } Vector;
-typedef struct { int a, b, c, d; } __attribute__((aligned(16))) Quad16;
 typedef struct {
     Vector impulse;
     int owner, flags;
@@ -34,12 +53,23 @@ typedef struct {
 } ProjectileState;
 /* The hit pointer is outside the GP-relative displacement range. */
 extern char *D_L00_001BF218 NOT_SDA;
-extern Vector D_L00_001BF220, D_L00_001BF240;
+typedef struct {
+    char pad[0x18];
+    char *owner;
+    int flags;
+    Vector position, pad30, normal;
+} Collision;
+extern Collision D_L00_001BF200;
 extern int D_L00_001A8FF0;
-extern Vector D_L00_001A8F20;
+extern Vector D_L00_001A8F20 __attribute__((sda)) NOT_SDA;
 extern char *D_L00_001C3280[];
 extern unsigned char D_00139587 NOT_SDA;
-extern unsigned char D_L00_00262570[];
+typedef struct {
+    unsigned char pad[0x74];
+    float damage;
+    unsigned char rest[0x68];
+} DamageTableRow;
+extern DamageTableRow D_L00_00262570[];
 extern Color D_L00_001B0920;
 extern float D_L00_001B0900 __attribute__((sda));
 extern int D_L00_001B0904 __attribute__((sda));
@@ -58,7 +88,7 @@ extern float func_00282DB0(const Vector *, const Vector *);
 extern void func_L00_0031D670(Vector *, const Vector *, const Vector *, float);
 extern int func_002A77E0(int);
 extern float func_00283CE0(int);
-extern char *func_002BDCE8(Vector *, int, const Vector *, long, int, float, float, float, float);
+extern char *func_002BDCE8(Vector *, float, float, float, int, const Vector *, float, int, int);
 extern int func_002761F8(Vector *, Vector *, int, char *, int);
 extern void func_00282F20(Vector *, const Vector *, float);
 extern void func_00283028(Vector *, const Vector *, const Vector *);
@@ -69,7 +99,7 @@ extern void func_003001E0(Vector *, const Vector *, const Vector *);
 extern int func_00283CF0(float);
 extern void func_00300190(void *, void *);
 extern int func_002E5DA0(int, int, char *, int);
-extern void func_002ABBB8(void *, void *, void *, float, float, int, int, int,
+extern void func_002ABBB8(void *, float, void *, float, void *, int, int, int,
                          float, float, float, float, int, float, int, int, int, int, int);
 extern void func_002A8BD0(char *, int, int, float);
 extern int func_00277F48(Vector *, int, char *, DamageRequest *, float);
@@ -86,15 +116,13 @@ void func_L00_003F4210(char *object)
     } scratch;
     Vector point, temporary, vertical, tangent;
     ProjectileState *state = *(ProjectileState **)(object + 0x68);
-    Vector *position = (Vector *)(object + 0x10);
-    Vector *velocity = &state->velocity;
     char *particle;
     char **hit;
     int count, i, spin, crossed;
-    unsigned int red, green, blue;
+    int red, green, blue;
     float speed, fade, damage, dot, minimum;
 
-    if (func_00277258(position, 0, object, 0.64999998f) != 0 &&
+    if (func_00277258((Vector *)(object + 0x10), 0, object, 0.64999998f) != 0 &&
         D_L00_001BF218 != 0 && D_L00_001BF218 != state->owner)
         *(unsigned char *)(object + 0x20) = 3;
     if (func_00282948(&state->timer) != 0)
@@ -102,104 +130,119 @@ void func_L00_003F4210(char *object)
     switch (*(unsigned char *)(object + 0x20)) {
     case 0:
     case 1:
-        func_00282CC0(&scratch.motion.end, position, velocity);
+        func_00282CC0(&scratch.motion.end, (Vector *)(object + 0x10), (&state->velocity));
         func_L00_003252A8(object, &scratch.motion.normal, 0);
-        func_00282D30(&scratch.motion.scaled, &scratch.motion.normal, velocity->v[3]);
-        func_00282CC0(velocity, velocity, &scratch.motion.scaled);
-        if (D_L00_001A8FF0 == 0) {
-            if (*(unsigned char *)(object + 0x20) == 1 && velocity->v[2] < 0.0f)
+        func_00282D30(&scratch.motion.scaled, &scratch.motion.normal, state->velocity.v[3]);
+        func_00282CC0((&state->velocity), (&state->velocity), &scratch.motion.scaled);
+        if (D_L00_001A8FF0 != 0) {
+            if (*(unsigned char *)(object + 0x20) == 1 && func_00282DB0((&state->velocity), &scratch.motion.normal) > 0.0f)
                 *(unsigned char *)(object + 0x20) = 0;
         } else if (*(unsigned char *)(object + 0x20) == 1) {
-            if (func_00282DB0(velocity, &scratch.motion.normal) > 0.0f)
+            if (state->velocity.v[2] < 0.0f)
                 *(unsigned char *)(object + 0x20) = 0;
         }
         func_00282978(&state->particle_timer);
         if (state->particle_timer != 0) {
             for (i = 0; i < 3; ++i) {
-                qcopy(&temporary, position);
-                func_L00_0031D670(&point, &temporary, &scratch.motion.end, (float)i * 0.3333f);
+                float third = 0.3333f;
+                float life_range = 45000.0f;
+                float one = 1.0f;
+                float life_min = 5000.0f;
+                float life;
+                QuadWord copy = ((Vector *)(object + 0x10))->word;
+                temporary.word = copy;
+                func_L00_0031D670(&point, &temporary, &scratch.motion.end, (float)i * third);
                 spin = func_002A77E0(6);
                 if (func_002A77E0(2) != 0) spin = -spin;
                 fade = func_00283CE0(D_L00_001B0904);
-                particle = func_002BDCE8(&point, spin, &D_L00_001A8F20, (long)(int)0x80808080,
-                                        1, 0.025f, 1.0f, 1.0f,
-                                        ((float)state->particle_timer / fade) * 45000.0f + 5000.0f);
+                life = (float)state->particle_timer;
+                life /= fade;
+                particle = func_002BDCE8(&point, 0.025f, one, one, spin, &D_L00_001A8F20,
+                                        life * life_range + life_min, (int)0x80808080, 1);
                 if (particle != 0) {
+                    char *properties;
                     *(short *)(particle + 0xa) = 120;
-                    *(int *)(particle + 0x24) = 2;
-                    *(unsigned char *)(particle + 0x2a) = 127;
-                    *(unsigned char *)(particle + 0x2b) = *(unsigned char *)(particle + 0xa);
+                    properties = particle + 0x20;
+                    *(int *)(properties + 4) = 2;
+                    *(unsigned char *)(properties + 0xa) = 127;
+                    *(unsigned char *)(properties + 0xb) = *(unsigned char *)(particle + 0xa);
                 }
             }
         }
-        if (func_002761F8(position, &scratch.motion.end, 0, object, 0) != 0 &&
-            (D_L00_001BF218 == 0 || D_L00_001BF218 != state->owner))
-            qcopy(position, &D_L00_001BF220);
+        if (func_002761F8((Vector *)(object + 0x10), &scratch.motion.end, 0, object, 0) != 0 &&
+            (D_L00_001BF200.owner == 0 || D_L00_001BF200.owner != state->owner))
+            qcopy((Vector *)(object + 0x10), &D_L00_001BF200.position);
         else
-            qcopy(position, &scratch.motion.end);
-        if (D_L00_001A8FF0 == 0) {
-            crossed = position->v[2] - D_L00_001BF220.v[2] < 0.0f;
-        } else {
-            func_00282CF0(&point, position, &D_L00_001BF220);
+            qcopy((Vector *)(object + 0x10), &scratch.motion.end);
+        if (D_L00_001A8FF0 != 0) {
+            func_00282CF0(&point, (Vector *)(object + 0x10), &D_L00_001BF200.position);
             crossed = func_00282DB0(&point, &scratch.motion.normal) > 0.0f;
+        } else {
+            crossed = ((Vector *)(object + 0x10))->v[2] - D_L00_001BF200.position.v[2] < 0.0f;
         }
-        if (func_00277258(position, 0, object, D_L00_001B0900) == 0) break;
+        if (func_00277258((Vector *)(object + 0x10), 0, object, D_L00_001B0900) == 0) break;
         if (*(unsigned char *)(object + 0x20) != 0 && !crossed) break;
-        if (D_L00_001BF218 != 0 && D_L00_001BF218 == state->owner) break;
-        func_00282F20(&point, &D_L00_001BF240, D_L00_001B0900);
-        func_00282CC0(position, &D_L00_001BF220, &point);
-        func_00283028(velocity, velocity, &D_L00_001BF240);
+        if (D_L00_001BF200.owner != 0 && D_L00_001BF200.owner == state->owner) break;
+        func_00282F20(&point, &D_L00_001BF200.normal, D_L00_001B0900);
+        func_00282CC0((Vector *)(object + 0x10), &D_L00_001BF200.position, &point);
+        func_00283028((&state->velocity), (&state->velocity), &D_L00_001BF200.normal);
         func_002E5CF8(1, 0, object);
         if (*(unsigned char *)(object + 0x20) == 0) {
             *(unsigned char *)(object + 0x20) = 3;
             ++state->bounces;
             if (state->bounces == 1) {
-                func_00282F70(velocity, velocity, D_L00_001B091C * 0.016666668f);
-                if (D_L00_001A8FF0 == 0) {
-                    velocity->v[2] *= D_L00_001B0918;
-                } else {
-                    dot = func_00282DB0(velocity, &scratch.motion.normal);
+                func_00282F70((&state->velocity), (&state->velocity), D_L00_001B091C * 0.016666668f);
+                if (D_L00_001A8FF0 != 0) {
+                    dot = func_00282DB0((&state->velocity), &scratch.motion.normal);
                     func_00282D30(&temporary, &scratch.motion.normal, -dot);
-                    func_00282CF0(&vertical, velocity, &temporary);
+                    func_00282CF0(&vertical, (&state->velocity), &temporary);
                     func_00282D30(&temporary, &temporary, D_L00_001B0918);
-                    func_00282CC0(velocity, &vertical, &temporary);
+                    func_00282CC0((&state->velocity), &vertical, &temporary);
+                } else {
+                    state->velocity.v[2] *= D_L00_001B0918;
                 }
-                func_003001E0(velocity, velocity, position);
+                func_003001E0((&state->velocity), (&state->velocity), (Vector *)(object + 0x10));
             } else {
-                func_00282D30(&temporary, velocity, D_L00_001B0918);
+                func_00282D30(&temporary, (&state->velocity), D_L00_001B0918);
                 speed = func_00282E20(&temporary);
                 minimum = D_L00_001B0908 * 0.016666668f;
                 if (speed < minimum) {
-                    func_00282F70(velocity, velocity, minimum);
-                    if (D_L00_001A8FF0 == 0) {
-                        velocity->v[2] *= D_L00_001B0918;
-                    } else {
-                        dot = func_00282DB0(velocity, &scratch.motion.normal);
+                    func_00282F70((&state->velocity), (&state->velocity), minimum);
+                    if (D_L00_001A8FF0 != 0) {
+                        dot = func_00282DB0((&state->velocity), &scratch.motion.normal);
                         func_00282D30(&vertical, &scratch.motion.normal, -dot);
-                        func_00282CF0(&tangent, velocity, &vertical);
+                        func_00282CF0(&tangent, (&state->velocity), &vertical);
                         func_00282D30(&vertical, &vertical, D_L00_001B0918);
-                        func_00282CC0(velocity, &tangent, &vertical);
+                        func_00282CC0((&state->velocity), &tangent, &vertical);
+                    } else {
+                        state->velocity.v[2] *= D_L00_001B0918;
                     }
-                    func_003001E0(velocity, velocity, position);
+                    func_003001E0((&state->velocity), (&state->velocity), (Vector *)(object + 0x10));
                 } else {
-                    qcopy(velocity, &temporary);
+                    qcopy((&state->velocity), &temporary);
                 }
             }
         }
         if (state->bounces >= 4) {
             *(unsigned char *)(object + 0x20) = 2;
-            if (D_L00_001A8FF0 == 0) velocity->v[2] = 0.0f;
-            else {
-                dot = func_00282DB0(velocity, &scratch.motion.normal);
+            if (D_L00_001A8FF0 != 0) {
+                dot = func_00282DB0((&state->velocity), &scratch.motion.normal);
                 func_00282D30(&temporary, &scratch.motion.normal, -dot);
-                func_00282CF0(velocity, velocity, &temporary);
+                func_00282CF0((&state->velocity), (&state->velocity), &temporary);
+            } else state->velocity.v[2] = 0.0f;
+            speed = func_00282E20(&state->velocity);
+            {
+                float damping = D_L00_001B0918;
+                float min = D_L00_001B0908;
+                state->velocity.v[3] = speed;
+                min *= 0.016666668f;
+                damping = speed * damping;
+                state->velocity.v[3] = damping;
+                if (state->velocity.v[3] < min)
+                    state->velocity.v[3] = min;
             }
-            speed = func_00282E20(velocity);
-            velocity->v[3] = speed * D_L00_001B0918;
-            if (velocity->v[3] < D_L00_001B0908 * 0.016666668f)
-                velocity->v[3] = D_L00_001B0908 * 0.016666668f;
-            func_00282F20(velocity, velocity, velocity->v[3]);
-            func_003001E0(velocity, velocity, position);
+            func_00282F20((&state->velocity), (&state->velocity), state->velocity.v[3]);
+            func_003001E0((&state->velocity), (&state->velocity), (Vector *)(object + 0x10));
             state->fade_scale = 1.0f / func_00283CE0(state->timer);
         }
         break;
@@ -209,38 +252,56 @@ void func_L00_003F4210(char *object)
         red = func_00283CF0((scratch.color.r - 255.0f) * fade + 255.0f);
         green = func_00283CF0(scratch.color.g * fade);
         blue = func_00283CF0(scratch.color.b * fade);
-        *(unsigned int *)(object + 0x78) = (blue << 16) | 0xff000000 | (green << 8) | red;
-        velocity->v[3] *= (D_L00_001B090C - 1.0f) + 1.0f;
-        if (velocity->v[3] < D_L00_001B0908 * 0.016666668f)
-            velocity->v[3] = D_L00_001B0908 * 0.016666668f;
-        func_00282F20(velocity, velocity, velocity->v[3]);
-        func_00282CC0(position, position, velocity);
-        func_00300190(position, position);
+        {
+            float slowdown = (D_L00_001B090C - 1.0f) + 1.0f;
+            float min = D_L00_001B0908 * 0.016666668f;
+            unsigned int packed = blue << 16;
+            packed |= 0xff000000;
+            packed |= green << 8;
+            packed |= red;
+            *(unsigned int *)(object + 0x78) = packed;
+            state->velocity.v[3] *= slowdown;
+            if (state->velocity.v[3] < min)
+                state->velocity.v[3] = min;
+        }
+        func_00282F20((&state->velocity), (&state->velocity), state->velocity.v[3]);
+        func_00282CC0((Vector *)(object + 0x10), (Vector *)(object + 0x10), (&state->velocity));
+        func_00300190((Vector *)(object + 0x10), (Vector *)(object + 0x10));
         break;
     case 3:
-        damage = *(float *)(D_L00_00262570 + D_00139587 * 0xe0 + 0x74);
+        damage = ((DamageTableRow *)(D_00139587 * 0xe0 + (int)D_L00_00262570))->damage;
         func_002E5DA0(5, 0, object, 0xb02);
-        func_002ABBB8(object, velocity, position, 0.0f, 0.0f, 5, 2, 4,
+        func_002ABBB8(object, 0.0f, (&state->velocity), 0.0f, (Vector *)(object + 0x10), 5, 2, 4,
                      6.0f, 2.0f, 9.0f, 1.0f, 0, 15.0f, 1, 1, -1, 0, 0x810001);
         func_002A8BD0((char *)&scratch.request, (int)object, 0x810000, damage);
         scratch.request.enabled = 2;
         scratch.request.kind = 1;
         scratch.request.object_class = *(unsigned short *)(object + 0xaa);
-        count = func_00277F48(position, 0x10, object, &scratch.request, 6.0f);
+        count = func_00277F48((Vector *)(object + 0x10), 0x10, object, &scratch.request, 6.0f);
+        if (count > 0) {
+        int remaining = count;
         hit = D_L00_001C3280;
-        while (count > 0) {
+        do {
             func_00334160(*hit, 61, *(int *)(object + 0xb8));
             ++hit;
-            --count;
+            --remaining;
+        } while (remaining != 0);
         }
         func_0029F338(object);
         return;
     }
-    if (*(unsigned char *)(object + 0x20) < 2) speed = func_00282E20(velocity);
-    else if (*(unsigned char *)(object + 0x20) == 2) speed = velocity->v[3];
+    if (*(unsigned char *)(object + 0x20) < 2) speed = func_00282E20(&state->velocity);
+    else if (*(unsigned char *)(object + 0x20) == 2) speed = state->velocity.v[3];
     else return;
-    if (speed < 0.0033333336f) speed = 0.0033333336f;
-    if (speed > 0.10000001f) speed = 0.10000001f;
-    *(float *)(object + 0xf4) = func_00283B98((((speed - 0.0033333336f) / 0.09666668f) * 7.0f + 1.0f) * 0.017453294f,
-                                            *(float *)(object + 0xf4));
+    {
+        float lo = 0.0033333336f;
+        float hi = 0.10000001f;
+        float ratio;
+        if (speed < lo) speed = lo;
+        if (speed > hi) speed = hi;
+        speed -= lo;
+        ratio = speed / (hi - lo);
+        *(float *)(object + 0xf4) = func_00283B98((ratio * 7.0f + 1.0f) * 0.017453294f,
+                                               *(float *)(object + 0xf4));
+    }
 }
