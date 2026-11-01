@@ -189,17 +189,17 @@ void func_L04_003E2338(char *a0)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L04_003E4C00);
+/* func_L04_003E4C00 is defined in L04_003E4C00.c. */
 
-INCLUDE_ASM("asm/levels", func_L04_003E5B10);
+/* func_L04_003E5B10 is defined in L04_003E5B10.c. */
 
 /* func_L04_003E7E68 is defined in L04_003E7E68-g32.c. */
 
 /* func_L04_003E8010 is defined in L04_003E8010.c. */
 
-INCLUDE_ASM("asm/levels", func_L04_003EB8D8);
+/* func_L04_003EB8D8 is defined in L04_003EB8D8.c. */
 
-INCLUDE_ASM("asm/levels", func_L04_003EC140);
+/* func_L04_003EC140 is defined in L04_003EC140-g8.c. */
 
 /* func_L04_003ED3D8 is defined in L04_003ED3D8.c. */
 
@@ -211,4 +211,4 @@ INCLUDE_ASM("asm/levels", func_L04_003EC140);
 
 /* Defined in L04_00412AF8.c. */
 
-INCLUDE_ASM("asm/levels", func_L04_00422318);
+/* func_L04_00422318 is defined in L04_00422318-g8.c. */

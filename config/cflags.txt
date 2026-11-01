@@ -1945,6 +1945,7 @@ src/levels/shared/L22_002A8B98-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy
 src/levels/01_oozla/L01_002BEB90-nsa-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
 src/levels/00_aranos_tutorial/L00_003CE278-update.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
 src/levels/shared/L00_003A2EE0-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/03_endako/L03_0041BE50-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/levels/01_oozla/L01_003C0408-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/game/00300F58-g8.c	-O2 -G8 -ffunction-sections -g -frac2-keep-block-order
 src/game/002BF6F0-c5120-g8.c	-O2 -G8 -ffunction-sections -g
@@ -1987,6 +1988,7 @@ src/game/00308600-spawn.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-
 src/core/0011BEE0-kputchar.c	sdk -O2 -G2 -ffunction-sections -Wa,--r5900-swap-branch-slots
 src/levels/shared/L00_0041ABB8-shot-g8.c	-O2 -G8 -ffunction-sections -g -frac2-qcopy -frac2-qcopy-barrier
 src/game/0027BD70-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/04_barlow/L04_003E5B10.c	-O2 -G0 -ffunction-sections -frac2-keep-block-order
 src/levels/shared/L00_0037A2E8-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/core/00132318-g8.c	-O2 -G8 -ffunction-sections -fno-gcse -fno-cse-follow-jumps
 src/levels/shared/L05_003979B0-g8.c	-O2 -G8 -ffunction-sections -g
@@ -2031,6 +2033,7 @@ src/levels/shared/L00_003DB118-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -fr
 src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/levels/shared/L00_00418A80-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
 src/levels/shared/L04_00403530.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/03_endako/L03_003F4638-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/01_oozla/L01_003B9F30-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
 src/game/002F5220-7738.c	-O2 -G8 -fno-sched-interblock -ffunction-sections
 src/levels/01_oozla/L01_003D98E0-g8.c	-O2 -G8 -ffunction-sections -ffast-math -g
@@ -2039,14 +2042,22 @@ src/levels/02_maktar_nebula/L02_003F9C10-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sectio
 src/levels/01_oozla/L01_003B5878-g8.c	-O2 -G8 -ffunction-sections -fno-expensive-optimizations
 src/levels/01_oozla/L01_002BEB90-action-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/00_aranos_tutorial/L00_002FC7A8-lift.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/04_barlow/L04_002D38E8-probe.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/03_endako/L03_003CB398-g8.c	-O2 -G8 -ffunction-sections -fno-gcse
+src/levels/03_endako/L03_002BA278-ground.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/03_endako/L03_003C6208-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/02_maktar_nebula/L02_003D2DE0-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-keep-block-order
+src/levels/03_endako/L03_003F09C0-help-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/game/00295F60-map-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -ffast-math -g
 src/levels/02_maktar_nebula/L02_003D7C20-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-zero-ti-por -g
 src/game/00286738-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/levels/02_maktar_nebula/L02_003CFAC8-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-hazard-labels
 src/game/002B1C20-gravity.c	-O2 -G0 -ffunction-sections -g -frac2-hazard-labels
 src/game/002E9268.c	-O2 -G0 -ffunction-sections -g
+src/levels/04_barlow/L04_00422318-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
 src/game/00294988-g8.c	-O2 -G8 -ffunction-sections -Wa,-G32
 src/levels/01_oozla/L01_003CB668-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -g
 src/game/0028BE00-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/03_endako/L03_003F5590-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/03_endako/L03_0041F720-g8.c	-O2 -G8 -Wa,-G32 -ffunction-sections -frac2-hazard-labels
 src/game/002AF580-qcopy.c	-O2 -G0 -ffunction-sections -g -ffast-math -frac2-qcopy -frac2-qcopy-barrier

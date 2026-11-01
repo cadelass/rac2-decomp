@@ -73,7 +73,6 @@ extern float func_00282DF0(void *);
 extern void func_00282F20(void *, void *, float);
 
 
-INCLUDE_ASM("asm/levels", func_L03_002BA278);
 
 int func_L03_002BAEA0(int mode)
 {

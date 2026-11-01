@@ -98,4 +98,3 @@ void func_L04_002D38E8(void)
         func_L04_002E7C08(124, 1);
 }
 
-INCLUDE_ASM("asm/levels", func_L04_002DAD10);
