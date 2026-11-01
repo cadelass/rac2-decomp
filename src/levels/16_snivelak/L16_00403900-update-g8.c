@@ -1,30 +1,7 @@
-/* Complete retained C reconstruction; not linked or counted.
- * Qualified compiler profile: -O2 -G8 -ffunction-sections -frac2-qcopy
- * -frac2-qcopy-barrier -frac2-zero-ti-por.
- * Measured 2026-10-25: 4396/4444 bytes, frame 0x80. Historical screening was
- * 2816/4444 bytes with shared firing paths. The real four firing phases and
- * both bone queries are explicit, including the separate collision paths.
- * States 1/2 are observed no-op table arms. Resident vector/target fields use
- * a measured partial view. AAA00 retains its proved float return; changing
- * that declaration alone was object-neutral here. The animation setter's
- * state argument retains its canonical 32-bit width. AA548 returns float;
- * the two emission helpers return pointer/null. Their ignored results retain
- * these observed contracts. The case 4 height gate preserves its unordered
- * branch instead of replacing it with a finite-only >= comparison.
- * Remaining: GCC hoists the high half of the level offset vector into an extra
- * saved register. Disabling GCSE removes it but also loses a required callback
- * lifetime and gives a wrong frame, so that diagnostic option is not retained.
- * Separate lexical vector arrays and a phase union were negative controls.
- * Global/call/branch scheduling remains different; no complete retail-semantic,
- * linked-image, runtime or native-ABI equality is claimed.
- * Reopen with the independently measured offset-vector/callback lifetimes and
- * remaining animation-call branches. Do not contract any complete vector or
- * introduce artificial dependencies to change the saved-register count.
- */
 #include "common.h"
-/* Observed assembly interfaces; ignored results remain unqualified. The path
- * call supplies a second GPR and two FP values although its callee overwrites
- * those registers before use. They are retained at this call boundary. */
+/* Interfaces as the call sites load them; ignored results stay unqualified.
+ * Retail's call to func_L16_00404E40 loads a1, f12 and f13 although the callee
+ * never reads them, so this caller declares the arguments it really passes. */
 extern int func_L16_00404A60(void *), func_002B3890(void *);
 extern int func_002A7820(int, int), func_00282978(short *);
 extern void func_002A7470(void *, int, int, int), func_002A7750(void *, int, int);
@@ -32,14 +9,14 @@ extern void func_002A6C58(void *, int, int), func_002A7A00(void *, float, float)
 extern float func_00282C48(float), func_002A78D8(float, float), func_002A7878(float, float);
 extern void func_00282CC0(void *, void *, void *), func_00282CF0(void *, void *, void *);
 extern void func_00282F20(void *, void *, float);
-extern u8 *func_00273730(void *, int, int, int, void *, void *, void *, int, float, float);
+extern u8 *func_00273730(void *, int, int, int, void *, void *, void *, u8, float, float);
 extern void func_00310C88(void *), func_002AB650(void *), func_0029F338(void *);
 extern int func_002E5CF8(int, int, void *);
 extern void *func_L16_00406080(void *, int, int, int, int, int, int, int, float, int, int);
 extern int func_L01_00322288(int, float), func_L09_00329028(char *, int);
 extern int func_L16_00404E40(void *, void *, float, float);
 extern float func_00283248(float, float), func_00282E80(void *, void *), func_00283C80(float, float);
-extern float func_002AAA00(float *, float *, int, float, float, float, float);
+extern float func_002AAA00(float *, float *, float, float, float, float, int);
 extern int func_002AEB60(void *, float);
 extern void func_0029FCC0(char *, int, char *);
 extern void *func_L16_00405488(void *, void *, void *, int, float);
@@ -53,13 +30,25 @@ typedef struct {
     float aimPositionE0[4];
     u8 unknownF0[0x2290 - 0xf0];
     u8 *target2290;
-} SnivelakBodyResidentView;
-extern SnivelakBodyResidentView D_00189E20 NOT_SDA;
-extern float D_L16_001A8F20[4];
-extern u8 *D_L16_001BFF58;
-extern int D_L16_001B9B48, D_L16_001B9B28, D_L16_001B9B2C;
-extern float D_L16_001B9B40, D_L16_001B9B20;
+} PlayerView;
+extern PlayerView D_00189E20 NOT_SDA;
+extern float D_L16_001A8F20[4] __attribute__((sda));
+extern u8 *D_L16_001BFF58 NOT_SDA;
+/* Partial view shared with the matched sibling death/debris update. */
+extern struct {
+    u8 pad000[0x160];
+    float strength;
+    u8 pad164[4];
+    int duration, timer;
+    u8 pad170[0x10];
+    float damping;
+    u8 pad184[4];
+    int lifetime;
+} D_L16_001B99C0;
 
+/* Both destruction exits are written out. Sched2 still sees func_0029F338 in
+ * the debris block, and its extra dependence decides that block's order; jump2
+ * then merges the exits, so the early-out branches into the debris tail. */
 void func_L16_00403900(u8 *moby)
 {
     u8 *state = *(u8 **)(moby + 0x68);
@@ -68,7 +57,11 @@ void func_L16_00403900(u8 *moby)
     u8 *child;
     int i, attack;
     float angle, pitch;
-    if (func_L16_00404A60(moby)) goto destroy;
+    float *pitchField3, *pitchField6, *pitchField7, *pitchField5;
+    if (func_L16_00404A60(moby)) {
+        func_0029F338(moby);
+        return;
+    }
     switch (moby[0x95]) {
     case 0:
         if (func_002B3890(moby)) *(short *)(state + 0x25e) = func_002A7820(0, 30);
@@ -118,11 +111,11 @@ void func_L16_00403900(u8 *moby)
             func_002E5CF8(0, 0, moby);
             func_L16_00406080(moby + 0x10, 0, 15, 10, 10, 10, 15, 1, 2.0f, 1, 1);
             func_L16_00406080(moby + 0x10, 0, 15, 10, 10, 10, 15, 1, 1.0f, 1, 1);
-            D_L16_001B9B40 = 0.1f;
-            D_L16_001B9B48 = 90;
-            D_L16_001B9B20 = 0.2f;
-            D_L16_001B9B28 = 60;
-            D_L16_001B9B2C = 0;
+            D_L16_001B99C0.damping = 0.1f;
+            D_L16_001B99C0.lifetime = 90;
+            D_L16_001B99C0.strength = 0.2f;
+            D_L16_001B99C0.duration = 60;
+            D_L16_001B99C0.timer = 0;
             func_0029F338(*(void **)(state + 0x274));
             position[0] = func_002A78D8(0.5f, 4.0f) * 0.016666668f;
             position[1] = func_002A78D8(0.0f, 4.0f) * 0.016666668f;
@@ -133,7 +126,8 @@ void func_L16_00403900(u8 *moby)
             child = func_00273730(moby, 3, 0xecb, 0, moby + 0x10,
                 moby + 0xf0, position, 255, 180.0f, 25.0f);
             func_002AB650(child);
-            goto destroy;
+            func_0029F338(moby);
+            return;
         }
         if (!(moby[0x60] & 2)) break;
         *(int *)(state + 0x2b8) = 0;
@@ -153,11 +147,6 @@ void func_L16_00403900(u8 *moby)
         }
         break;
     }
-    goto active;
-destroy:
-    func_0029F338(moby);
-    return;
-active:
     attack = moby[0x20];
     switch (attack) {
     case 1:
@@ -168,11 +157,11 @@ active:
             func_L01_00322288((int)moby, func_00283248(D_00189E20.position80[0] - *(float *)(moby + 0x10),
                 D_00189E20.position80[1] - *(float *)(moby + 0x14)));
         if (func_L16_00404E40(moby, moby + 0x10, 0.0f, 0.0f)) {
-            if (*(int *)(state + 0x298) == -1) {
-                func_002A7750(moby, 5, -1);
+            if (*(int *)(state + 0x298) != -1) {
+                func_002A7750(moby, 6, -1);
                 if (moby[0x43] != 3) func_002A7470(moby, 3, 0, 10);
             } else {
-                func_002A7750(moby, 6, -1);
+                func_002A7750(moby, 5, -1);
                 if (moby[0x43] != 3) func_002A7470(moby, 3, 0, 10);
             }
             if (*(int *)(state + 0x288) || *(int *)(state + 0x2ac)) {
@@ -182,10 +171,11 @@ active:
             }
         }
         if (!*(int *)(state + 0x2ac)) {
+            pitchField3 = (float *)(moby + 0xf4);
             pitch = func_00283248(func_00282E80(moby + 0x10, D_00189E20.target2290 + 0x10),
                 *(float *)(D_00189E20.target2290 + 0x18) - *(float *)(moby + 0x18));
-            func_002AAA00((float *)(moby + 0xf4), (float *)(state + 0x270), 0,
-                -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f);
+            func_002AAA00(pitchField3, (float *)(state + 0x270),
+                -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f, 0);
         }
         if (!func_002AEB60(moby, 1.5f)) break;
         angle = func_00283248(D_00189E20.position80[0] - *(float *)(moby + 0x10),
@@ -205,10 +195,11 @@ active:
             D_00189E20.position80[1] - *(float *)(moby + 0x14)));
         if (func_L09_00329028((char *)moby, *(int *)(state + 0x298)) &&
             *(int *)(state + 0x29c) != -1) func_002A7750(moby, 7, -1);
+        pitchField6 = (float *)(moby + 0xf4);
         pitch = func_00283248(func_00282E80(moby + 0x10, D_00189E20.target2290 + 0x10),
             *(float *)(D_00189E20.target2290 + 0x18) - *(float *)(moby + 0x18));
-        func_002AAA00((float *)(moby + 0xf4), (float *)(state + 0x270), 0,
-            -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f);
+        func_002AAA00(pitchField6, (float *)(state + 0x270),
+            -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f, 0);
         if (!func_002AEB60(moby, 1.5f)) break;
         angle = func_00283248(D_00189E20.position80[0] - *(float *)(moby + 0x10),
             D_00189E20.position80[1] - *(float *)(moby + 0x14));
@@ -218,8 +209,8 @@ active:
         func_00282F20(aim, aim, 0.833333373f);
         if (!func_002761F8(position, D_00189E20.aimPositionE0, 0, moby, 0)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
-        } else if (D_L16_001BFF58 && D_L16_001BFF58 != D_00189E20.target2290 &&
-                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb) {
+        } else if (D_L16_001BFF58 && (D_L16_001BFF58 == D_00189E20.target2290 ||
+                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
         }
         func_0029FCC0((char *)moby, 3, (char *)position);
@@ -227,8 +218,8 @@ active:
         func_00282F20(aim, aim, 0.833333373f);
         if (!func_002761F8(position, D_00189E20.aimPositionE0, 0, moby, 0)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
-        } else if (D_L16_001BFF58 && D_L16_001BFF58 != D_00189E20.target2290 &&
-                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb) {
+        } else if (D_L16_001BFF58 && (D_L16_001BFF58 == D_00189E20.target2290 ||
+                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
         }
         break;
@@ -237,10 +228,11 @@ active:
             D_00189E20.position80[1] - *(float *)(moby + 0x14)));
         if (func_L09_00329028((char *)moby, *(int *)(state + 0x29c)) &&
             *(int *)(state + 0x298) != -1) func_002A7750(moby, 6, -1);
+        pitchField7 = (float *)(moby + 0xf4);
         pitch = func_00283248(func_00282E80(moby + 0x10, D_00189E20.target2290 + 0x10),
             *(float *)(D_00189E20.target2290 + 0x18) - *(float *)(moby + 0x18));
-        func_002AAA00((float *)(moby + 0xf4), (float *)(state + 0x270), 0,
-            -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f);
+        func_002AAA00(pitchField7, (float *)(state + 0x270),
+            -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f, 0);
         if (!func_002AEB60(moby, 1.5f)) break;
         angle = func_00283248(D_00189E20.position80[0] - *(float *)(moby + 0x10),
             D_00189E20.position80[1] - *(float *)(moby + 0x14));
@@ -250,8 +242,8 @@ active:
         func_00282F20(aim, aim, 0.833333373f);
         if (!func_002761F8(position, D_00189E20.aimPositionE0, 0, moby, 0)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
-        } else if (D_L16_001BFF58 && D_L16_001BFF58 != D_00189E20.target2290 &&
-                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb) {
+        } else if (D_L16_001BFF58 && (D_L16_001BFF58 == D_00189E20.target2290 ||
+                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
         }
         func_0029FCC0((char *)moby, 3, (char *)position);
@@ -259,8 +251,8 @@ active:
         func_00282F20(aim, aim, 0.833333373f);
         if (!func_002761F8(position, D_00189E20.aimPositionE0, 0, moby, 0)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
-        } else if (D_L16_001BFF58 && D_L16_001BFF58 != D_00189E20.target2290 &&
-                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb) {
+        } else if (D_L16_001BFF58 && (D_L16_001BFF58 == D_00189E20.target2290 ||
+                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
         }
         break;
@@ -276,10 +268,11 @@ active:
     case 5:
         func_L01_00322288((int)moby, func_00283248(D_00189E20.position80[0] - *(float *)(moby + 0x10),
             D_00189E20.position80[1] - *(float *)(moby + 0x14)));
+        pitchField5 = (float *)(moby + 0xf4);
         pitch = func_00283248(func_00282E80(moby + 0x10, D_00189E20.target2290 + 0x10),
             *(float *)(D_00189E20.target2290 + 0x18) - *(float *)(moby + 0x18));
-        func_002AAA00((float *)(moby + 0xf4), (float *)(state + 0x270), 0,
-            -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f);
+        func_002AAA00(pitchField5, (float *)(state + 0x270),
+            -pitch, 0.00349065894f, 0.00349065894f, 0.20943955f, 0);
         if (!func_002AEB60(moby, 1.5f)) break;
         angle = func_00283248(D_00189E20.position80[0] - *(float *)(moby + 0x10),
             D_00189E20.position80[1] - *(float *)(moby + 0x14));
@@ -289,8 +282,8 @@ active:
         func_00282F20(aim, aim, 0.833333373f);
         if (!func_002761F8(position, D_00189E20.aimPositionE0, 0, moby, 0)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
-        } else if (D_L16_001BFF58 && D_L16_001BFF58 != D_00189E20.target2290 &&
-                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb) {
+        } else if (D_L16_001BFF58 && (D_L16_001BFF58 == D_00189E20.target2290 ||
+                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
         }
         func_0029FCC0((char *)moby, 3, (char *)position);
@@ -298,8 +291,8 @@ active:
         func_00282F20(aim, aim, 0.833333373f);
         if (!func_002761F8(position, D_00189E20.aimPositionE0, 0, moby, 0)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
-        } else if (D_L16_001BFF58 && D_L16_001BFF58 != D_00189E20.target2290 &&
-                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb) {
+        } else if (D_L16_001BFF58 && (D_L16_001BFF58 == D_00189E20.target2290 ||
+                   *(short *)(D_L16_001BFF58 + 0xaa) != 0xebb)) {
             func_L16_00405488(moby, aim, position, 0, (float)state[0x34]);
         }
         break;
@@ -316,5 +309,4 @@ active:
         }
     }
     func_L16_00404F50(moby);
-    return;
 }

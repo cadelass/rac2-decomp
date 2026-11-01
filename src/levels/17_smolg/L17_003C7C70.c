@@ -188,7 +188,6 @@ void func_L17_003E3148(u8 *a0)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L17_003E31E8);
 
 
 
@@ -297,7 +296,7 @@ INCLUDE_ASM("asm/levels", func_L17_00417DB0);
 
 
 
-INCLUDE_ASM("asm/levels", func_L17_0041E208);
+/* func_L17_0041E208 is defined in L17_0041E208-g8.c. */
 
 /* func_L17_0041EAA8 is defined in L17_003C7C70-g8.c. */
 

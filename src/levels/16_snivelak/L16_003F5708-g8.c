@@ -1,21 +1,28 @@
-/* Retained reconstruction, 23 October 2026.
- * Profile: -O2 -G8 -ffunction-sections -g -mno-split-addresses.
- * USA v1.01/v2.00: 0/1 each, 604/608 bytes; canonical row absent in PAL. Nine bounded trials
- * tested array/scalar table declarations and scheduling/loop flags. The indexed small-data load
- * folds the table displacement into the final lwc1, whereas retail materializes its address in a
- * GPR first. Reopen with independently justified table typing/address formation; do not repeat
- * equivalent loop or scalar spellings.
- */
-
 #include "include_asm.h"
+
+/* func_L16_003F5708 has a unit of its own: retail reads the particle colours and lifetime bounds
+   through bare absolute `lui $r ; lw $r,%lo($r)` pairs that never sit in a delay slot, yet builds
+   the size table's address with `addiu $v1,$gp,...` and adds the scaled index to it in a register.
+   -mno-split-addresses gives the first form but folds the table into the load; the default split
+   profile gives the table form but lets the scheduler drop a bare load into each call slot.
+   -membedded-data makes cc1 count a small-data reference as two words (no delay slot, no
+   displacement fold), which gives both, unchanged elsewhere: retail puts no $gp access of this
+   function into a slot either. The `sda` incomplete arrays are the bare absolute reads
+   (COMPILER-NOTES.md); the sized `sda` declarations are the $gp ones. */
+
 typedef int Quadword __attribute__((mode(TI)));
-extern float D_L16_001B10E4 __attribute__((sda));
-extern int D_L16_001B10E8 __attribute__((sda));
-extern int D_L16_001B10EC[], D_L16_001B10F0[], D_L16_001B10F4[];
-extern float D_L16_001B10F8[2] __attribute__((sda));
+
+extern float D_L16_001B10E4 __attribute__((sda));   /* particle count (200.0) */
+extern int D_L16_001B10E8 __attribute__((sda));     /* first colour pair */
+extern int D_L16_001B10EC[] __attribute__((sda));
+extern int D_L16_001B10F0[] __attribute__((sda));   /* second colour pair */
+extern int D_L16_001B10F4[] __attribute__((sda));
+extern float D_L16_001B10F8[2] __attribute__((sda)); /* sizes, picked by func_002A77E0(2) */
 extern int D_L16_001B1104 __attribute__((sda));
 extern int D_L16_001B1108 __attribute__((sda));
-extern int D_L16_001B110C[], D_L16_001B1110[];
+extern int D_L16_001B110C[] __attribute__((sda));   /* lifetime bounds */
+extern int D_L16_001B1110[] __attribute__((sda));
+
 extern float func_002A78D8(float, float);
 extern float func_002A7878(float, float);
 extern float func_00282C48(float);
@@ -28,7 +35,8 @@ extern int func_002A7820(int, int);
 extern void func_00282C88(void *);
 extern void func_002BAA28(void *, void *, void *, int, int, int, int, int, int);
 
-/* Emits randomly positioned particles outside the central rectangle. */
+/* Emits randomly positioned particles outside the central rectangle, each with colours blended
+   at random between two pairs, a random size from the table and random lifetimes. */
 void func_L16_003F5708(char *object)
 {
     float position[4];
@@ -38,6 +46,8 @@ void func_L16_003F5708(char *object)
     float scale;
     int first, second, third, fourth;
     float size;
+    float blend;
+
     for (i = 0; (float)i < D_L16_001B10E4; ++i) {
         *(Quadword *)random = 0;
         random[0] = func_002A78D8(0.0f, 26.0f);
@@ -50,8 +60,10 @@ void func_L16_003F5708(char *object)
         func_00282D30(position, position, scale);
         func_00283098(position, position, object + 192);
         func_00282CC0(position, position, object + 16);
-        first = func_00283D38(D_L16_001B10E8, D_L16_001B10EC[0], func_002A7878(0.0f, 1.0f));
-        second = func_00283D38(D_L16_001B10F0[0], D_L16_001B10F4[0], func_002A7878(0.0f, 1.0f));
+        blend = func_002A7878(0.0f, 1.0f);
+        first = func_00283D38(D_L16_001B10E8, D_L16_001B10EC[0], blend);
+        blend = func_002A7878(0.0f, 1.0f);
+        second = func_00283D38(D_L16_001B10F0[0], D_L16_001B10F4[0], blend);
         size = D_L16_001B10F8[func_002A77E0(2)];
         func_00282C88(random);
         random[3] = size;

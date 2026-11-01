@@ -50,7 +50,7 @@ f32 func_L16_00416EB8(char *arg0) {
 
 /* func_L16_00416EC8 uses its dedicated quadword-copy and G16 profile. */
 
-INCLUDE_ASM("asm/levels", func_L16_00416FB0);
+/* func_L16_00416FB0 is defined in L16_004165B0-aim-g8.c. */
 
 /* func_L16_00417210 is defined in L16_00417210-g8.c. */
 
@@ -60,7 +60,7 @@ s32 func_L16_00417788(char *arg0) {
     return *(s32 *)(p + 0x60);
 }
 
-INCLUDE_ASM("asm/levels", func_L16_00417798);
+/* func_L16_00417798 is defined in L16_00417798-g8.c. */
 
 /* func_L16_00417990 is defined in L16_00417990-g8.c. */
 
@@ -70,7 +70,7 @@ INCLUDE_ASM("asm/levels", func_L16_00417798);
 
 /* func_L16_004189A0 is defined in L16_004189A0.c. */
 
-INCLUDE_ASM("asm/levels", func_L16_00418E38);
+/* func_L16_00418E38 is defined in L16_004165B0-blend-g8.c. */
 
 /* func_L16_00419140 is defined in L16_00419140-g8.c. */
 
@@ -139,10 +139,10 @@ void func_L16_0041C7A0(char *self) {
 }
 
 
-INCLUDE_ASM("asm/levels", func_L16_0041C990);
+/* func_L16_0041C990 is defined in L16_0041C990-g8.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L16_0041CF80);
+/* func_L16_0041CF80 is defined in L16_0041CF80.c. */
 
 /* func_L16_0041E370 lives in L16_0041E370.c. */
 
@@ -177,5 +177,7 @@ void func_L16_0041F150(char *arg0) {
 /* func_L16_0041F1F0 lives in L16_0041F1F0.c. */
 
 /* func_L16_0041F360 is defined in L16_0041F360-g8.c. */
+
+/* func_L16_0041F360 is defined in L16_004165B0-ring-g8.c. */
 
 

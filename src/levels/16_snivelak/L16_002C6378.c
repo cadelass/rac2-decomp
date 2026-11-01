@@ -25,7 +25,7 @@ extern void func_002A7470(void *, s32, s32, s32);
    missing.  Deposited in nonmatching/levels/func_L16_002D2D10.c. */
 /* func_L16_002D2D10 is matched in its own unit, L16_002D2D10.c. */
 
-INCLUDE_ASM("asm/levels", func_L16_002F60B8);
+/* func_L16_002F60B8 is in L16_002F60B8-g8.c. */
 
 /* func_L16_00317C90 is in the sibling file L16_00317C90.c: it needs the -g profile, whose
    line labels let the assembler reproduce the padding before its division. */
@@ -90,4 +90,4 @@ void func_L16_003F54F8(char *a0) {
 
 /* func_L16_003F55A0 is in L16_003F55A0-g8.c; its division needs -g. */
 
-INCLUDE_ASM("asm/levels", func_L16_003F5708);
+/* func_L16_003F5708 is in L16_003F5708-g8.c. */
