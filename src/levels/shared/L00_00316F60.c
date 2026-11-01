@@ -530,7 +530,7 @@ void func_L00_00326200(void)
     func_0029CC50();
 }
 
-INCLUDE_ASM("asm/levels", func_L00_003263D0);
+/* func_L00_003263D0 is in L00_003263D0.c: its qcopy needs common.h. */
 
 /* Defined in L00_00326620.c. */
 
@@ -559,7 +559,7 @@ void func_L00_003294F0(unsigned char *entity, int enabled) {
 /* func_L00_00329520 is in L00_00329520.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L00_00329E90);
+/* func_L00_00329E90 is in L00_00329E90.c: its counter is declared differently there. */
 
 /* func_L00_00329FF0 is defined in L00_00329FF0-g.c. */
 
@@ -581,4 +581,4 @@ void func_L00_0032A0E8(void) {
 
 /* func_L00_0032A258 is matched in L00_0032A258-g8.c (built with -G8). */
 
-INCLUDE_ASM("asm/levels", func_L00_0032A530);
+/* func_L00_0032A530 is matched in L00_0032A530-g.c (built with -g; its qcopy needs common.h). */

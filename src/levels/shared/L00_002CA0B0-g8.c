@@ -1,9 +1,4 @@
-/* Animation-range selection and frame conversion are reconstructed, with the real unsigned division followed by signed remainder and typed containing range/matrix arrays. Only canonical table identity D_L00_001A7DA8 is retained; an experimental numbered absolute alias was removed. GP versus absolute end-field access, range classification and loop allocation remain different. The old byte-view draft was 876/964 bytes; typed containing-object and explicit classification drafts were measured without claiming a match. Reopen with a legitimate model of the single range table and its two access forms.
- * Profile: -O2 -G8 -ffunction-sections -Wa,-G32
- * us: 920 bytes, expected 964; 0/27 placements
- * us2: 920 bytes, expected 964; 0/27 placements
- */
-#include "include_asm.h"
+#include "common.h"
 typedef struct {
     unsigned char pad0[0x160]; float velocity[4];
     float field_170, elapsed_174, speed_178;
@@ -29,10 +24,16 @@ typedef struct {
 extern HeroActionState D_00189E20;
 
 typedef struct { float start, end, reserved0, reserved1; } AnimationRange;
-extern AnimationRange D_L00_001A7DA8[2] __attribute__((sda));
-extern int D_L00_001A7DC8[2][2] __attribute__((sda));
+/* The same table from its first end field; retail reaches these through an absolute address. */
+extern float D_L00_001A7DAC[][4] MACRO_ADDR;
+extern AnimationRange animation_ranges[2] SDATA(D_L00_001A7DA8);
+extern int D_L00_001A7DC8[2][2] SDATA(D_L00_001A7DC8);
 extern void func_L00_002D2168(int, int, float);
 
+/* Sets the animation scale. Mode 1 scales from field_170. With both 0x1454 flags set it plays
+ * animation 20 and clamps a scale from the time. Otherwise it moves frame to the range holding the
+ * time, restarts the animation at the matching frame when frame changes (the table gives an
+ * offset per old and new frame), and clamps a scale chosen by frame. */
 void func_L00_002CA0B0(void)
 {
     float limit;
@@ -57,40 +58,40 @@ void func_L00_002CA0B0(void)
         float start;
         int before_range;
         old = D_00189E20.frame;
-        start = D_L00_001A7DA8[old].start * 0.01666666753590107f;
+        start = animation_ranges[old].start * 0.01666666753590107f;
         before_range = time < start;
-        if (before_range || D_L00_001A7DA8[old].end * 0.01666666753590107f < time) {
+        if (before_range || D_L00_001A7DAC[old][0] * 0.01666666753590107f < time) {
             if (before_range) {
-                while (time < start) {
-                    --D_00189E20.frame;
-                    start = D_L00_001A7DA8[D_00189E20.frame].start * 0.01666666753590107f;
+                if (time < start) {
+                    do {
+                        --D_00189E20.frame;
+                    } while (time < animation_ranges[D_00189E20.frame].start * 0.01666666753590107f);
                 }
             } else {
-                int next = old;
-                while (D_L00_001A7DA8[next].end * 0.01666666753590107f < time) next++;
-                D_00189E20.frame = next;
+                while (D_L00_001A7DAC[D_00189E20.frame][0] * 0.01666666753590107f < time) D_00189E20.frame++;
             }
             if (D_00189E20.frame < 0) D_00189E20.frame = 0;
             if (D_00189E20.frame > 1) D_00189E20.frame = 1;
             if (old != D_00189E20.frame) {
                 char *object = D_00189E20.object;
-                void **frames = (void **)(*(char **)(object + 0x24) + 0x48);
-                unsigned int before = ((unsigned char *)frames[old + 3])[0x10];
-                unsigned int after = ((unsigned char *)frames[D_00189E20.frame + 3])[0x10];
-                int frame = ((unsigned char)object[0x41] * after) / before;
-                frame = (frame + D_L00_001A7DC8[old][D_00189E20.frame]) % (int)after;
-                func_L00_002D2168(D_00189E20.frame + 3, frame, 8.0f);
+                struct { char pad[0x48]; unsigned char *entry[1]; } *frames = *(void **)(object + 0x24);
+                int before = frames->entry[old + 3][0x10];
+                int after = frames->entry[D_00189E20.frame + 3][0x10];
+                int offset = D_L00_001A7DC8[old][D_00189E20.frame];
+                func_L00_002D2168(D_00189E20.frame + 3, ((unsigned char)object[0x41] * after / before + offset) % after, 8.0f);
             }
         }
     }
-    if (D_00189E20.frame == 0) {
+    switch (D_00189E20.frame) {
+    case 0:
         D_00189E20.animation_scale = D_00189E20.animation_time * 157.0f;
         if (D_00189E20.animation_scale < 0.6f) D_00189E20.animation_scale = 0.6f;
-        limit = 4.0f;
-    } else if (D_00189E20.frame == 1) {
+        if (4.0f < D_00189E20.animation_scale) D_00189E20.animation_scale = 4.0f;
+        break;
+    case 1:
         D_00189E20.animation_scale = D_00189E20.animation_time * 14.0f;
         if (D_00189E20.animation_scale < 0.6f) D_00189E20.animation_scale = 0.6f;
-        limit = 2.2f;
-    } else return;
-    if (limit < D_00189E20.animation_scale) D_00189E20.animation_scale = limit;
+        if (2.2f < D_00189E20.animation_scale) D_00189E20.animation_scale = 2.2f;
+        break;
+    }
 }

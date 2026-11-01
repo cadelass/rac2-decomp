@@ -1,36 +1,6 @@
-/*
- * Retained reconstruction, 23 October 2026. USA v1.01: 2900/2940 bytes, 0/26 catalogue
- * placements. The canonical row is absent from USA v2.00 and PAL; neither absence is a match.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -frac2-keep-block-order
- * -frac2-gcse-unsplit-edges.
- * Six meaningful trials: a byte-addressed root compiled to 2920 bytes; the measured
- * HeroActionState prefix corrected root address formation (2904). Separate transition calls and
- * a required global target reload after atan reached 2900. Disabling GCSE gave 2964 with worse
- * allocation. Broad control-flow, saved-register lifetime and scheduling differences remain; the
- * frame and initial root addressing agree.
- * The seven dispatch destinations were read from all 56 retail table entries, not inferred from
- * source order. This source retains the actual table binding and uses the established local-
- * label keeper pattern. All helper current C definitions and unknown marker APIs were inspected
- * against retail: integer conversion, atan and angle difference return banks, input-history
- * output pointers, pointer-returning target search and the ignored incoming value 21 are
- * preserved.
- * M34 2026-10-26: the computed goto is now a real switch, one case per retail table entry
- * (10; 12/15/17/31; 13; 22/65; 46; 53; the rest default), bodies in table-address order.
- * Size is unchanged at 2900/2940: the switch reproduces the dispatch exactly, so the gap is
- * elsewhere. One located cause: in the mode-11 test retail keeps the redundant second
- * `attack_mode != 3` test after the 18.0 check and its own reload of animation_frame before
- * the 20.0 check; this compiler's CSE (follow-jumps) folds the second test and cross-jumps the
- * two compare tails, whether written as nested ifs or one || chain.
- * Reopen with independently justified control-flow/live-range evidence for the buffered action
- * branches. Do not classify por, vector copies or instruction scheduling as handwritten
- * assembly. No strict linked build was run.
- */
-
-#include "include_asm.h"
+#include "common.h"
 
 typedef int Quadword __attribute__((mode(TI)));
-typedef unsigned int u32;
-typedef unsigned long long u64;
 /* Fields used here are a prefix of the resident hero state, not its total size. */
 typedef struct {
     unsigned char pad_000[128];
@@ -111,11 +81,19 @@ typedef struct {
     float transition_progress;
 } HeroActionState;
 extern HeroActionState D_00189E20;
-extern u32 D_00138320[];
+typedef union {
+    struct { u32 held, pressed; } word;
+    u64 both;
+} ButtonPair;
+typedef struct {
+    unsigned char prefix[0x1A0];
+    ButtonPair buttons;
+} InputState;
+extern InputState D_00138180;
 extern unsigned char D_00139568[];
-extern unsigned char D_001A7B2E[];
-extern int D_001A739C[];
-extern int D_L00_001A7CC4;
+extern u8 D_001A7B08[0x40] __attribute__((sda));
+extern unsigned int D_001A7390[] __attribute__((sda));
+extern int D_L00_001A7CC4 __attribute__((sda));
 typedef struct { char pad[12]; int first_frame, trigger_frame; char rest[24]; } AnimationRange;
 extern AnimationRange D_L00_0025D990[];
 typedef struct { char pad[20]; int sound; char rest[200]; } EffectDefinition;
@@ -124,10 +102,10 @@ extern EffectDefinition D_L00_00262570[];
 /* The retail helper consumes a button mask, a history window and optional age output. */
 extern int func_L00_0032EF10(u32, int, int *);
 extern int func_L00_002B3248(unsigned char *);
-/* The incoming value is dead in the helper, but this caller supplies it. */
-extern void func_L00_002BA508(int);
+/* Matched helper definition takes no parameters. */
+extern void func_L00_002BA508(void);
 extern int func_00283CF0(float);
-extern int func_L00_002C42E0(int, int);
+extern void func_L00_002C42E0(int, int);
 extern int func_L00_002D4040(int);
 extern int func_002E5DA0(int, int, char *, int);
 extern char *func_L00_002AE888(void *, int, int, float, float, float, float);
@@ -142,16 +120,17 @@ extern int func_002E5CF8(int, int, char *);
 extern int func_00282948(int *);
 
 
-/* Selects context-sensitive hero actions from buffered input and nearby targets. */
+/* Selects context-sensitive hero actions from buffered input and nearby targets.
+ * RAC1's process_hero_equipped_item_input is the counterpart. */
 int func_L00_002C9448(void)
 {
-    float point[4];
-    int input_age, action_age, detach_age;
-    int previous_frame, action, frame_window, difference, state;
+    struct {
+        Quadword point;
+        int input_age, action_age, detach_age;
+    } scratch;
+    int previous_frame, state;
     u32 mask;
-    char *object;
-    AnimationRange *range;
-    float threshold, direction;
+
 
     if (D_00189E20.special_control) {
         if (D_00189E20.action != 10)
@@ -164,22 +143,27 @@ int func_L00_002C9448(void)
     if (D_00189E20.input_locked) return 0;
     if (D_00189E20.control_mode != 2) return 0;
 
-    state = D_00189E20.action;
     previous_frame = D_00189E20.frame;
     mask = D_00189E20.buttons;
+    state = D_00189E20.action;
     switch (state) {
-    case 10:
-    if (D_00189E20.action_locked) goto state_other;
+    case 10: {
+    int action, difference;
+    int buffered_window;
+    char *object;
+    AnimationRange *range;
+    float threshold, movement;
+    if (D_00189E20.action_locked) break;
     if (D_00189E20.state < 2 || (D_00189E20.state == 4 && D_00189E20.grounded)) {
-        if (func_L00_0032EF10(mask, 10, &input_age)) {
+        if (func_L00_0032EF10(mask, 10, &scratch.input_age)) {
             object = D_00189E20.object;
             if (!object) goto clear_action;
             if (!func_L00_002B3248((unsigned char *)object) || *(unsigned char *)(object + 0x20))
                 goto clear_action;
-            if ((D_00138320[0] & 8) ||
+            if ((D_00138180.buttons.word.held & 8) ||
                 ((D_00189E20.mode == 1 || D_00189E20.mode == 29) && D_00189E20.frame >= 21)) {
                 if ((D_00189E20.mode == 1 || D_00189E20.mode == 29) && D_00189E20.frame >= 21)
-                    func_L00_002BA508(21);
+                    func_L00_002BA508();
                 else
                     func_L00_002C42E0(21, 1);
             } else {
@@ -193,26 +177,21 @@ int func_L00_002C9448(void)
         D_00189E20.mode == 8 || D_00189E20.mode == 6 ||
         (D_00189E20.mode == 14 && D_00189E20.animation_frame > 32.0f))
         goto buffered_attack;
-    if (D_00189E20.mode == 11) {
-        if (D_00189E20.attack_mode != 3) {
-            if (D_00189E20.animation_frame > 18.0f) goto buffered_attack;
-            if (D_00189E20.attack_mode != 3) goto other_attack;
-        }
-        if (D_00189E20.animation_frame > 20.0f) goto buffered_attack;
-    }
-other_attack:
+    if ((D_00189E20.mode == 11 && D_00189E20.attack_mode != 3 && D_00189E20.animation_frame > 18.0f) ||
+        (D_00189E20.mode == 11 && D_00189E20.attack_mode == 3 && D_00189E20.animation_frame > 20.0f))
+        goto buffered_attack;
     if (D_00189E20.mode == 44 || D_00189E20.mode == 17)
         goto buffered_attack;
     goto ranged_attack;
 
 buffered_attack:
     if (D_00189E20.frame < 11) goto ranged_attack;
-    action = 14;
+    buffered_window = 14;
     if (D_00189E20.mode == 11 || D_00189E20.mode == 14)
-        action = 18;
-    if (!func_L00_0032EF10(mask, action, 0)) goto clear_action;
-    threshold = D_00189E20.fast_attack ? 0.57f : 0.1f;
-    if (D_00189E20.movement > threshold ||
+        buffered_window = 18;
+    if (!func_L00_0032EF10(mask, buffered_window, 0)) goto clear_action;
+    if ((!D_00189E20.fast_attack && D_00189E20.movement > 0.1f) ||
+        (D_00189E20.fast_attack && D_00189E20.movement > 0.57f) ||
         (D_00189E20.mode == 8 && D_00189E20.movement > 0.57f)) {
         if (D_00189E20.attack_blocked || D_00189E20.attack_pending) goto clear_action;
         func_L00_002C42E0(20, 1);
@@ -225,22 +204,24 @@ ranged_attack:
     if (D_00189E20.state == 6) {
         range = &D_L00_0025D990[D_00189E20.animation_index];
         if (D_00189E20.mode == 21 && D_00189E20.frame >= 31) {
-            if (D_00189E20.input_locked) goto clear_action;
+            if (D_00189E20.input_locked) goto check_attack_delay;
             if (D_00189E20.attack_delay) goto clear_action;
-            if ((float)range->trigger_frame <= D_00189E20.animation_frame && (D_00138320[0] & 8) &&
+            if ((float)range->trigger_frame <= D_00189E20.animation_frame && (D_00138180.buttons.word.held & 8) &&
                 func_L00_0032EF10(mask, 15, 0)) {
                 func_L00_002C42E0(21, 1);
-                goto state_other;
+                break;
             }
         }
+check_attack_delay:
         if (!D_00189E20.attack_delay) {
-            if (!D_00189E20.input_locked && (float)range->trigger_frame <= D_00189E20.animation_frame) {
-                difference = (func_00283CF0(D_00189E20.animation_frame) - range->first_frame) * 2;
-                action = 1;
-                if (difference > 0) action = difference;
-                if (action > 15) action = 15;
+            if (!D_00189E20.input_locked) {
+                float frame = D_00189E20.animation_frame;
+                if (!((float)range->trigger_frame <= frame)) goto clear_action;
+                difference = (func_00283CF0(frame) - range->first_frame) * 2;
+                action = difference > 0 ? difference : 1;
+                action = action < 16 ? action : 15;
                 if (func_L00_0032EF10(mask, action, 0)) {
-                    if (D_00138320[0] & 8) {
+                    if (D_00138180.buttons.word.held & 8) {
                         func_L00_002C42E0(21, 1);
                         goto clear_action;
                     }
@@ -251,49 +232,55 @@ ranged_attack:
     }
 clear_action:
     D_00189E20.attack_pending = 0;
-    goto state_other;
+    break;
 
+    }
     case 22:
     case 65:
-    if (D_00189E20.mode == 1 || D_00189E20.mode == 29) goto state_other;
+    if (D_00189E20.mode == 1 || D_00189E20.mode == 29) break;
     if (!(D_00189E20.state < 2 || D_00189E20.state == 12 ||
-          (D_00189E20.state == 4 && D_00189E20.grounded))) goto state_other;
+          (D_00189E20.state == 4 && D_00189E20.grounded))) break;
     if (D_00189E20.pending_action && D_00189E20.pending_action != 22 && D_00189E20.pending_action != 65)
-        goto state_other;
-    if (!(D_00138320[0] & 32) || D_00189E20.input_window < 23) goto state_other;
+        break;
+    if (!(D_00138180.buttons.word.held & 32) || D_00189E20.input_window < 23) break;
     if (func_L00_002D4040(state)) {
         func_L00_002C42E0(131, 1);
-        goto state_other;
+        break;
     }
-    if (D_00138320[1] & 32)
-        func_002E5DA0(0, 0, D_00189E20.owner, D_L00_00262570[D_00139568[state]].sound);
-    goto state_other;
+    if (D_00138180.buttons.word.pressed & 32) {
+        EffectDefinition *effect = &D_L00_00262570[D_00139568[state]];
+        func_002E5DA0(0, 0, D_00189E20.owner, effect->sound);
+    }
+    break;
 
-    case 46:
-    if (!(D_00138320[1] & mask)) goto state_other;
+    case 46: {
+    char *target;
+    float direction;
+    if (!(D_00138180.buttons.word.pressed & mask)) break;
     if (D_00189E20.aim_target) {
         D_00189E20.aim_target = 0;
-        goto state_other;
+        break;
     }
-    object = func_L00_002AE888(&D_00189E20, 21, 0, 20.0f, D_00189E20.heading,
+    target = func_L00_002AE888(&D_00189E20, 21, 0, 20.0f, D_00189E20.heading,
                               0.5235988497734069824f, 0.6981317996978759766f);
-    D_00189E20.aim_target = object;
-    if (object) {
-        *(Quadword *)point = *(Quadword *)(object + 16);
-        point[2] += 0.5f;
-        if (func_002761F8(point, (char *)&D_00189E20 + 0xE0, 2, object, 0))
+    D_00189E20.aim_target = target;
+    if (target) {
+        qcopy(&scratch.point, target + 16);
+        ((float *)&scratch.point)[2] += 0.5f;
+        if (func_002761F8(&scratch.point, (char *)&D_00189E20 + 0xE0, 2, target, 0))
             D_00189E20.aim_target = 0;
         else {
-            object = D_00189E20.aim_target;
-            direction = func_00283248(D_00189E20.position[0] - *(float *)(object + 16),
-                                     D_00189E20.position[1] - *(float *)(object + 20));
-            object = D_00189E20.aim_target;
-            D_00189E20.target_angle = func_00283BE0(*(float *)(object + 0xF8), direction);
+            char *aim_target = D_00189E20.aim_target;
+            direction = func_00283248(D_00189E20.position[0] - *(float *)(aim_target + 16),
+                                     D_00189E20.position[1] - *(float *)(aim_target + 20));
+            D_00189E20.target_angle = func_00283BE0(*(float *)(D_00189E20.aim_target + 0xF8), direction);
         }
     }
-    goto state_other;
+    break;
 
-    case 13:
+    }
+    case 13: {
+    int action;
     func_L00_002C3BB0();
     func_L00_002C3E18();
     func_L00_002C40C0();
@@ -301,17 +288,17 @@ clear_action:
     if (D_00189E20.mode == 40) action = 11;
     if (D_00189E20.mode == 39 && (D_00189E20.alternate_target_ready || D_00189E20.nearby_ready)) {
         if (func_L00_0032EF10(mask, action, 0) ||
-            ((D_00138320[0] & mask) && D_00189E20.input_window >= 16)) {
+            ((D_00138180.buttons.word.held & mask) && D_00189E20.input_window >= 16)) {
             func_L00_002C42E0(40, 1);
-            goto state_other;
+            break;
         }
     }
     if (!(D_00189E20.state < 2 || D_00189E20.state == 12 || D_00189E20.state == 4 ||
           D_00189E20.state == 2 || D_00189E20.state == 30 || D_00189E20.state == 5 ||
           (D_00189E20.mode == 40 && D_00189E20.frame >= 6) || D_00189E20.mode == 29))
-        goto state_other;
+        break;
     if (!func_L00_0032EF10(mask, action, 0) &&
-        (!(D_00138320[0] & mask) || D_00189E20.input_window < 16)) goto state_other;
+        (!(D_00138180.buttons.word.held & mask) || D_00189E20.input_window < 16)) break;
     if (D_00189E20.alternate_target_ready) {
         if (D_00189E20.nearby_ready) {
             if (D_00189E20.alternate_distance < D_00189E20.nearby_distance) D_00189E20.nearby_ready = 0;
@@ -319,69 +306,75 @@ clear_action:
         }
         if (D_00189E20.alternate_target_ready && !D_00189E20.control_lock && D_00189E20.mode != 43) {
             func_L00_002C42E0(43, 1);
-            goto state_other;
+            break;
         }
     }
     if (D_00189E20.nearby_ready && !D_00189E20.control_lock) {
         func_L00_002C42E0(35, 1);
-        goto state_other;
+        break;
     }
     if (D_00189E20.second_target_ready) {
         func_L00_002C42E0(138, 1);
-        goto state_other;
+        break;
     }
-    goto state_other;
+    break;
 
+    }
     case 12:
     case 15:
     case 17:
-    case 31:
+    case 31: {
+    int action, frame_window;
     if (!((D_00189E20.state == 0 && D_00189E20.mode != 29) || D_00189E20.state == 1 ||
           D_00189E20.state == 12 || D_00189E20.state == 5 || D_00189E20.state == 15 ||
           (D_00189E20.state == 4 && D_00189E20.alternate_ready) ||
-          (D_00189E20.mode == 34 && D_00189E20.animation_frame > 55.0f))) goto state_other;
-    if (D_00189E20.changing_weapon) goto state_other;
+          (D_00189E20.mode == 34 && D_00189E20.animation_frame > 55.0f))) break;
+    if (D_00189E20.changing_weapon) break;
     frame_window = D_00189E20.input_window;
-    action = frame_window < 7 ? frame_window : 7;
-    if (!func_L00_0032EF10(mask, action, &action_age) && !(D_00138320[0] & 32)) goto state_other;
-    if (frame_window < 23) goto state_other;
+    action = 7;
+    if (frame_window < action) action = frame_window;
+    if (!func_L00_0032EF10(mask, action, &scratch.action_age) && !(D_00138180.buttons.word.held & 32)) break;
+    if (frame_window < 23) break;
     if (func_L00_002D4040(-1)) {
         if (D_00189E20.state == 12 || D_00189E20.state == 0 || D_00189E20.mode == 3 ||
             (D_00189E20.state == 1 && D_00189E20.transition_progress < 0.7f)) {
             func_L00_002C42E0(34, 1);
-            goto state_other;
+            break;
         }
         func_L00_002AF568();
-    } else if (D_00189E20.object && (D_00138320[1] & 32))
+    } else if (D_00189E20.object && (D_00138180.buttons.word.pressed & 32))
         func_002E5CF8(0, 0, D_00189E20.object);
-    goto state_other;
+    break;
 
-    case 53:
+    }
+    case 53: {
+    int action, frame_window;
     if (!(D_00189E20.state < 2 || (D_00189E20.state == 4 && D_00189E20.grounded)))
-        goto state_other;
+        break;
     if (D_00189E20.mode != 1) {
         frame_window = D_00189E20.input_window;
-        action = frame_window > 9 ? 10 : frame_window;
-        if (!func_L00_0032EF10(mask, action, &detach_age)) goto state_other;
+        action = 9;
+        action = action < frame_window ? 10 : frame_window;
+        if (!func_L00_0032EF10(mask, action, &scratch.detach_age)) break;
         if (D_00189E20.object) {
             func_L00_002C42E0(31, 1);
             if (D_00189E20.object) func_002E5CF8(0, 0, D_00189E20.object);
         }
     }
-    goto state_other;
+    break;
+    }
     }
 
-state_other:
-    if (D_00189E20.frame == previous_frame && D_001A7B2E[0] && D_001A739C[0] == 54 &&
+    if (D_00189E20.frame == previous_frame && D_001A7B08[0x26] && D_001A7390[3] == 54 &&
         D_00189E20.mode != 29 && D_00189E20.mode != 1 &&
         (D_00189E20.motion_flags & 0xffffffff00000000ULL) == 0) {
         func_00282948(&D_L00_001A7CC4);
         if (D_L00_001A7CC4 &&
             (D_00189E20.state < 2 || D_00189E20.state == 12 ||
              ((D_00189E20.state == 2 || D_00189E20.state == 4) && D_00189E20.action_ready)) &&
-            (*(u64 *)D_00138320 & 0x800000008ULL) == 0x800000008ULL)
+            (D_00138180.buttons.both & 0x800000008ULL) == 0x800000008ULL)
             func_L00_002C42E0(123, 1);
-        if (D_00138320[1] & 8) D_L00_001A7CC4 = 30;
+        if (D_00138180.buttons.word.pressed & 8) D_L00_001A7CC4 = 30;
     }
     return D_00189E20.frame < previous_frame;
 }

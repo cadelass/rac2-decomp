@@ -132,7 +132,7 @@ void func_L00_002C3838(void)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L00_002C3A40);
+/* func_L00_002C3A40 is built in its dedicated block-order-profile unit. */
 
 /* reads a 16-bit state word out of a fixed global block and, when it is non-zero, maps a second byte of that block onto a return code 0/1/2/3; otherwise it runs a reset call, builds a float either from a query on a sub-object of the block or from two floats stored in the block, and classifies it against a stored angle */
 int func_L00_002C3A78(void)
@@ -275,8 +275,6 @@ void func_L00_002C9228(void)
         + ((Res_F458c670e *)D_00189E20_7)->f790;
 }
 
-INCLUDE_ASM("asm/levels", func_L00_002C9448);
-
 extern int func_L00_0032EF10(int, int, int *);
 
 extern int func_L00_002C3A40(void);
@@ -319,7 +317,7 @@ int func_L00_002C9FC8(int arg0, int arg1)
     return 1;
 }
 
-INCLUDE_ASM("asm/levels", func_L00_002CA0B0);
+/* func_L00_002CA0B0 is built in its dedicated unit. */
 
 /* On a byte-addressable root base: if the word at +6228 is set, calls a helper with it and clears it, then clears bits 0 and 6 of the 16-bit field at +52 of each object pointed to by the base words at +4880 and +4884. */
 void func_L00_002CA478(void)

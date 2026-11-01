@@ -141,7 +141,7 @@ void func_L00_002D2070(void)
 }
 
 
-INCLUDE_ASM("asm/levels", func_L00_002D2168);
+/* func_L00_002D2168 is in L00_002D1ED8-g8.c. */
 
 
 /* updates the resident selection and index after validating the selected table entry */
@@ -177,7 +177,7 @@ void func_L00_002D24D0(int value)
 }
 
 
-INCLUDE_ASM("asm/levels", func_L00_002D2E68);
+/* func_L00_002D2E68 is in L00_002D1ED8-scan-g8.c. */
 
 /* shared native body of family ea34650e369e */
 void func_L00_002D3068(void)

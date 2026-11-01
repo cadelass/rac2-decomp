@@ -112,7 +112,7 @@ int func_L00_002D9D48(int key) {
 
 
 
-INCLUDE_ASM("asm/levels", func_L00_002D9E80);
+/* func_L00_002D9E80 is in L00_002D7940-setup-g8.c. */
 
 /* Builds a 3-component vector from a spherical radius/elevation/azimuth triple using two unary float helpers, clears the 4th component, then forwards the destination twice plus a third argument to a final helper. */
 void func_L00_002DA0B8(float *out, float *p, void *q)
@@ -133,7 +133,7 @@ void func_L00_002DA0B8(float *out, float *p, void *q)
 
 /* func_L00_002DB350 is in L00_002D7940-grid.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_002DB4B8);
+/* func_L00_002DB4B8 is in L00_002D7940-shape.c. */
 
 /* Return the constant signed integer one. */
 /* Returns the constant integer 1. Matches FUN_0012F940 disassembly and decompilation. */
