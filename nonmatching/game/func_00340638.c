@@ -1,63 +1,77 @@
-/* func_00340638 - 448 bytes.  Worker attempt, 27 October 2026 (draft below).
-
-   432 B vs 448. Natural: six 8-byte local copies (struct of 2 floats) from
-   D_001AE098/A0/98/A8/90/B0 compile to the same ldl/ldr/sdl/sdr at
-   sp+0,0x10..0x50 as retail; 23-word descriptor f[] like func_00344F98. Store
-   order after the func_00336390 call decoded from retail.
-   Diff: retail keeps the default store f[21]=1 as sw t6,0x54(s6) with s6=&f
-   (=sp+0x60) held across the call (daddu a0,s6) while the later f[21]=(x==1)
-   store is sp-relative; mine drops the first store (dead) and uses addiu
-   a0,sp,0x60. Needs a way for cse to not see them as the same address
-   (pointer base). Also f[20]=0 before the call is kept in both. */
-
-/* in src/game/0033F030.c replacing the INCLUDE_ASM */
-typedef struct { float x, y; } Pair340638;
-
-extern Pair340638 D_001AE098;
-extern Pair340638 D_001AE0A0;
-extern Pair340638 D_001AE0A8;
-extern Pair340638 D_001AE090;
-extern Pair340638 D_001AE0B0;
+/* Opus 5.5 xhigh, task v1750; USA v1.01 game -O2 -G0 -ffunction-sections, 28 places.
+ * Best: 448/448 bytes, 0 of 28 places, first mismatch +0x1C. 20 instructions differ, all from four
+ * allocation or order facts:
+ * - child (o + 0x17C) is $s2 and the q3 address $s1, retail the reverse: same cause as
+ *   func_00340498 (see its draft); here q3's delta must grow by one, or child's shrink by two.
+ * - o + 0xA18 takes $v1, so D_00259CE0 moves to $a3 and the 0x820 load to $a2, which also moves the
+ *   sltiu in sched2. By the model, retail needs that address's delta >= 8 (it is 7), or D_00259CE0's
+ *   <= 28 (it is 29).
+ * - constant 1 is $t5 and o + 0x870 $t6, retail the reverse. The local `pos` already gives retail's
+ *   $t2/$t3/$t4 for 3, 2 and &q4 (without it those are $t3/$t4/$t2); pos's delta is 21 and must be
+ *   <= 20, which the model says takes the 0x8710 constant before pos in first-pass order.
+ * - `sw $s0,0x9C` and `daddu $a0,$s6` are swapped in one cycle: retail needs the a0 copy before that
+ *   store in sched1's order. func_00340498's extra address add gives it that order; this has none.
+ * The pos-less draft has 21 differences, and so do these on it: incomplete-array D_001A8CFC, `if (f)`
+ * around the call (forbidden shape, measured only), -fstrict-aliasing, -fno-sched-interblock,
+ * -fno-sched-spec, -fno-rerun-loop-opt, -fmove-all-movables, -fno-cse-follow-jumps, -fno-thread-jumps,
+ * -fno-strength-reduce, -frac2-hazard-labels, -frac2-no-null-pointer-checks. Worse: -fno-schedule-insns (92).
+ * Next: as func_00340498; a fix for child's rank in sched1 should also lengthen o + 0xA18's range.
+ */
+typedef struct { unsigned int lo; unsigned int hi; } Word2_340638;
+extern const Word2_340638 D_001AE090;
+extern const Word2_340638 D_001AE098;
+extern const Word2_340638 D_001AE0A0;
+extern const Word2_340638 D_001AE0A8;
+extern const Word2_340638 D_001AE0B0;
 extern char D_00259CE0[];
-extern char *D_001A8CFC;
-extern void func_00336390(char *, char *, int);
+extern char *D_001A8CFC __attribute__((sda));
+extern void func_00336390(void *, void *, int);
 extern void func_00337210(int *);
+
+static __inline__ void initDescriptor_340498(int *f) { f[20] = 0; f[21] = 1; }
 
 void func_00340638(char *o)
 {
-    Pair340638 p0 = D_001AE098;
-    Pair340638 p1 = D_001AE0A0;
-    Pair340638 p2 = D_001AE098;
-    Pair340638 p3 = D_001AE0A8;
-    Pair340638 p4 = D_001AE090;
-    Pair340638 p5 = D_001AE0B0;
+    Word2_340638 q0 = D_001AE098;
+    Word2_340638 q1 = D_001AE0A0;
+    Word2_340638 q2 = D_001AE098;
+    Word2_340638 q3 = D_001AE0A8;
+    Word2_340638 q4 = D_001AE090;
+    Word2_340638 q5 = D_001AE0B0;
     int f[23];
+    char *child;
+    char *pos;
 
-    f[20] = 0;
-    f[21] = 1;
+    initDescriptor_340498(f);
     f[21] = *(int *)(o + 0x81C) == 1;
     f[16] = (int)(o + 0xA18);
     f[19] = *(int *)(o + 0x820);
     f[3] = *(int *)(o + 0x814);
     f[4] = *(int *)(o + 0x818);
-    f[9] = (int)&p4;
+    f[9] = (int)&q4;
+    pos = o + 0x870;
     f[14] = 1;
     f[0] = (int)D_00259CE0;
     f[1] = 3;
     f[2] = 2;
-    f[17] = (int)(o + 0x870);
+    f[17] = (int)pos;
     f[13] = 0;
-    func_00336390(o + 0x17C, D_001A8CFC + 0x8710, 0x5D);
-    f[10] = (int)(o + 0x17C);
-    f[15] = (int)(o + 0x7D0);
-    f[8] = (int)&p3;
-    f[7] = (int)&p2;
-    f[6] = (int)&p1;
-    f[20] = (int)&p5;
-    f[12] = (int)(o + 0x214);
+    child = o + 0x17C;
+    func_00336390(child, D_001A8CFC + 0x8710, 0x5D);
+    {
+        char *first = o + 0x214;
+        char *third = o + 0x7D0;
+        f[10] = (int)child;
+        f[15] = (int)third;
+        f[8] = (int)&q3;
+        f[7] = (int)&q2;
+        f[6] = (int)&q1;
+        f[20] = (int)&q5;
+        f[12] = (int)first;
+    }
     f[18] = *(int *)(o + 0x80C);
     f[11] = 0;
-    f[5] = (int)&p0;
+    f[5] = (int)&q0;
     f[22] = 0;
     func_00337210(f);
 }

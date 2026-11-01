@@ -1,91 +1,74 @@
-/* func_00340498 (412 bytes, 28 places: the boot and the 27 levels) - screening attempt.
- *
- * The shape of the function is understood and recorded here so that the next attempt
- * does not have to rediscover it:
- *
- *  - $s0 is the object; the frame is 0xF0 bytes;
- *  - five eight-byte copies (ldl/ldr + sdl/sdr, what this cc1 emits for an aggregate
- *    of two words) land on the stack at +0x00, +0x10, +0x20, +0x30 and +0x40, from the
- *    data addresses 0x1AE078, 0x1AE080, 0x1AE078 (again), 0x1AE088 and 0x1AE090.
- *    The stride of sixteen bytes says the locals are sixteen-byte objects; the copy
- *    is of the first eight bytes of each;
- *  - a 23-word argument block is built at $sp+0x50 and its address is kept in $s5
- *    (the stores are "0x54($s5)" and so on), with the fields
- *      +0x00 = 0x25FF58 (a data address: lui 0x26 / addiu -0x60A8)
- *      +0x04 = 4            +0x08 = 6
- *      +0x0C = obj->[0x814] +0x10 = obj->[0x818]
- *      +0x14 = $sp          +0x18 = $sp+0x10   +0x1C = $sp+0x20
- *      +0x20 = $sp+0x30     +0x24 = $sp+0x40
- *      +0x28 = obj+0x17C    +0x2C = obj+0x98   +0x30 = obj+0x214
- *      +0x34 = obj+0x260    +0x38 = 0
- *      +0x3C = obj+0x7D0    +0x40 = obj+0xA18  +0x44 = obj+0x870
- *      +0x48 = obj->[0x80C] +0x4C = obj->[0x820]
- *      +0x50 = 0            +0x54 = (obj->[0x81C] < 1)   +0x58 = 0
- *    The stores come in a permutation of that order, and the store of the constant 1
- *    to +0x54 is dead (the sltiu overwrites it);
- *  - the calls are `jal func_336390` with a0 = obj+0x17C, a1 = *(0x1A8CFC) + 0x8710
- *    and a2 = 0x23, then `jal func_337210` with a0 = $sp+0x50.
- *
- * The attempt below (the field list above, the block passed by pointer) comes out at
- * 428 bytes against retail's 412: the frame is 0x100 instead of 0xF0, the compiler
- * keeps seven callee-saved registers and the frame pointer, and it addresses the
- * block through $sp instead of through the base register $s5 that retail keeps.
- *
- * What is open: the type of the five locals (sixteen bytes each), the type of the
- * argument block, the order in which the twenty-three fields are assigned in the
- * source (the compiler's store order is a permutation of it, and retail's order is
- * the one to hit), and the names of the data addresses, which differ in every
- * program and therefore need a D_LNN_ or ref_ name.
+/* Opus 5.5 xhigh, task v1750; USA v1.01 game -O2 -G0 -ffunction-sections, 28 places.
+ * Best: 412/412 bytes, 0 of 28 places, first mismatch +0x54. Exactly 5 instructions differ, all one
+ * swap: the child pointer (o + 0x17C) is $s2 and the q3 address $s1; retail has them the other way
+ * round. Everything else, including the schedule, already equals retail.
+ * Cause, from the dumps: local-alloc orders values by floor_log2(refs) * refs / (2 * delta), delta
+ * being the distance from def to last use in the order sched1 leaves (this reproduces the order of
+ * the $s and $t registers here). q3 has 2 refs, delta 19 (526); child has 3 refs, delta 32 (468); retail needs child
+ * first. That takes child's delta <= 28, q3's >= 22, or a fourth child reference. Child's address
+ * ranks early in sched1 because it has 3 dependents against 2 for the other address adds.
+ * Same allocation in the dumps: inlined call helper, returning or not. Same bytes (tie): `register` or
+ * `char *const` child, table local just before the call, incomplete-array D_001A8CFC, and -g, -fno-gcse, -fno-expensive-optimizations, -ffast-math,
+ * -fno-sched-interblock, -fno-sched-spec, -fno-rerun-loop-opt, -fmove-all-movables,
+ * -fno-cse-follow-jumps, -fno-thread-jumps, -fno-strength-reduce, -frac2-hazard-labels,
+ * -frac2-keep-block-order, -frac2-gcse-unsplit-edges, -frac2-no-null-pointer-checks.
+ * `if (f)` around the first call (forbidden shape, measured only): leaves a (use (const_int 0)) no-op,
+ * but sched1 moves it before the call, both ranges grow by one, same bytes.
+ * Worse: child initialised at its declaration (7 differ), table local before the descriptor (34),
+ * -fstrict-aliasing (22), -fno-schedule-insns (87; child does get $s1 there, the rest does not fit).
+ * Next: a source shape that adds a reference to child, or lowers its address's rank in sched1.
  */
-typedef struct { int a, b; } Pair;
+typedef struct { unsigned int lo; unsigned int hi; } Word2_340498;
+extern const Word2_340498 D_001AE078;
+extern const Word2_340498 D_001AE080;
+extern const Word2_340498 D_001AE088;
+extern const Word2_340498 D_001AE090;
+extern char D_0025FF58[];
+extern char *D_001A8CFC __attribute__((sda));
+extern void func_00336390(void *, void *, int);
+extern void func_00337210(int *);
 
-typedef struct {
-    int f00, f04, f08, f0c, f10, f14, f18, f1c, f20, f24, f28, f2c, f30, f34,
-        f38, f3c, f40, f44, f48, f4c, f50, f54, f58;
-} InitArgs;
+static __inline__ void initDescriptor_340498(int *f) { f[20] = 0; f[21] = 1; }
 
-extern Pair D_001AE078;
-extern Pair D_001AE080;
-extern Pair D_001AE088;
-extern Pair D_001AE090;
-extern unsigned int D_001A8CFC;
-extern unsigned int D_0025FF58;
-extern void func_336390(void *, void *, int);
-extern void func_337210(void *);
-
-void func_00340498(u8 *obj)
+void func_00340498(char *o)
 {
-    Pair q0 = D_001AE078;
-    Pair q1 = D_001AE080;
-    Pair q2 = D_001AE078;
-    Pair q3 = D_001AE088;
-    Pair q4 = D_001AE090;
-    InitArgs a;
+    Word2_340498 q0 = D_001AE078;
+    Word2_340498 q1 = D_001AE080;
+    Word2_340498 q2 = D_001AE078;
+    Word2_340498 q3 = D_001AE088;
+    Word2_340498 q4 = D_001AE090;
+    int f[23];
+    char *child;
 
-    a.f00 = (int)D_0025FF58;
-    a.f04 = 4;
-    a.f08 = 6;
-    a.f0c = *(int *)(obj + 0x814);
-    a.f10 = *(int *)(obj + 0x818);
-    a.f14 = (int)&a;
-    a.f18 = (int)&q0;
-    a.f1c = (int)&q1;
-    a.f20 = (int)&q2;
-    a.f24 = (int)&q3;
-    a.f28 = (int)(obj + 0x17C);
-    a.f2c = (int)(obj + 0x98);
-    a.f30 = (int)(obj + 0x214);
-    a.f34 = (int)(obj + 0x260);
-    a.f38 = 0;
-    a.f3c = (int)(obj + 0x7D0);
-    a.f40 = (int)(obj + 0xA18);
-    a.f44 = (int)(obj + 0x870);
-    a.f48 = *(int *)(obj + 0x80C);
-    a.f4c = *(int *)(obj + 0x820);
-    a.f50 = 0;
-    a.f54 = *(int *)(obj + 0x81C) < 1;
-    a.f58 = 0;
-
-    func_336390(obj + 0x17C, *(unsigned int *)D_001A8CFC + 0x8710, 0x23);
-    func_337210(&a);
+    initDescriptor_340498(f);
+    f[19] = *(int *)(o + 0x820);
+    f[21] = *(int *)(o + 0x81C) == 0;
+    f[3] = *(int *)(o + 0x814);
+    f[4] = *(int *)(o + 0x818);
+    f[16] = (int)(o + 0xA18);
+    f[9] = (int)&q4;
+    f[1] = 4;
+    f[2] = 6;
+    f[0] = (int)D_0025FF58;
+    f[17] = (int)(o + 0x870);
+    f[13] = (int)(o + 0x260);
+    f[14] = 0;
+    child = o + 0x17C;
+    func_00336390(child, D_001A8CFC + 0x8710, 0x23);
+    {
+        char *first = o + 0x214;
+        char *second = o + 0x98;
+        char *third = o + 0x7D0;
+        f[10] = (int)child;
+        f[15] = (int)third;
+        f[8] = (int)&q3;
+        f[7] = (int)&q2;
+        f[6] = (int)&q1;
+        f[12] = (int)first;
+        f[11] = (int)second;
+    }
+    f[18] = *(int *)(o + 0x80C);
+    f[5] = (int)&q0;
+    f[22] = 0;
+    func_00337210(f);
 }
