@@ -1,14 +1,3 @@
-/* Complete retained reconstruction; not linked.
- * Profile: -O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * Tested as src/levels/shared/L16_00413850.c.
- * us: 0/2 placements, exit 1.
- * us2: 0/2 placements, exit 1.
- * pal: explicit catalogue absence, no credit.
- * USA compiled 1204 / retail 1212 bytes.
- * Residual: Retained1204 versus1212 bytes; complete190 frame and live F24 are restored, but prologue/scalar/copy scheduling differ.
- * Reopen with: A measured quaternion/impact source lifetime or scheduling profile; preserve the six-GPR/three-FP effect factory ABI, the twelve-GPR explosion tail, full vectors and callback identity.
- */
-
 #include "common.h"
 typedef int Quad __attribute__((mode(TI)));
 typedef struct { int a,b,c,d; } __attribute__((aligned(16))) Quad16;
@@ -40,7 +29,12 @@ extern int func_00277F48(void *,int,void *,void *,float);
 extern void func_0032C700(void *,int,int,int,int,int,int,int,int,int,int,int,float,float);
 extern void func_0029F338(void *);
 extern void ref_L16_00413850_00(void *);
-extern void func_L00_002E6EF8(void (*)(void *),void *);
+extern void ref_L16_00413850_01(void (*)(void *),void *);
+/* Projectile update: expires after 240 frames, rotates its velocity by a half-angle
+ * quaternion built from the surface normal under it, moves and, on a hit, unless the
+ * object hit is the one its state records at +0x10, sends a blast request (velocity
+ * scaled 1.5, or 3 with no object hit). Both blast branches are written out in full;
+ * the compiler's cross-jumping merges their common tails, as in retail. */
 void func_L16_00413850(u8 *object)
 {
     float destination[4],backward[4],normal[4],quaternion[4],inverse[4],rotated[4],start[4],finish[4];
@@ -48,16 +42,14 @@ void func_L16_00413850(u8 *object)
     float impact[4];
     L16Hit blast;
     u8 *state=*(u8 **)(object+0x68);
-    float savedW,speed,angle,magnitude;
-    float unitScale=1.0f;
-    float effectScale=0.6f;
-    int i;
+    float savedW,speed,angle;
     *(int *)(state+0x24) += 1;
     if (*(int *)(state+0x24)>240) {
-        func_002A8C28(object,effectScale,(float *)(object+0x10),0x10001,*(float *)(state+0x14),0.0f,0,1,0);
+        func_002A8C28(object,0.6f,(float *)(object+0x10),0x10001,*(float *)(state+0x14),0.0f,0,1,0);
         func_002A7750(object,1,-1);
     }
-    if (object[0x20]==0) {
+    switch (object[0x20]) {
+    case 0: {
         qcopy(backward,object+0xE0);
         func_00282D30(backward,backward,-1.0f);
         savedW=*(float *)(state+0xC);
@@ -67,10 +59,10 @@ void func_L16_00413850(u8 *object)
         func_00282F20(finish,object+0xE0,-3.0f);
         func_00282CC0(start,start,object+0x10);
         func_00282CC0(finish,finish,object+0x10);
-        if (!func_002761F8(start,finish,2,object,0)) func_00282F20(normal,object+0xE0,-1.0f);
-        else func_00282F20(normal,D_L16_001BFF80,unitScale);
+        if (func_002761F8(start,finish,2,object,0)) func_00282F20(normal,D_L16_001BFF80,1.0f);
+        else func_00282F20(normal,object+0xE0,-1.0f);
         func_00282D30(normal,normal,-1.0f);
-        func_00282F20(state,state,unitScale);
+        func_00282F20(state,state,1.0f);
         func_00282DD8(normal,backward,normal);
         angle=-func_00282DB0(backward,normal)*0.5f;
         func_00282D30(quaternion,normal,func_00283198(angle));
@@ -89,27 +81,43 @@ void func_L16_00413850(u8 *object)
         func_002A8C00((char *)&hit,(int)object,1,*(float *)(state+0x14),(Quad16 *)state);
         hit.oclass=*(u16 *)(object+0xAA);
         if (func_002761F8(object+0x10,destination,0,object,&hit) || func_00277258(object+0x10,0,object,0.3f)) {
-            if (!D_L16_001BFF58 || D_L16_001BFF58 != *(u8 **)(state+0x10)) {
-                if (D_L16_001BFF58) { qcopy(impact,state); magnitude=1.5f; }
-                else { qcopy(impact,state); magnitude=3.0f; }
-                func_00282D30(impact,impact,magnitude);
-                impact[2]=unitScale;
+            if (D_L16_001BFF58) {
+                if (D_L16_001BFF58 != *(u8 **)(state+0x10)) {
+                    qcopy(impact,state);
+                    func_00282D30(impact,impact,1.5f);
+                    impact[2]=1.0f;
+                    impact[3]=5627.9248046875f;
+                    func_002A8C00((char *)&blast,(int)object,0x10001,*(float *)(state+0x14),(Quad16 *)impact);
+                    blast.active=1;
+                    blast.oclass=*(u16 *)(object+0xAA);
+                    blast.kind=0;
+                    func_00277F48(object+0x10,0,object,&blast,0.6f);
+                    func_002A7750(object,1,-1);
+                    return;
+                }
+            } else {
+                qcopy(impact,state);
+                func_00282D30(impact,impact,3.0f);
+                impact[2]=1.0f;
                 impact[3]=5627.9248046875f;
                 func_002A8C00((char *)&blast,(int)object,0x10001,*(float *)(state+0x14),(Quad16 *)impact);
-                blast.oclass=*(u16 *)(object+0xAA);
                 blast.active=1;
+                blast.oclass=*(u16 *)(object+0xAA);
                 blast.kind=0;
-                func_00277F48(object+0x10,0,object,&blast,effectScale);
+                func_00277F48(object+0x10,0,object,&blast,0.6f);
                 func_002A7750(object,1,-1);
                 return;
             }
         }
         qcopy(object+0x10,destination);
         func_00282D30(impact,state,-0.5f);
-    } else if (object[0x20]==1) {
+    break;
+    }
+    case 1: {
         func_0032C700(object+0x10,0,25,20,20,20,45,0,0,0,0,0,0.25f,20.0f);
         func_0029F338(object);
         return;
     }
-    func_L00_002E6EF8(ref_L16_00413850_00,object);
+    }
+    ref_L16_00413850_01(ref_L16_00413850_00,object);
 }

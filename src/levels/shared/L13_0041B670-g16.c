@@ -1,12 +1,3 @@
-/* M21 2026-10-26: 1004 of 1004 bytes with -O2 -G16 -Wa,-G16 -ffunction-sections (us level 13).
-   Same code as retail except one global-alloc swap: retail keeps the object in $s3 and the
-   destination ring in $s4; here the other way round (27 words, register only). What closed
-   the rest: a switch in jump-table order with case 0 last (closing falls into it), struct
-   views for ring/state/hero (hero target at 0x33C through D_00189E20), 256-byte ring records,
-   D_00138324 and D_0018C0D5 as incomplete arrays, per-arm func_00288CB0 calls on `locked`
-   (no movz, no re-test of busy), and store orders. Tried for the swap: if/else destination,
-   char-pointer and pointer-plus spellings, inner-block declarations, TI copy. Permuter queued. */
-
 #include "common.h"
 
 typedef struct { float acceleration, deceleration, speed; } MotionSettings_L13;
@@ -67,6 +58,9 @@ void func_L13_0041B670(Ring_L13 *object)
     if (state->enabled == 0)
         return;
     switch (object->mode) {
+    case 0:
+        object->mode = 1;
+        return;
     case 1:
         if (state->flagA >= 0 && !(D_0019B2E8[state->flagA + D_001A79F0 * 16] & 0x80))
             return;
@@ -150,7 +144,6 @@ void func_L13_0041B670(Ring_L13 *object)
                 D_L13_001B16D8.speed * 0.016666668f);
             return;
         }
-    case 0:
         object->mode = 1;
     }
 }
