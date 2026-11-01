@@ -1951,5 +1951,12 @@ src/game/0027F128-quad.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-b
 src/game/0026EA00-target.c	-O2 -G0 -ffunction-sections -g
 src/core/0011B140.c	sdk -O2 -G2 -ffunction-sections
 src/core/001334B8-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/game/0029DDC0.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/game/0029DD30.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/game/00294BC8-nosched.c	-O2 -G0 -ffunction-sections -fno-schedule-insns
 src/core/00119BF8.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
+src/game/00295F60-map-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -ffast-math -g
+src/game/00286738-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/game/00294988-g8.c	-O2 -G8 -ffunction-sections -Wa,-G32
+src/game/0028BE00-g8.c	-O2 -G8 -ffunction-sections -g

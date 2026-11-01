@@ -139,7 +139,7 @@ void func_00289AA0(void)
 {
 }
 
-INCLUDE_ASM("asm/game", func_00289AA8);
+/* func_00289AA8 is in 00288D88-render.c. */
 
 extern short D_00254EC8[][2];
 
@@ -219,7 +219,116 @@ void func_0028A180(int key, int value)
 
 /* func_0028A278 is defined in 0028A278.c with its qualified address profile. */
 
-INCLUDE_ASM("asm/game", func_0028A2F8);
+typedef struct {
+    int value;
+    int timer;
+    int age;
+    short reserved;
+    short state;
+} CounterRow;
+typedef struct {
+    CounterRow rows[2];
+    int shown;
+    int base;
+    int pending;
+    int active;
+    int falling;
+} CounterState;
+extern CounterState D_001B1928 __attribute__((sda));
+extern int D_001A8BB0[] __attribute__((sda));
+extern int D_001A79F8[] __attribute__((sda));
+extern int func_0029B780(void);
+extern void func_0029CBA8(int);
+extern void func_0028A278(void);
+extern void func_0029B698(int);
+
+/* Moves the shown bolt count (D_001A79F8 is the real one) to the real count: a change opens a
+ * transition row, 60 frames without a further change commit it, and the pending amount is then
+ * applied over 15 frames. */
+void func_0028A2F8(void)
+{
+    CounterRow *row;
+    int index;
+    int falling;
+    int previous;
+    int delta;
+
+    if (func_0029B780())
+        return;
+    func_0029CBA8((int)&D_001B1928.shown);
+    if (D_001A8BB0[0] == 5 && D_001A79F8[0] < D_001B1928.shown) {
+        func_0028A278();
+    } else {
+        falling = D_001B1928.falling;
+        if (!falling && D_001B1928.active == -1 && D_001A79F8[0] < D_001B1928.shown) {
+            index = D_001B1928.rows[0].state != 0;
+            row = &D_001B1928.rows[index];
+            falling = 1;
+            row->state = falling;
+            row->timer = 0;
+            row->age = 0;
+            row->value = D_001B1928.shown - D_001A79F8[0];
+            D_001B1928.active = index;
+            D_001B1928.falling = falling;
+        } else if (!falling && D_001B1928.active == -1 && D_001B1928.shown + D_001B1928.pending < D_001A79F8[0]) {
+            index = D_001B1928.rows[0].state != 0;
+            row = &D_001B1928.rows[index];
+            row->state = 1;
+            row->timer = 0;
+            row->age = 0;
+            row->value = 0;
+            D_001B1928.active = index;
+            D_001B1928.falling = 0;
+        }
+    }
+    index = D_001B1928.active;
+    if (index != -1) {
+        row = &D_001B1928.rows[index];
+        if (row->state != 3) {
+            previous = row->value;
+            if (previous >= 0) {
+                row->value = D_001A79F8[0] - D_001B1928.shown + D_001B1928.pending;
+                if (row->value != previous)
+                    row->timer = 0;
+            }
+            row->timer++;
+            row->age++;
+            if (row->timer > 60) {
+                D_001B1928.pending = row->value;
+                D_001B1928.base = D_001B1928.shown;
+                row->timer = -1;
+                row->state = 3;
+            }
+        }
+    }
+    if (index != -1 || D_001B1928.rows[0].state == 3 || D_001B1928.rows[1].state == 3)
+        func_0029B698(180);
+    for (index = 0; index < 2; index++) {
+        row = &D_001B1928.rows[index];
+        switch (row->state) {
+        case 1:
+            if (row->age >= 15)
+                row->state = 2;
+            break;
+        case 3:
+            row->timer++;
+            delta = (int)((float)D_001B1928.pending * 0.0714285746f);
+            D_001B1928.shown += delta;
+            row->value -= delta;
+            if (D_001B1928.falling ? row->value > 0 : row->value < 0)
+                row->value = 0;
+            if (row->timer >= 15) {
+                if (D_001B1928.shown != D_001B1928.base + D_001B1928.pending)
+                    D_001B1928.shown = D_001B1928.base + D_001B1928.pending;
+                D_001B1928.pending = 0;
+                D_001B1928.active = -1;
+                row->state = 0;
+                D_001B1928.falling = 0;
+            }
+            break;
+        }
+    }
+}
 
 INCLUDE_ASM("asm/game", func_0028A670);
 
@@ -228,7 +337,110 @@ INCLUDE_ASM("asm/game", func_0028A670);
 /* func_0028AB70 is in 00288D88-init-g8.c. */
 
 
-INCLUDE_ASM("asm/game", func_0028ACB0);
+/* The HUD arena at D_001B1870, RAC1's HudState at D_0019A4E8 (src/game/hud.c): heap_cur and
+ * heap_end are D_001B1880/D_001B1884, the texture tables follow. Its fields are read at an
+ * offset from the arena's name: such a macro load has length 2, so reorg leaves it out of slots. */
+struct HudTexCounts {
+    unsigned char pad0[0x14];
+    int mid_ends[8];
+    int ends[16];
+    int loaded[16];
+};
+struct HudBank {
+    int unk0;
+    int off4;
+    int off8;
+    int offC;
+    int off10;
+    unsigned char pad14[0x40];
+    int has54;
+    int size58;
+    int has5C;
+    int has60;
+    int has64;
+    unsigned char pad68[0x2C];
+    int unk94;
+    int unk98;
+    int unk9C;
+    int unkA0;
+    int unkA4;
+};
+struct HudTexPage {
+    unsigned int source_address;
+    unsigned short gs_block_offset;
+    unsigned char width_log2;
+    unsigned char height_log2;
+};
+struct HudState {
+    int serial;
+    int unk4;
+    int unk8;
+    int z;
+    int heap_cur;
+    int heap_end;
+    union {
+        struct HudTexCounts *counts;
+        struct HudBank *bank;
+    } header;
+    void *anim_defs;
+    void *frame_refs;
+    struct HudTexPage *image_pages;
+    struct HudTexPage *palette_pages;
+};
+extern struct HudState D_001B1870 __attribute__((sda));
+extern void func_0028AE88(int, int);
+typedef struct { char pad[0x20]; int dest; char gap[0xf0]; int offset; } LoadGroupRoot;
+extern LoadGroupRoot D_001F2840;
+extern int D_001B18B0;
+extern int D_001B18B8;
+extern int D_001B18BC;
+extern int D_001B18C0;
+extern int func_002EEED0(int, int, int, int, int);
+extern void func_0029D4D0(int, int);
+/* Fetches the bank's stashed texture groups (handles at +0x94 on, sizes at +0x54 on) to dest at
+ * a running offset and links each one. Groups 3 and 4 depend on mode: 0 takes 3, 1 takes 4, 2
+ * takes both. */
+void func_0028ACB0(int mode)
+{
+    int dest, offset;
+    {
+        int size;
+        dest = D_001F2840.dest;
+        size = D_001B1870.header.bank->has54;
+        offset = D_001F2840.offset;
+        if (size) {
+            func_002EEED0(dest, D_001B1870.header.bank->unk94, 0, D_001B18B0/16, 0);
+            func_0029D4D0(dest, offset);
+            func_0028AE88(0, offset);
+            offset += size;
+        }
+    }
+    {
+        int size = D_001B1870.header.bank->has5C;
+        if (size) {
+            func_002EEED0(dest, D_001B1870.header.bank->unk9C, 0, D_001B18B8/16, 0);
+            func_0029D4D0(dest, offset);
+            func_0028AE88(2, offset);
+            offset += size;
+        }
+    }
+    if (mode == 0 || mode == 2) {
+        int size = D_001B1870.header.bank->has60;
+        if (size) {
+            func_002EEED0(dest, D_001B1870.header.bank->unkA0, 0, D_001B18BC/16, 0);
+            func_0029D4D0(dest, offset);
+            func_0028AE88(3, offset);
+            offset += size;
+        }
+    }
+    if (mode == 1 || mode == 2) {
+        if (D_001B1870.header.bank->has64) {
+            func_002EEED0(dest, D_001B1870.header.bank->unkA4, 0, D_001B18C0/16, 0);
+            func_0029D4D0(dest, offset);
+            func_0028AE88(4, offset);
+        }
+    }
+}
 
 
 

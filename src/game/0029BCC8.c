@@ -452,7 +452,7 @@ void func_0029CD20(void) {
     func_00335DC0(D_001A7B90[0] != 0);
 }
 
-INCLUDE_ASM("asm/game", func_0029CD48);
+/* func_0029CD48 is in 0029CD48.c. */
 
 void func_0029CE38(void)
 {
@@ -568,9 +568,7 @@ L11:
 
 
 
-extern unsigned char D_001395C1[];
-
-INCLUDE_ASM("asm/game", func_0029DC90);
+/* func_0029DC90 is in 0029DC90.c. */
 
 extern int D_001397C4[];
 extern unsigned char D_001395D5[];
@@ -583,6 +581,6 @@ int func_0029DCD0(void) {
     return 0;
 }
 
-INCLUDE_ASM("asm/game", func_0029DD30);
+/* func_0029DD30 is in 0029DD30.c. */
 
-INCLUDE_ASM("asm/game", func_0029DDC0);
+/* func_0029DDC0 is in 0029DDC0.c. */

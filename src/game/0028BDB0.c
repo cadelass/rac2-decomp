@@ -16,8 +16,6 @@ void func_0028BDB0(u8 *object) {
  *(u16 *)(object+0x48)=0;*(u16 *)(object+0x4a)=0;*(s32 *)(object+0x70)=0;
 }
 
-INCLUDE_ASM("asm/game", func_0028BE00);
-
 INCLUDE_ASM("asm/game", func_0028C6D0);
 
 

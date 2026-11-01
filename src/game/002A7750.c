@@ -585,9 +585,56 @@ void func_002A91F0(void *a0, float *a1) {
 
 /* func_002A9288 uses the quadword-copy profile in 002A9288-qcopy.c. */
 
-INCLUDE_ASM("asm/game", func_002A93B0);
+extern int D_001A8CA0[] __attribute__((sda));
+extern float D_001BAFA0[];
+extern float D_001BAFA8;
+extern void func_00282D60(void *, void *, float);
+extern void func_00282D30(void *, void *, float);
+extern void func_00282CC0(void *, void *, void *);
+extern void func_00282CF0(void *, void *, void *);
+extern float func_00282DB0(void *, void *);
+extern int func_002761F8(void *, void *, int, void *, void *);
 
-extern void func_002A93B0(void *);
+void func_002A93B0(char *o)
+{
+    float a[4] __attribute__((aligned(16)));
+    float b[4] __attribute__((aligned(16)));
+    float c[4] __attribute__((aligned(16)));
+
+    if (D_001A8CA0[0] == 0) {
+        if (*(float *)(o + 0xE8) < 0.9f) {
+            *(float *)(o + 0x70) = 0.0f;
+            *(float *)(o + 0x74) = 0.0f;
+            return;
+        }
+        qcopy(a, o + 0x10);
+        a[2] = a[2] - 16.0f;
+        if (a[2] < 0.5f)
+            a[2] = 0.5f;
+        qcopy(b, o + 0x10);
+        b[2] = b[2] + 0.5f;
+        if (func_002761F8(b, a, 0x22, 0, 0) != 0) {
+            *(float *)(o + 0x70) = D_001BAFA8 - *(float *)(o + 0x18);
+            *(float *)(o + 0x74) = *(float *)(o + 0xC) * 0.000244140625f;
+        } else {
+            *(float *)(o + 0x70) = 0.0f;
+            *(float *)(o + 0x74) = 0.0f;
+        }
+    } else {
+        func_00282D60(a, o, 0.0009765625f);
+        func_00282D30(b, o + 0xE0, -8.0f);
+        func_00282CC0(b, a, b);
+        if (func_002761F8(a, b, 0x22, 0, 0) != 0) {
+            func_00282CF0(c, D_001BAFA0, o + 0x10);
+            *(float *)(o + 0x70) = func_00282DB0(c, o + 0xE0);
+            *(float *)(o + 0x74) = 0.2f;
+            *(unsigned char *)(o + 0xBD) = 0xFF;
+        } else {
+            *(float *)(o + 0x70) = 0.0f;
+            *(float *)(o + 0x74) = 0.0f;
+        }
+    }
+}
 
 void func_002A9548(void *object) {
     func_002A93B0(object);

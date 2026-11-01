@@ -1,21 +1,13 @@
-/* functional: medium. The near-miss reconstruction compiles to 4944 bytes against retail's 5280 but does the same reads, writes and calls in the same order (fcheck SAME on 6 of 6 captured calls); byte layout only differs. */
-/* Nonmatching modal-state reconstruction, 2026-10-23.
- * Game profile: -O2 -G8 -ffunction-sections -frac2-qcopy
- * -frac2-qcopy-barrier -frac2-zero-ti-por, dedicated 00286738-g8.c trial.
- * US: 4944 versus retail 5280 bytes; 0/28 placements. Frame 0xB0 matches,
- * but the first difference is +0x4 (saved-register allocation). US2 and PAL
- * have no catalogue entry for this canonical function.
- * Ten bounded compiles examined separate modal paths, case ordering, copy/zero
- * profiles, camera object grouping, scoped modal views, signed flag types and
- * verified callback declarations. Earlier drafts were 4804..5012 bytes; equal
- * case-order/debug-policy outputs did not resolve the dispatch layout.
- * Remaining work: register lifetimes, switch block order and branch merges;
- * generated switch-table dependencies would also need real linked qualification.
- * Reopen with a measured large-switch layout remedy or recovered owner layouts.
- * Helper retail analysis establishes float return for func_002AA548 and integer
- * return for func_0028B3D0/func_002E4AC8. Update/draw callback parameters remain
- * unspecified here: this caller only passes their addresses to the registrar.
+/* func_00286738 needs its own unit: -O2 -G8 -ffunction-sections -frac2-zero-ti-por
+ * (config/cflags.txt). D_001B17D0's sda declaration gives retail's repeated
+ * lui/addiu; D_0018C0D4, D_001F29A0 and D_001F2930 need absolute addressing;
+ * D_001B1680 uses an incomplete sda view for its absolute store macro.
+ * func_002AA548 returns float; func_0028B3D0 and func_002E4AC8 return int.
+ * ref_00286738_00 is 0x1A8A44 in the boot and 0x1A8D94 in every level, where
+ * func_L00_003A0C00 uses the name D_001A8A44 for a different word at 0x1A8A44.
  */
+
+#include "common.h"
 
 /* Modal state observed by the menu and camera transition handlers. */
 typedef int Quadword __attribute__((mode(TI)));
@@ -76,17 +68,27 @@ extern int D_001A7420;
 extern int D_001A7424;
 extern int D_001A8C88;
 extern int D_001A8C8C;
-extern int D_001F29A0;
-extern int D_001F2940;
-extern int D_001F2858;
-extern int *D_001F2930;
-extern unsigned short D_0018C9DC;
-extern int D_001B1F10;
-extern int D_001393E8;
-extern int D_001393F0;
+extern int D_001F29A0 NOT_SDA;
+typedef struct {
+    char reserved00[0x18];
+    int selection;
+    char reserved1C[0xE4];
+    int savedSelection;
+} ModalSelection;
+extern ModalSelection D_001F2840;
+extern int *D_001F2930 NOT_SDA;
+extern unsigned short D_0018C958[];
+extern unsigned char D_001B1F10;
+typedef struct {
+    char reserved00[8];
+    int status;
+    char reserved0C[4];
+    int result;
+} ModalCardState;
+extern ModalCardState D_001393E0;
 extern int D_0013955C[];
-extern int D_001A8B84;
-extern int D_001B1680;
+extern int D_001A8B84 __attribute__((sda));
+extern int D_001B1680[] __attribute__((sda));
 extern int D_001A8A78 __attribute__((sda));
 extern float D_001A8A7C __attribute__((sda));
 typedef struct {
@@ -96,16 +98,16 @@ typedef struct {
     float matrix[16];
 } ModalCamera;
 extern ModalCamera D_001B5340;
-extern float D_001B17D0[4];
+extern float D_001B17D0[4] __attribute__((sda));
 extern unsigned char D_001A7A44;
 extern int D_001A79F0;
 extern CameraObject *D_001B1B5C;
 extern CameraObject *D_001B1B60;
-extern unsigned char D_0018C0D4;
-extern int D_001A8A40;
-extern int D_001A8A44;
-extern int D_001A8A48;
-extern int D_001A8A60;
+extern unsigned char D_0018C0D4 NOT_SDA;
+extern int D_001A8A40 __attribute__((sda));
+extern int ref_00286738_00 __attribute__((sda));
+extern int D_001A8A48 __attribute__((sda));
+extern int D_001A8A60 __attribute__((sda));
 extern int D_001A7BB8;
 
 extern int func_002E4AC8(void);
@@ -163,6 +165,8 @@ void func_00286738(void)
 {
     float delta[4], target[4], transform[16];
     float distance;
+    ModalState *loadDialog, *saveDialog, *phaseDialog;
+    ModalInput *saveInput;
 
     func_002E4AC8();
     D_001B170C = D_001BAC80.gameState;
@@ -177,12 +181,12 @@ void func_00286738(void)
             --D_001BAC80.inputDelay;
         if (D_001A7420 == 2) {
             func_002B49E0(4, 2, 1, 0, 0);
-            return;
+            break;
         }
         if (D_001BAC80.elapsed >= 121 && (D_00138180.buttons & 0x40)) {
-            if (!D_0018C9DC)
-                D_0018C9DC = 1;
-            goto closeModal;
+            if (!D_0018C958[0x84 / 2])
+                D_0018C958[0x84 / 2] = 1;
+            { func_002B4B70(0, 0); break; }
         }
         break;
     case 5:
@@ -192,7 +196,7 @@ void func_00286738(void)
         if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x40)) {
             D_001A7424 &= ~0x40;
             D_0013955C[0] = 0;
-            goto reload;
+            { func_002DE990(-1); func_002F64A8(); break; }
         }
         break;
     case 4:
@@ -201,238 +205,296 @@ void func_00286738(void)
             --D_001BAC80.inputDelay;
         if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x40)) {
             D_0013955C[0] = 0;
-            goto reload;
+            { func_002DE990(-1); func_002F64A8(); break; }
         }
         break;
     case 3:
-        if (D_001BAC80.phase == 1) {
+        switch (D_001BAC80.phase) {
+        case 0:
+            if (!D_001BAC80.countdown)
+                D_001BAC80.phase = 1;
+            break;
+        case 1:
             if (D_00138180.buttons & 0x10)
-                goto closeModal;
+                { func_002B4B70(0, 0); break; }
             if (D_00138180.buttons & 0x40) {
                 func_0027D330(4);
                 D_001B1F10 = 0;
                 D_001BAC80.phase = 2;
                 D_001BAC80.elapsed = 600;
             }
-            return;
-        } else if (D_001BAC80.phase < 2) {
-            if (D_001BAC80.phase == 0) {
-                if (!D_001BAC80.countdown)
-                    D_001BAC80.phase = 1;
-                return;
-            }
-        } else if (D_001BAC80.phase == 2) {
+            break;
+        case 2:
             if (!D_001BAC80.elapsed || --D_001BAC80.elapsed == 0) {
                 D_001B1F10 = 1;
                 D_001BAC80.phase = 3;
-                return;
+                break;
             }
             if (D_00138180.buttons & 0x10) {
                 func_0027D330(4);
                 D_001B1F10 = 1;
-            } else {
-                if (!(D_00138180.buttons & 0x40))
-                    return;
+                { func_002B4B70(0, 0); break; }
+            } else if (D_00138180.buttons & 0x40) {
                 D_001B1F10 = 0;
+                { func_002B4B70(0, 0); break; }
             }
-        } else if (D_001BAC80.phase == 3 && !(D_00138180.buttons & 0x40)) {
-            return;
+            break;
+        case 3:
+            if (!(D_00138180.buttons & 0x40))
+                break;
+        default:
+            { func_002B4B70(0, 0); break; }
         }
-        goto closeModal;
+        break;
     case 1:
         ++D_001BAC80.elapsed;
         if (D_001BAC80.elapsed > 30 && D_001BAC80.inputDelay)
             --D_001BAC80.inputDelay;
         if (func_00288D80()) {
             if (!(D_00138180.buttons & 0x40))
-                return;
+                break;
             func_00288D68();
             func_00287E80();
-            goto closeModal;
+            { func_002B4B70(0, 0); break; }
         }
         switch (D_001A7420) {
-        case 1:
-        case 16:
-            func_002B4B70(0, 0);
-            D_001F2940 = D_001BAC80.selection;
-            D_001F2858 = D_001BAC80.selection;
-            break;
         case 2:
             if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x40)) {
                 D_001BAC80.result = 2;
                 D_001A7424 &= ~1;
-                goto closeModal;
+                { func_002B4B70(0, 0); break; }
             }
-            return;
-        case 3:
-        case 5:
-            goto cancelSelection;
-        case 4:
-            if (!D_001A8C88) {
-                if (D_001A8C8C)
-                    goto acceptReload;
-            } else if (!D_001F29A0) {
-                if (D_001BAC80.inputDelay)
-                    return;
-                if (D_00138180.buttons & 0x40) {
-                    func_00298E08();
-                    D_001BAC80.result = 2;
-                    D_001A7424 &= ~6;
-                    func_002F64A8();
-                }
-            }
-            if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x10)) {
-                D_001BAC80.result = 1;
-                D_001A7424 = (D_001A7424 & ~6) | 0x20;
-                goto closeModal;
-            }
-            return;
+            break;
         case 6:
             if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x20)) {
                 D_001A7424 |= 8;
                 D_001BAC80.result = 2;
-                return;
+                break;
             }
             if (D_001BAC80.countdown || !(D_00138180.buttons & 0x10))
-                return;
+                break;
             if (D_001A8C8C) {
                 D_001BAC80.result = 2;
-                goto reload;
+                { func_002DE990(-1); func_002F64A8(); break; }
             }
             D_001A7424 |= 0x20;
             if (!func_002DF1D0())
                 D_001A7424 &= ~2;
             D_001A7424 &= ~4;
-            goto finishSelection;
-        case 9:
-            if (!(D_001A7424 & 6))
-                goto closeModal;
-            return;
-        case 12:
-            if (D_001F29A0)
-                goto cancelSelection;
-            return;
+            D_001BAC80.result = 1;
+            if (!D_001A8C88) {
+                func_002B4B70(0, 0);
+                break;
+            }
+            break;
         case 13:
             if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x20)) {
                 D_001A7424 |= 0x10;
                 D_001BAC80.result = 2;
-                return;
+                break;
             }
             if (D_001BAC80.countdown || !(D_00138180.buttons & 0x10))
-                return;
+                break;
             if (D_001A8C8C) {
                 D_001BAC80.result = 2;
-                goto reload;
+                { func_002DE990(-1); func_002F64A8(); break; }
             }
-            D_001A7424 = (D_001A7424 & ~6) | 0x20;
-finishSelection:
+            D_001A7424 |= 0x20;
+                D_001A7424 &= ~2;
+                D_001A7424 &= ~4;
             D_001BAC80.result = 1;
             if (!D_001A8C88)
-                goto closeModal;
+                { func_002B4B70(0, 0); break; }
+            break;
+        case 20:
+            if (D_001BAC80.inputDelay || !(D_00138180.buttons & 0x40))
+                break;
+            D_001A7424 &= ~0x40;
+                D_001A7424 &= ~0x400;
+                D_001A7424 &= ~2;
+                D_001A7424 &= ~4;
+            D_001BAC80.result = 2;
+            if (!D_001A8C88) {
+                if (func_002C9A50()) {
+                    func_00298D28(D_001F2930);
+                    func_002B4B70(0, 0);
+                } else {
+                    D_0013955C[0] = 0;
+                    D_001B1680[0] = -1;
+                    D_001A8B84 = 1;
+                }
+                break;
+            }
+            func_002B4B70(0, 0);
             break;
         case 17:
         case 18:
         case 21:
             if (D_001BAC80.pending > 0) {
                 if (--D_001BAC80.pending <= 0) {
-                    if (D_001393E8 != 2) {
-                        D_001BAC80.result = 2;
-                        func_00287EA8();
-                        goto reload;
-                    }
-                    D_001A7420 = 9;
-                    if (D_001393F0) {
-                        if (D_001393F0 == -1) {
+                    if (D_001393E0.status == 2) {
+                        if (!D_001393E0.result) {
                             D_001A7420 = 9;
-                            D_001393F0 = 0;
+                        } else if (D_001393E0.result == -1) {
+                            D_001A7420 = 9;
+                            D_001393E0.result = 0;
+                        } else if (D_001393E0.result == -2) {
+                            D_001A7420 = 5;
                         } else {
                             D_001A7420 = 12;
-                            if (D_001393F0 == -2)
-                                D_001A7420 = 5;
                         }
+                        func_002B4B70(0, 0);
+                    } else {
+                        D_001BAC80.result = 2;
+                        func_00287EA8();
+                        func_002DE990(-1);
+                        func_002F64A8();
                     }
-                    goto closeModal;
+                    break;
                 }
             } else {
                 if (D_001BAC80.inputDelay || !(D_00138180.buttons & 0x40))
-                    return;
+                    break;
                 func_00287EA8();
-                if (!D_001A8C8C) {
+                if (D_001A8C8C) {
+                    D_001BAC80.pending = 15;
+                } else {
                     D_001BAC80.result = 2;
-                    D_001A7424 &= ~0x446;
-                    goto closeModal;
+                    D_001A7424 &= ~0x40;
+                    D_001A7424 &= ~0x400;
+                    D_001A7424 &= ~2;
+                    D_001A7424 &= ~4;
+                    func_002B4B70(0, 0);
                 }
-                D_001BAC80.pending = 15;
+            }
+            break;
+        case 1:
+        case 16:
+            func_002B4B70(0, 0);
+            D_001F2840.selection = D_001BAC80.selection;
+            D_001F2840.savedSelection = D_001BAC80.selection;
+            break;
+        case 12:
+            if (!D_001F29A0)
+                break;
+        case 3:
+        case 5:
+            if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x10)) {
+                D_001BAC80.result = 1;
+                D_001A7424 &= ~2;
+                D_001A7424 &= ~4;
+                { func_002B4B70(0, 0); break; }
             }
             break;
         case 19:
             if (D_001A8C88 && !D_001F29A0) {
-                if (D_001BAC80.inputDelay)
-                    return;
-                if (D_00138180.buttons & 0x40)
-                    goto acceptLoad;
+                /* Set once, unlike a shared pointer, so alias analysis knows its
+                 * base and the cancel arm's store has no tie to D_001A7424. The
+                 * accept body below merges with case 23's copy at jump2. */
+                ModalState *pickDialog = &D_001BAC80;
+                if (pickDialog->inputDelay)
+                    break;
+                if (D_00138180.buttons & 0x40) {
+                    func_00298E08();
+                    pickDialog->result = 2;
+                    D_001A7424 &= ~2;
+                    D_001A7424 &= ~4;
+                    D_001A7424 |= 0x20;
+                    func_002F64A8();
+                    break;
+                }
                 if (!(D_00138180.buttons & 0x10))
-                    return;
-                D_001BAC80.result = 1;
-                D_001A7424 &= ~6;
-                goto closeModal;
+                    break;
+                pickDialog->result = 1;
+                D_001A7424 &= ~2;
+                D_001A7424 &= ~4;
+                { func_002B4B70(0, 0); break; }
             }
-            if (!D_001A8C8C) {
+            if (D_001A8C8C)
+                goto acceptReload;
+            {
                 if (D_001BAC80.inputDelay)
-                    return;
+                    break;
                 if (!(D_00138180.buttons & 0x40) || D_001F29A0) {
                     if (!(D_00138180.buttons & 0x10) || !D_001F29A0)
-                        return;
+                        break;
                 }
-                D_001A7424 &= ~6;
+                D_001A7424 &= ~2;
+                D_001A7424 &= ~4;
                 D_001BAC80.result = 1;
-                goto closeModal;
+                { func_002B4B70(0, 0); break; }
             }
-acceptReload:
-            if (D_001BAC80.inputDelay || !(D_00138180.buttons & 0x40))
-                return;
-            D_001BAC80.result = 2;
-            goto reload;
-        case 20:
-            if (D_001BAC80.inputDelay || !(D_00138180.buttons & 0x40))
-                return;
-            D_001A7424 &= ~0x446;
-            D_001BAC80.result = 2;
-            if (!D_001A8C88) {
-                if (!func_002C9A50()) {
-                    D_0013955C[0] = 0;
-                    D_001A8B84 = 1;
-                    D_001B1680 = -1;
-                    return;
-                }
-                func_00298D28(D_001F2930);
-            }
-            goto closeModal;
         case 23:
         case 24:
-            if (D_001BAC80.inputDelay)
-                return;
+            loadDialog = &D_001BAC80;
+            if (loadDialog->inputDelay)
+                break;
             if (D_00138180.buttons & 0x40) {
-acceptLoad:
                 func_00298E08();
-                D_001BAC80.result = 2;
-                D_001A7424 = (D_001A7424 & ~6) | 0x20;
+                loadDialog->result = 2;
+                D_001A7424 &= ~2;
+                D_001A7424 &= ~4;
+                D_001A7424 |= 0x20;
                 func_002F64A8();
-                return;
+                break;
             }
             if (D_00138180.buttons & 0x10) {
+                loadDialog->result = 1;
+                D_001A7424 |= 0x20;
+                { func_002B4B70(0, 0); break; }
+            }
+            break;
+        case 4:
+            if (D_001A8C88) {
+                if (!D_001F29A0) {
+                    saveDialog = &D_001BAC80;
+                    if (saveDialog->inputDelay)
+                        break;
+                    saveInput = &D_00138180;
+                    if (saveInput->buttons & 0x40) {
+                        func_00298E08();
+                        saveDialog->result = 2;
+                        D_001A7424 &= ~2;
+                        D_001A7424 &= ~4;
+                        func_002F64A8();
+                    }
+                    if (!saveDialog->inputDelay && (saveInput->buttons & 0x10)) {
+                        saveDialog->result = 1;
+                        D_001A7424 |= 0x20;
+                        D_001A7424 &= ~2;
+                        D_001A7424 &= ~4;
+                        func_002B4B70(0, 0);
+                    }
+                    break;
+                }
+            } else if (D_001A8C8C) {
+acceptReload:
+                if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x40)) {
+                    D_001BAC80.result = 2;
+                    func_002DE990(-1);
+                    func_002F64A8();
+                }
+                break;
+            }
+            if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x10)) {
                 D_001BAC80.result = 1;
                 D_001A7424 |= 0x20;
-                goto closeModal;
+                D_001A7424 &= ~2;
+                D_001A7424 &= ~4;
+                func_002B4B70(0, 0);
             }
+            break;
+        case 9:
+            if (!(D_001A7424 & 6))
+                { func_002B4B70(0, 0); break; }
             break;
         }
         break;
     case 6:
         switch (D_001BAC80.phase) {
         case 0:
-            *(Quadword *)D_001BAC80.cameraPosition = *(Quadword *)D_001B5340.position;
-            *(Quadword *)D_001BAC80.cameraAngles = *(Quadword *)D_001B5340.angles;
+            qcopy(D_001BAC80.cameraPosition, D_001B5340.position);
+            qcopy(D_001BAC80.cameraAngles, D_001B5340.angles);
             D_001BAC80.phase = 1;
             break;
         case 1:
@@ -483,7 +545,7 @@ acceptLoad:
             if (func_00282DF0(delta) < speed - 0.01f) {
                 /* The transition publishes its separate state word before capturing the return pose. */
                 { extern int D_001B1710; D_001B1710 = 2; }
-                *(Quadword *)D_001BAC80.returnPosition = *(Quadword *)D_001B5340.position;
+                qcopy(D_001BAC80.returnPosition, D_001B5340.position);
                 if (D_001A7A44) {
                     func_00282D30(D_001B5340.matrix + 4, D_001B5340.matrix + 4, -1.0f);
                     func_002AB6D8(D_001B5340.matrix, D_001BAC80.returnAngles);
@@ -513,113 +575,137 @@ acceptLoad:
         }
         D_001BAC80.cameraActive = 1;
         if ((D_00138180.buttons & 0x500) && D_001BAC80.phase == 2) {
-            D_001BAC80.angle = 0.0f;
-            D_001BAC80.phase = 3;
             D_001BAC80.fraction = 0.0f;
+            D_001BAC80.phase = 3;
+            D_001BAC80.angle = 0.0f;
         }
-        if ((unsigned)(D_001A79F0 - 22) < 2 && D_001B1B5C < D_001B1B60) {
+        if ((unsigned)(D_001A79F0 - 22) < 2) {
             CameraObject *object = D_001B1B5C;
-            do {
-                if (object->kind == 0xD3D && object->update)
-                    object->update(object);
-                ++object;
-            } while (object < D_001B1B60);
+            if (object < D_001B1B60) {
+                do {
+                    if (object->kind == 0xD3D && object->update)
+                        object->update(object);
+                    ++object;
+                } while (object < D_001B1B60);
+            }
         }
         break;
     case 7:
-        if (D_001BAC80.phase == 1) {
-            if (D_0018C0D4 == 1) {
-                func_0028B3D0(0x23, 0, func_0028CC98, func_0028CCE0, func_0028D1E8, 0, 0);
-            } else {
+        switch (D_001BAC80.phase) {
+        case 0:
+            D_001BAC80.cameraActive = 1;
+            D_001BAC80.phase = 1;
+            if (D_0018C0D4 != 1)
+                func_0026F7B0();
+            D_001A8A48 = 0;
+            D_001A8A40 = ref_00286738_00;
+            func_00290670();
+            func_00287E60();
+            break;
+        case 1:
+            if (D_0018C0D4 != 1) {
                 func_0026F7B0();
                 func_0028B3D0(0x23, 0, func_0028BDB0, func_0028BE00, func_0028C6D0, 0, 0);
+            } else {
+                func_0028B3D0(0x23, 0, func_0028CC98, func_0028CCE0, func_0028D1E8, 0, 0);
             }
             func_0029CE38();
             func_0029B720(360);
             func_0029B698(180);
             func_00290670();
-            if (D_001A8A40 > 0)
-                --D_001A8A40;
+            {
+                int remaining = D_001A8A40;
+                if (remaining > 0) {
+                    D_001A8A40 = remaining - 1;
+                    remaining = D_001A8A40;
+                }
+                D_001A8A40 = remaining;
+            }
             --D_001A8A60;
             if (D_001A8A60 < 0)
                 D_001A8A60 = 0;
-            if (D_001A8A60)
-                return;
-        } else {
-            if (D_001BAC80.phase < 2) {
-                if (D_001BAC80.phase == 0) {
-                    D_001BAC80.phase = 1;
-                    D_001BAC80.cameraActive = 1;
-                    if (D_0018C0D4 != 1)
-                        func_0026F7B0();
-                    D_001A8A48 = 0;
-                    D_001A8A40 = D_001A8A44;
-                    func_00290670();
-                    func_00287E60();
-                }
-                return;
-            }
-            if (D_001BAC80.phase != 2) {
-                if (D_001BAC80.phase != 3)
-                    return;
-                if (D_0018C0D4 != 1)
-                    func_0026F7B0();
-                func_00290728();
-                func_00290720();
-                goto closeModal;
-            }
-            if (D_0018C0D4 == 1) {
-                func_0028B3D0(0x23, 0, func_0028CC98, func_0028CCE0, func_0028D1E8, 0, 0);
-            } else {
+            if (!D_001A8A60)
+                ++D_001BAC80.phase;
+            break;
+        case 2:
+            if (D_0018C0D4 != 1) {
                 func_0026F7B0();
                 func_0028B3D0(0x23, 0, func_0028BDB0, func_0028BE00, func_0028C6D0, 0, 0);
+            } else {
+                func_0028B3D0(0x23, 0, func_0028CC98, func_0028CCE0, func_0028D1E8, 0, 0);
             }
             func_0029CE38();
             func_0029B720(360);
             func_0029B698(180);
             func_00290670();
-            if (D_001A8A40 > 0)
-                --D_001A8A40;
-            if (D_001A8A40 > 0)
-                return;
-            D_001A8A40 = 0;
+            {
+                int remaining = D_001A8A40;
+                if (remaining > 0) {
+                    D_001A8A40 = remaining - 1;
+                    remaining = D_001A8A40;
+                }
+                D_001A8A40 = remaining;
+            }
+            if (D_001A8A40 <= 0) {
+                D_001A8A40 = 0;
+                ++D_001BAC80.phase;
+            }
+            break;
+        case 3:
+            if (D_0018C0D4 != 1)
+                func_0026F7B0();
+            func_00290728();
+            func_00290720();
+            { func_002B4B70(0, 0); break; }
         }
-        ++D_001BAC80.phase;
         break;
     case 8:
-        if (D_001BAC80.phase >= 0 && D_001BAC80.phase <= 1)
-            ++D_001BAC80.phase;
-        else if (D_001BAC80.phase == 2) {
-            func_002B49E0(3, 2, D_001BAC80.selection, 0, 0);
-            func_002B49C0(3);
-            ++D_001BAC80.phase;
+        phaseDialog = &D_001BAC80;
+        if (phaseDialog->phase != 2) {
+            if (phaseDialog->phase >= 3)
+                break;
+            if (phaseDialog->phase < 0)
+                break;
+            ++phaseDialog->phase;
+            break;
         }
-        break;
+        func_002B49E0(3, 2, phaseDialog->selection, 0, 0);
+        func_002B49C0(3);
+        goto advanceModalPhase;
     case 9:
-        if (D_001BAC80.phase == 0) {
-            func_00287E80();
-            ++D_001BAC80.phase;
-        } else if (D_001BAC80.phase == 1) {
-            if (D_00138180.pressed & D_001BAC80.acceptMask) {
-                D_001BAC80.result = 2;
-            } else {
-                if (!(D_00138180.held & D_001BAC80.cancelMask))
-                    return;
-                D_001BAC80.result = 1;
+        phaseDialog = &D_001BAC80;
+        switch (phaseDialog->phase) {
+        case 1:
+            if (D_00138180.pressed & phaseDialog->acceptMask) {
+                phaseDialog->result = 2;
+                func_002B4B70(0, 0);
+            } else if (D_00138180.held & phaseDialog->cancelMask) {
+                phaseDialog->result = 1;
+                func_002B4B70(0, 0);
             }
-            goto closeModal;
+            break;
+        case 0:
+            goto initializeDialog;
         }
         break;
     case 10:
-        if (D_001BAC80.phase == 0) {
+        phaseDialog = &D_001BAC80;
+        switch (phaseDialog->phase) {
+        case 0:
+initializeDialog:
             func_00287E80();
-            ++D_001BAC80.phase;
-        } else if (D_001BAC80.phase == 1) {
-            if (!(D_00138180.pressed & D_001BAC80.acceptMask))
-                return;
-            D_001BAC80.result = 2;
-            func_002E5E58(0x12, 0, 0);
-            goto closeModal;
+advanceModalPhase:
+            ++phaseDialog->phase;
+            break;
+        case 1:
+            if (D_00138180.pressed & phaseDialog->acceptMask) {
+                phaseDialog->result = 2;
+                func_002E5E58(0x12, 0, 0);
+                func_002B4B70(0, 0);
+            }
+            break;
+        default:
+            break;
         }
         break;
     case 11:
@@ -630,7 +716,7 @@ acceptLoad:
             if (D_001A7BB8) {
                 D_001A7BB8 = !D_001A7BB8;
                 func_002857B8();
-                goto closeModal;
+                { func_002B4B70(0, 0); break; }
             }
             break;
         case 1:
@@ -639,32 +725,36 @@ acceptLoad:
                 ++D_001BAC80.phase;
             } else if (D_00138180.held & 0x10) {
                 D_001BAC80.result = 1;
-                goto closeModal;
+                { func_002B4B70(0, 0); break; }
             }
             break;
         case 2:
             D_001BAC80.elapsed = 900;
+            D_001BAC80.inputDelay = 0;
             ++D_001BAC80.phase;
             D_001BAC80.result = 0;
             D_001A7BB8 = !D_001A7BB8;
-            D_001BAC80.inputDelay = 0;
             func_002857B8();
-            return;
+            break;
         case 3:
             if (D_00138180.pressed & 0x40)
                 D_001BAC80.result = 2;
             else if (D_00138180.pressed & 0x10)
                 D_001BAC80.result = 1;
             --D_001BAC80.elapsed;
-            if (D_001BAC80.elapsed > 0 && !D_001BAC80.result)
-                return;
-            ++D_001BAC80.phase;
-            break;
+            if (D_001BAC80.elapsed <= 0)
+                goto advanceConfirmation;
+            if (!D_001BAC80.result)
+                break;
+            goto advanceConfirmation;
         case 4:
-            if (D_001BAC80.result >= 0 && D_001BAC80.result < 2) {
+            if (D_001BAC80.result < 0)
+                goto advanceConfirmation;
+            if (D_001BAC80.result < 2) {
                 D_001A7BB8 = !D_001A7BB8;
                 func_002857B8();
             }
+advanceConfirmation:
             ++D_001BAC80.phase;
             break;
         case 5:
@@ -673,19 +763,5 @@ acceptLoad:
         }
         break;
     }
-    return;
 
-cancelSelection:
-    if (!D_001BAC80.inputDelay && (D_00138180.buttons & 0x10)) {
-        D_001BAC80.result = 1;
-        D_001A7424 &= ~6;
-        goto closeModal;
-    }
-    return;
-reload:
-    func_002DE990(-1);
-    func_002F64A8();
-    return;
-closeModal:
-    func_002B4B70(0, 0);
 }
