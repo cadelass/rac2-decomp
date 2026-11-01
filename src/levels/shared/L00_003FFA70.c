@@ -98,9 +98,9 @@ void func_L00_00402DD8(char *arg)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L00_00402E50);
+/* func_L00_00402E50 is defined in L00_003FFA70-wander-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_00403730);
+/* func_L00_00403730 is defined in L00_00403730.c. */
 
 extern int D_L00_001B2C6C __attribute__((nosda));
 
@@ -217,14 +217,14 @@ INCLUDE_ASM("asm/levels", func_L00_00405808);
 
 
 
-INCLUDE_ASM("asm/levels", func_L00_00406FB0);
+/* func_L00_00406FB0 is defined in L00_00406FB0-g8.c. */
 
 
 /* func_L00_004079C8 is defined in L00_004079C8-g64.c. */
 
 /* func_L00_00407C18 is defined in L00_00407C18-g64.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_00407E38);
+/* func_L00_00407E38 is defined in L00_00407E38-g8.c. */
 
 
 INCLUDE_ASM("asm/levels", func_L00_00408E58);

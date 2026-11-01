@@ -39,6 +39,9 @@ extern float func_00282DB0(void *, void *);
 extern float func_002831B0(float);
 extern void func_L00_00415DE8(char *, char *);
 extern void func_L00_00418A80(char *, char *);
+extern void func_L00_00414540(char *, char *, char *);
+extern int func_002AD330(char *, char *, char *, char *);
+extern char ref_L00_004195C8_00[];
 extern char D_L00_001B8C80[];
 typedef struct SpawnState {
     short life;
@@ -48,6 +51,22 @@ typedef struct SpawnState {
     float outer, inner, fade, size;
     int flags, control, kind, red, green, blue, enabled, extra;
 } SpawnState;
+/* SpawnState with an attachment parent, as func_L00_00414020 fills it. */
+typedef struct ParentedSpawnState {
+    short life;
+    short timer;
+    short delay;
+    short pad06;
+    float outer, inner, fade, size;
+    int flags, control, kind, red, green, blue, enabled, extra, extra2;
+    char *parent;
+} ParentedSpawnState;
+/* The record func_L00_00416F68 fills; func_L00_00417D70 reads kind as a mode and parent. */
+typedef struct AttachedSpawnState {
+    int life;
+    int kind;
+    char *parent;
+} AttachedSpawnState;
 typedef struct SpawnObject {
     char pad00[0x10];
     float position[4];
@@ -239,7 +258,75 @@ void func_L00_00414018(void)
 {
 }
 
-INCLUDE_ASM("asm/levels", func_L00_00414020);
+char *func_L00_00414020(float size, char *position, int trigger, int kind, int red, int green,
+                        int blue, int enabled, int flags, int extra, int control, int extra2,
+                        char *parent)
+{
+    Vector128 direction[1], up[1], attachment[1], sphere[1], difference[1];
+    char *object = func_0029EFD0(0x139c);
+    ParentedSpawnState *state;
+    SpawnObject *m;
+    if (object != 0) {
+        m = (SpawnObject *)object;
+        *(unsigned char *)(object + 0x30) = 0xff;
+        object[0x20] = 0;
+        *(short *)(object + 0x32) = 0xff;
+        state = (ParentedSpawnState *)m->state;
+        qcopy(object + 0x10, position);
+        *(float *)(object + 0x1c) = 1.0f;
+        func_00282CF0(direction, D_L00_001B8C80 + 0x140, object + 0x10);
+        func_00282F20(direction, direction, 1.0f);
+        func_002AFFD8(object + 0x10, (char *)up, 1);
+        qcopy(object + 0xc0, direction);
+        func_00282DD8(object + 0xd0, object + 0xc0, up);
+        func_00282F20(object + 0xd0, object + 0xd0, 1.0f);
+        func_00282DD8(object + 0xe0, object + 0xd0, object + 0xc0);
+        m->forward[3] = m->right[3] = m->up[3] = 0.0f;
+        state->size = size;
+        state->kind = kind;
+        state->red = red;
+        state->green = green;
+        state->blue = blue;
+        state->enabled = enabled;
+        state->extra = extra;
+        state->extra2 = extra2;
+        /* Both countdowns start together. */
+        state->timer = state->life = 60;
+        state->outer = size + size;
+        state->inner = size*4.0f;
+        state->control = control;
+        state->flags = flags;
+        state->parent = parent;
+        qzero_nc(attachment);
+        if (parent)
+            func_002AD330(object, parent, object + 0x10, (char *)attachment);
+        qcopy(sphere, object + 0x10);
+        ((float *)sphere)[3] = size*3.0f;
+        if (func_00283DB8(sphere, 128.0f) == 1) {
+            state->delay = 10;
+            state->fade = 0.1f;
+            if (func_00282E48(position, D_L00_001B8C80 + 0x140) < 48.0f && trigger != 0) {
+                char *manager = D_L00_001B8C80;
+                *(int *)(manager + 0x16c) = 0;
+                *(int *)(manager + 0x168) = 20;
+                *(float *)(manager + 0x160) = 0.075f;
+            }
+            if (state->flags != 0) {
+                func_00282CF0(difference, object + 0x10, D_L00_001B8C80 + 0x140);
+                func_00282F20(difference, difference, 1.0f);
+                if (1.5707964f - func_002831B0(func_00282DB0(difference, D_L00_001B8C80 + 0x370)) < 0.45378566f)
+                    state->flags = 1;
+                else
+                    state->flags = 0;
+            }
+        } else {
+            state->delay = 0;
+            state->flags = 0;
+        }
+        func_L00_00414540(object, (char *)up, (char *)attachment);
+    }
+    return object;
+}
 
 /* Forwards the cached sub-object into the pair update when it is present, then releases the handle pair or re-arms the module callback. */
 void func_L00_00414350(char *object)
@@ -571,7 +658,37 @@ void func_L00_00416A38(Vector *position, float size, float offset, float roll,
 }
 
 
-INCLUDE_ASM("asm/levels", func_L00_00416F68);
+char *func_L00_00416F68(Vector128 *position, int kind, char *parent)
+{
+    Vector128 direction[1], up[1];
+    char *object = func_0029EFD0(0x139E);
+    if (object != 0) {
+        SpawnObject *m = (SpawnObject *)object;
+        AttachedSpawnState *state = (AttachedSpawnState *)m->state;
+        char *first = object + 0x10;
+        char *second;
+        char *third;
+        *(unsigned char *)(object + 0x30) = 0xff;
+        *(short *)(object + 0x32) = 0xff;
+        object[0x20] = 0;
+        qcopy(first, position);
+        *(float *)(object + 0x1c) = 1.0f;
+        second = object + 0xc0;
+        func_00282CF0(direction, D_L00_001B8C80 + 0x140, first);
+        func_00282F20(direction, direction, 1.0f);
+        func_002AFFD8(first, (char *)up, 1);
+        qcopy(second, direction);
+        third = object + 0xd0;
+        func_00282DD8(third, second, up);
+        func_00282F20(third, third, 1.0f);
+        func_00282DD8(object + 0xe0, third, second);
+        m->forward[3] = m->right[3] = m->up[3] = 0.0f;
+        state->life = 60;
+        state->kind = kind;
+        state->parent = parent;
+    }
+    return object;
+}
 
 
 /* Spawns 25 particles around the object, each drifting away from the camera at a random angle. */
@@ -794,9 +911,22 @@ void func_L00_00418A28(char *object)
         func_0029F338_2(object);
 }
 
-INCLUDE_ASM("asm/levels", func_L00_00418A80);
+/* func_L00_00418A80 is defined in L00_00418A80-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_004195C8);
+/* Runs the destroy helper once the child's status goes negative; otherwise re-arms the module callback
+   when the timer at 0x3C is zero or the sphere test accepts the record at 0x30. */
+void func_L00_004195C8(char *object)
+{
+    char *handle = *(char **)(object + 0x68);
+    char *child = *(char **)(handle + 0x44);
+
+    if (child != 0 && *(signed char *)(child + 0x20) < 0) {
+        func_00310440(object);
+    } else if (*(float *)(handle + 0x3C) == 0.0f ||
+               func_00283DB8(handle + 0x30, (float)*(short *)(object + 0x32)) != 0) {
+        func_002E6EF8(ref_L00_004195C8_00, object);
+    }
+}
 
 /* func_L00_00419668 is in L00_00419668-dbg.c. */
 

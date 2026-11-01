@@ -1,23 +1,3 @@
-/* Retained nonmatching C (Opus big42), measured 26 October 2026.
- * Profile: -O2 -G8 -ffunction-sections. 874/874 instructions, frame 0x150 as retail;
- * about 130 lines differ ignoring registers (493 positions identical with registers).
- * Kept: the hero, D_0018BE30, D_00139568, D_L00_001BF200 and D_L00_001FE940 reads
- * through union views (retail keeps each base in a register and uses offsets);
- * D_L00_001A8F20 as an sda incomplete array (retail rebuilds the lui/addiu pair at every
- * call); one float local per random draw (a shared one costs a mov.s and f20 in loop 1);
- * separate counters per loop (one shared counter steals the callee-saved register that
- * retail gives `self`); the 0xFE/0xFD tests as separate statements; the remove paths
- * written out (cross-jumped into one block after the state-1 test, as retail);
- * a switch on the state byte.
- * Left: (1) spill-slot order: retail puts &v40 at 0x9C and the gcse-made vars+0x30/0x60/0x70
- * pointers at 0xA0/0xA4/0xA8 (this C: vars+0x30 first), the gcse bucket-order note;
- * (2) state 0's class lookup: retail keeps 0xE0 in a register across the join and reloads
- * D_00139568[9] on the else path (cse follows the then-arm), this C does the opposite;
- * (3) the hit-record byte/half stores are scheduled before the angle test in retail;
- * (4) func_002E5DA0's arguments are set a0..a3 in retail (a3 first here), which moves the
- * join's first insn into the branch delay slots; (5) loop-2 copies of the gcse pointers.
- * Register choice (s2/s3/s4, s6/s7) follows from these.
- */
 #include "common.h"
 
 typedef int TI128 __attribute__((mode(TI)));
@@ -47,7 +27,7 @@ extern int D_L00_001B0FE8 __attribute__((sda));
 extern int D_L00_001B0FF4 __attribute__((sda));
 extern int D_L00_001B19C8 __attribute__((sda));
 
-extern void func_002AFFD8(char *, void *, int);
+extern void func_002AFFD8(void *, void *, int);
 extern void func_0029FCC0(int, int, void *);
 extern void func_00282CF0(void *, void *, void *);
 extern void func_00282CC0(void *, void *, void *);
@@ -60,18 +40,18 @@ extern float func_002A7878(float, float);
 extern float func_002A78D8(float, float);
 extern int func_002A77E0(int);
 extern void func_002ACEC0(void *, void *, void *, float);
-extern char *func_002AB1F0(char *);
+extern char *func_002AB1F0(void *);
 extern int func_00282948(void *);
 extern void func_00291450(int);
-extern void func_0029F338(char *);
-extern int func_002E5DA0(int, int, char *, int);
+extern void func_0029F338(void *);
+extern int func_002E5DA0(int, int, void *, int);
 extern int func_002761F8(void *, void *, int, int, void *);
 extern void func_L00_0040CCA0(void *, int, int);
 extern int func_L00_002FCF18(void *, float, float, float, float, float);
 extern char *func_002C65A0(void *, void *, int, unsigned int, int, int, int, float, float, float, int);
-extern void func_L00_0040B398(char *);
-extern void func_L00_002E6EF8(void (*)(char *), char *);
-extern void func_L00_0040C7D8(char *);
+extern void func_L00_0040B398(void *);
+extern void ref_L00_0040BA30_00(void (*)(void *), void *);
+extern void func_L00_0040C7D8(void *);
 
 typedef struct {
     float v[4];
@@ -84,7 +64,34 @@ typedef struct {
     int f20;
 } Hit;
 
-void func_L00_0040BA30(char *self)
+typedef struct BeamVars {
+    char pad00[0xC];
+    struct BeamMoby *target;
+    int timer;
+    int pad14;
+    int effect;
+    int enabled;
+    char pad20[0x10];
+    float end[4];
+    float aim[4];
+    float dir[4];
+    float left[4];
+    float right[4];
+} BeamVars;
+
+typedef struct BeamMoby {
+    char pad00[0x10];
+    float pos[4];
+    unsigned char state;
+    char pad21[0x13];
+    unsigned short flags;
+    char pad36[0x32];
+    BeamVars *vars;
+    char pad6c[0x3E];
+    unsigned short oClass;
+} BeamMoby;
+
+void func_L00_0040BA30(BeamMoby *self)
 {
     float old0[4];
     float mtx[4];
@@ -93,27 +100,25 @@ void func_L00_0040BA30(char *self)
     float v40[4];
     float v50[4];
     Hit hit;
-    char *vars = *(char **)(self + 0x68);
+    BeamVars *vars = self->vars;
     float ang;
     float r;
     int i;
     int j;
     int m;
-    unsigned int k;
-    int flags;
-    char *t;
-    char *p;
+    BeamMoby *t;
     float s1, s2, s3, s4, s5, s6, s7, s8, s9;
     int n;
+    int heroNode;
     ClassEntry *tbl;
 
-    qcopy(old0, self + 0x10);
-    func_002AFFD8(self + 0x10, mtx, 1);
-    n = D_00189E20.i[0x1314 / 4];
-    func_0029FCC0(n, 6, vars + 0x60);
-    func_0029FCC0(n, 7, vars + 0x70);
-    qcopy(old20, self + 0x10);
-    func_00282CF0(dir, vars + 0x30, &D_00189E20.b[0x2010]);
+    qcopy(old0, self->pos);
+    func_002AFFD8(self->pos, mtx, 1);
+    heroNode = D_00189E20.i[0x1314 / 4];
+    func_0029FCC0(heroNode, 6, vars->left);
+    func_0029FCC0(heroNode, 7, vars->right);
+    qcopy(old20, self->pos);
+    func_00282CF0(dir, vars->end, &D_00189E20.b[0x2010]);
     func_00282F20(dir, dir, 1.0f);
     ang = func_00283248(*(float *)(D_00189E20.ptr[0x18D0 / 4] + 0x10) - D_00189E20.f[0x80 / 4],
                         *(float *)(D_00189E20.ptr[0x18D0 / 4] + 0x14) - D_00189E20.f[0x84 / 4]);
@@ -121,57 +126,65 @@ void func_L00_0040BA30(char *self)
         r = func_002A7878(0.0f, -0.7853982448577881f);
     else
         r = func_002A7878(0.0f, 0.7853982448577881f);
-    qcopy(vars + 0x40, &D_0018BE30);
-    *(float *)(vars + 0x48) -= D_L00_001B1008;
-    func_00282CF0(vars + 0x40, vars + 0x40, &D_0018BE30);
-    func_002ACEC0(vars + 0x40, vars + 0x40, dir, r);
-    func_00282CC0(vars + 0x40, &D_0018BE30, vars + 0x40);
-    t = *(char **)(vars + 0xC);
+    qcopy(vars->aim, &D_0018BE30);
+    vars->aim[2] -= D_L00_001B1008;
+    func_00282CF0(vars->aim, vars->aim, &D_0018BE30);
+    func_002ACEC0(vars->aim, vars->aim, dir, r);
+    func_00282CC0(vars->aim, &D_0018BE30, vars->aim);
+    t = vars->target;
     if (t != 0) {
-        if (*(unsigned char *)(t + 0x20) == 0xFE) {
-            *(char **)(vars + 0xC) = 0;
-        } else if (*(unsigned char *)(t + 0x20) == 0xFD) {
-            *(char **)(vars + 0xC) = 0;
+        if (t->state == 0xFE) {
+            vars->target = 0;
+        } else if (t->state == 0xFD) {
+            vars->target = 0;
         } else {
-            func_00282CF0(v40, t + 0x10, self + 0x10);
+            func_00282CF0(v40, t->pos, self->pos);
             if (func_00282DF0(v40) != 0.0f) {
-                if ((p = func_002AB1F0(*(char **)(vars + 0xC))) != 0) {
-                    func_00282D30(v50, mtx, *(float *)(p + 0x10));
+                char *target = func_002AB1F0(vars->target);
+                if (target != 0) {
+                    func_00282D30(v50, mtx, *(float *)(target + 0x10));
                     func_00282CC0(v40, v40, v50);
                     func_00282DF0(v40);
                 }
             } else {
-                *(char **)(vars + 0xC) = 0;
+                vars->target = 0;
             }
         }
     }
     ang = func_00283C80(func_00283248(*(float *)(D_00189E20.ptr[0x18D0 / 4] + 0x10) - D_00189E20.f[0x80 / 4],
                                       *(float *)(D_00189E20.ptr[0x18D0 / 4] + 0x14) - D_00189E20.f[0x84 / 4]),
                         D_00189E20.f[0x98 / 4]);
-    switch (*(unsigned char *)(self + 0x20)) {
+    switch (self->state) {
     case 0:
+        /* Each arm repeats its whole setup; the compiler cross-jumps the shared tails away. */
         tbl = D_L00_00262570;
         if (tbl[D_00139568.b[9]].b4 != 0) {
-            k = D_00139568.b[0x49];
-            flags = 0x110000;
+            hit.flags = 0x110000;
+            hit.owner = (char *)self;
+            hit.f20 = 1;
+            hit.f1C = tbl[D_00139568.b[0x49]].f70;
+            qcopy(hit.v, vars->dir);
+            func_00282F20(&hit, &hit, 0.2f);
+            hit.b18 = 1;
+            hit.b19 = 1;
+            hit.v[3] = 5627.9248046875f;
+            hit.h1A = self->oClass;
         } else {
-            k = D_00139568.b[9];
-            flags = 0x10000;
+            hit.flags = 0x10000;
+            hit.owner = (char *)self;
+            hit.f20 = 1;
+            hit.f1C = tbl[D_00139568.b[9]].f70;
+            qcopy(hit.v, vars->dir);
+            func_00282F20(&hit, &hit, 0.2f);
+            hit.b18 = 1;
+            hit.b19 = 1;
+            hit.v[3] = 5627.9248046875f;
+            hit.h1A = self->oClass;
         }
-        hit.flags = flags;
-        hit.owner = self;
-        hit.f20 = 1;
-        hit.f1C = tbl[k].f70;
-        qcopy(hit.v, vars + 0x50);
-        func_00282F20(&hit, &hit, 0.2f);
-        hit.b19 = 1;
-        hit.v[3] = 5627.9248046875f;
-        hit.h1A = *(unsigned short *)(self + 0xAA);
-        hit.b18 = 1;
         if (D_L00_001B1000 * 0.01745329424738884f < ang) {
-            if (*(int *)(vars + 0x1C) == 0)
+            if (vars->enabled == 0)
                 { func_0029F338(self); return; }
-            if (func_002761F8(&D_0018BE30, vars + 0x30, 0, D_0018BE30.i[0x280 / 4], &hit) == 0)
+            if (func_002761F8(&D_0018BE30, vars->end, 0, D_0018BE30.i[0x280 / 4], &hit) == 0)
                 { func_0029F338(self); return; }
             if (D_L00_001BF200.i[0x1C / 4] > 0)
                 { func_0029F338(self); return; }
@@ -179,8 +192,12 @@ void func_L00_0040BA30(char *self)
                 func_L00_0040CCA0(&D_L00_001BF200.b[0x20], 0xF, 1);
             else if (*(int *)(D_L00_001BF200.p[0x18 / 4] + 0x98) != 0)
                 func_L00_0040CCA0(&D_L00_001BF200.b[0x20], 0xA, 1);
+            func_002E5DA0(0x15, 0, self, 0);
+            self->state = 1;
+            self->flags |= 0x41;
+            vars->timer = D_L00_001B0FE4;
         } else {
-            if (func_002761F8(&D_0018BE30, vars + 0x30, 0, D_0018BE30.i[0x280 / 4], &hit) == 0)
+            if (func_002761F8(&D_0018BE30, vars->end, 0, D_0018BE30.i[0x280 / 4], &hit) == 0)
                 { func_0029F338(self); return; }
             if (D_L00_001BF200.i[0x1C / 4] > 0)
                 { func_0029F338(self); return; }
@@ -188,41 +205,42 @@ void func_L00_0040BA30(char *self)
                 func_L00_0040CCA0(&D_L00_001BF200.b[0x20], 0xF, 0);
             else if (*(int *)(D_L00_001BF200.p[0x18 / 4] + 0x98) != 0)
                 func_L00_0040CCA0(&D_L00_001BF200.b[0x20], 0xA, 0);
+            func_002E5DA0(0x15, 0, self, 0);
+            self->state = 1;
+            self->flags |= 0x41;
+            vars->timer = D_L00_001B0FE4;
         }
-        func_002E5DA0(0x15, 0, self, 0);
-        *(unsigned char *)(self + 0x20) = 1;
-        *(unsigned short *)(self + 0x34) |= 0x41;
-        *(int *)(vars + 0x10) = D_L00_001B0FE4;
-        func_00282CF0(v40, vars + 0x30, &D_0018BE30);
+        func_00282CF0(v40, vars->end, &D_0018BE30);
         func_00282F20(v40, v40, func_00282DF0(v40) * 0.5f);
         func_00282CC0(v40, &D_0018BE30, v40);
         if (D_L00_001B1000 * 0.01745329424738884f < ang) {
-            if (*(int *)(vars + 0x1C) == 0)
+            if (vars->enabled == 0)
                 goto bounds;
-            *(int *)(vars + 0x18) = func_L00_002FCF18(v40, 10.0f, 0.0f, 1.0f, 0.1f, 0.1f);
+            vars->effect = func_L00_002FCF18(v40, 10.0f, 0.0f, 1.0f, 0.1f, 0.1f);
         } else {
-            *(int *)(vars + 0x18) = func_L00_002FCF18(v40, 10.0f, 0.0f, 0.1f, 1.0f, 0.1f);
+            vars->effect = func_L00_002FCF18(v40, 10.0f, 0.0f, 0.1f, 1.0f, 0.1f);
         }
         break;
     case 1:
-        if (func_00282948(vars + 0x10) != 0) {
-            *(char **)(vars + 0xC) = 0;
-            if (*(int *)(vars + 0x18) != -1)
-                func_00291450(*(int *)(vars + 0x18));
+        if (func_00282948(&vars->timer) != 0) {
+            vars->target = 0;
+            if (vars->effect != -1)
+                func_00291450(vars->effect);
             func_0029F338(self);
             return;
         }
         if (D_L00_001B1000 * 0.01745329424738884f < ang) {
-            if (*(int *)(vars + 0x1C) != 0) {
+            if (vars->enabled != 0) {
                 for (i = 0; i < 10; i++) {
+                    char *p;
                     s1 = func_002A7878(0.0f, 1.0f);
-                    func_00282CF0(v40, vars + 0x30, vars + 0x60);
+                    func_00282CF0(v40, vars->end, vars->left);
                     func_00282F20(v40, v40, s1 * func_00282DF0(v40));
-                    func_00282CC0(v40, vars + 0x60, v40);
+                    func_00282CC0(v40, vars->left, v40);
                     s2 = func_002A7878(0.0f, 1.0f);
-                    func_00282CF0(v50, vars + 0x30, vars + 0x70);
+                    func_00282CF0(v50, vars->end, vars->right);
                     func_00282F20(v50, v50, s2 * func_00282DF0(v50));
-                    func_00282CC0(v50, vars + 0x70, v50);
+                    func_00282CC0(v50, vars->right, v50);
                     n = func_002A77E0(0xFF);
                     s3 = func_002A7878(0.35f, 0.5f);
                     p = func_002C65A0(v40, D_L00_001A8F20, D_L00_001B0FEC, D_L00_001B0FF0, n, 0x30, 0,
@@ -235,14 +253,15 @@ void func_L00_0040BA30(char *self)
                         p[2] = (D_L00_001FE940.p[0x184 / 4])[7];
                 }
                 for (j = 0; j < 20; j++) {
+                    char *p;
                     s4 = func_002A7878(0.0f, 1.0f);
-                    func_00282CF0(v40, vars + 0x30, vars + 0x60);
+                    func_00282CF0(v40, vars->end, vars->left);
                     func_00282F20(v40, v40, s4 * func_00282DF0(v40));
-                    func_00282CC0(v40, vars + 0x60, v40);
+                    func_00282CC0(v40, vars->left, v40);
                     s5 = func_002A7878(0.0f, 1.0f);
-                    func_00282CF0(v50, vars + 0x30, vars + 0x70);
+                    func_00282CF0(v50, vars->end, vars->right);
                     func_00282F20(v50, v50, s5 * func_00282DF0(v50));
-                    func_00282CC0(v50, vars + 0x70, v50);
+                    func_00282CC0(v50, vars->right, v50);
                     n = func_002A77E0(0xFF);
                     s6 = func_002A7878(0.2f, 0.35f);
                     v40[0] += func_002A78D8(0.0f, 0.02f);
@@ -270,15 +289,16 @@ void func_L00_0040BA30(char *self)
                     if (p != 0)
                         p[2] = (D_L00_001FE940.p[0x184 / 4])[6];
                 }
-                if (*(char **)(vars + 0xC) != 0 && D_L00_001B19C8 % 5 == 0) {
+                if (vars->target != 0 && D_L00_001B19C8 % 5 == 0) {
+                    char *p;
                     s7 = func_002A7878(0.0f, 1.0f);
-                    func_00282CF0(v40, vars + 0x30, vars + 0x60);
+                    func_00282CF0(v40, vars->end, vars->left);
                     func_00282F20(v40, v40, s7 * func_00282DF0(v40));
-                    func_00282CC0(v40, vars + 0x60, v40);
+                    func_00282CC0(v40, vars->left, v40);
                     s8 = func_002A7878(0.0f, 1.0f);
-                    func_00282CF0(v50, vars + 0x30, vars + 0x70);
+                    func_00282CF0(v50, vars->end, vars->right);
                     func_00282F20(v50, v50, s8 * func_00282DF0(v50));
-                    func_00282CC0(v50, vars + 0x70, v50);
+                    func_00282CC0(v50, vars->right, v50);
                     p = func_002C65A0(v40, D_L00_001A8F20, 0x1E, 0x202080, 0, 0x40, 0,
                                       2100.0f, 126000.0078125f, 0.0f, 0);
                     if (p != 0)
@@ -291,6 +311,7 @@ void func_L00_0040BA30(char *self)
             }
         } else {
             for (m = 0; m < 10; m++) {
+                char *p;
                 s9 = func_002A7878(0.25f, 0.4f) * 210000.0f;
                 p = func_002C65A0(&D_00189E20.b[0x2010], D_L00_001A8F20, 2, 0x108010, 2, 0x7F, 0x10,
                                   s9, s9, 0.0f, 0);
@@ -303,12 +324,12 @@ void func_L00_0040BA30(char *self)
             }
         }
         func_L00_0040B398(self);
-        func_L00_002E6EF8(func_L00_0040C7D8, self);
+        ref_L00_0040BA30_00(func_L00_0040C7D8, self);
         break;
     }
 bounds:
-    if (*(float *)(self + 0x10) < 2.0f || *(float *)(self + 0x10) > 1021.0f ||
-        *(float *)(self + 0x14) < 2.0f || *(float *)(self + 0x14) > 1021.0f ||
-        *(float *)(self + 0x18) < 2.0f || *(float *)(self + 0x18) > 1021.0f)
+    if (self->pos[0] < 2.0f || self->pos[0] > 1021.0f ||
+        self->pos[1] < 2.0f || self->pos[1] > 1021.0f ||
+        self->pos[2] < 2.0f || self->pos[2] > 1021.0f)
         func_0029F338(self);
 }

@@ -1,7 +1,3 @@
-/* func_L00_00403730 (460 B, 27 places), M31 26 Oct 2026: size matches at the default -G0;
-   8 lines off: the three spawn stores (retail sh 0x32 / sb 0x30 / sb 0x31 with two separate
-   li 0x7F), the sh zero,0x56 vs a1 setup order, and the rate branch length. Weapon entry
-   through a pointer local, D_00139578 read [0]. */
 #include "include_asm.h"
 #include "common.h"
 
@@ -78,6 +74,7 @@ extern Link403730 *func_002AB1F0(void *);
 extern void func_002AB6D8(float *, float *);
 extern void func_L00_00403CB8(void *);
 
+/* Spawns moby 0xE7D at self's position: random scale, orientation copied from self's matrix or randomised, then starts it in state 4. */
 Moby403730 *func_L00_00403730(Moby403730 *self) {
     f32 mtx[16] __attribute__((aligned(16)));
     Moby403730 *m;
@@ -88,21 +85,20 @@ Moby403730 *func_L00_00403730(Moby403730 *self) {
 
     m = func_0029EFD0(0xE7D);
     if (m != 0) {
-        m->f31 = 1;
         m->alpha = 0x7F;
         m->f32 = 0x7F;
+        m->f31 = 1;
         vars = m->vars;
         m->scale = func_002A7878(0.85f, 1.15f);
         qcopy(m->pos, self->pos);
         if (D_001A8FF4[0] != 0 || D_001A8FF0[0] != 0) {
             func_00283658(mtx, self->mtx);
             func_002AB6D8(mtx, m->rot);
-            m->state = 0;
         } else {
             func_00282C88(m->rot);
             m->rot[2] = func_002A7940();
-            m->state = 0;
         }
+        m->state = 0;
         vars->f56 = 0;
         vars->delay = func_002A7820(0x78, 0x12C);
         vars->f70 = 600;
@@ -117,8 +113,8 @@ Moby403730 *func_L00_00403730(Moby403730 *self) {
         if (w->f4 != 0) {
             rate = 4.0f;
         }
-        vars->f60 = -1;
         vars->rate = rate;
+        vars->f60 = -1;
         link = func_002AB1F0(self);
         link->f17 = 0x10;
         if (m->flags & 0x1000) {
