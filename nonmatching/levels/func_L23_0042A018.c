@@ -1,78 +1,21 @@
 /*
- * Updated manual-C near miss, 2026-10-25.
- * Measured unit: src/levels/23_damosel_orbit/L23_0042A018-g8.c
- * Game profile: -O2 -G8 -ffunction-sections
- * Release coverage after copy-dependency correction: US 0/1 (exit1); US2 0/1 (exit1); PAL
- * absent (exit1).
- * Current residual: 1052/1052 bytes. The 144-byte packet and matrix/axis extents are
- * preserved. Only the first three independent stack rows use qcopy_nc; the fourth row uses
- * qcopy because C overwrites w. qzero retains its memory clobber. Matrix/state allocation
- * differs from +0x78; ALPHA scheduling and outer-loop setup remain different.
- * Reopen only for: A true matrix/state lifetime model and measured ALPHA/loop allocation
- * change; do not repeat recorded declaration permutations.
- * Older notes below are historical. Marker and trial-only flags are restored.
+ * GPT-6.1 Sol high, 2026-10-29: USA v1.01, 1052/1052 bytes, 0/1 places.
+ * Standalone L23_0042A018-g8.c, -O2 -G8 -ffunction-sections -g
+ * -frac2-hazard-labels. Other releases were not checked this time.
+ * 19 instruction rows remain: the alpha addition swaps its source registers at
+ * +0x130; color allocation and outer-loop setup differ at +0x22C..+0x274.
+ * qzero_nc fixes the matrix/state lifetime and argument-address regeneration;
+ * the first three independent matrix rows use qcopy_nc, while the fourth uses
+ * qcopy because its W component is overwritten. The grouped first ALPHA pair
+ * fixes the load/shift schedule. -g plus hazard-labels fixes the division guard.
+ * Explicit UV start pointers, 2D pointers and named U/V fields tie. Reversing
+ * alpha addition changes its load/result registers; unsigned addition ties.
+ * MACRO_ADDR on the UV table changes its hoisted base and worsens the loop.
+ * Reopen with new color/loop lifetime evidence; retained packet/matrix extents
+ * are unchanged. This is closer than the historical 25 October draft.
+ * Required declarations follow below; no custom helper or volatile cast.
  */
-
 #include "common.h"
-
-/* func_L23_0042A018 (1052 bytes, level 23 only) -- NEAR MISS, not integrated.
-   Measured on 22 October 2026 with the compiler built from master (qcopy barrier and the
-   annulled-wide-store switch included). This C compiles to 1052 bytes, retail's size; check.py:
-   "instruction at +0x78 differs". It belongs in a unit of its own,
-   src/levels/23_damosel_orbit/L23_0042A018-g8.c, built with `-O2 -G8 -ffunction-sections
-   -frac2-qcopy -frac2-qcopy-barrier -frac2-zero-ti-barrier` ($gp data, hence -G8): 68 rows differ,
-   19 when the registers are ignored.
-   What this attempt fixed (each is retail's code now):
-   - the 64-bit ALPHA word re-reads the stored field, `(s64)vars->alpha << 32`: CSE replaces the
-     load with the stored value but combine then keeps retail's separate `daddu v0,a2,zero`
-     before `dsll32` (with `(s64)x << 32` combine folds the extension into the shift: 4 bytes
-     short); the sum is written `D_147C + (s32)(...)`, which gives retail's a2/a3;
-   - the colour select computes `(vars->alpha << 24) + (rgb & 0xFFFFFF)` in each arm: the alpha
-     load is shared before the branch (retail's `bnez ; lw v0,4(s1)`), each arm keeps its `lui`
-     and cross-jumping merges the identical `ori; sll; and; addu` tails, as in retail;
-   - the uv table is one `float [][2]` table: `[b][1]` is addressed from the constant
-     D_L23_002A6D50+4 (retail's `lui; addiu 0x6D54`) and loop.c hoists the whole address of
-     D_L23_002A6D50 into fp, which fixes the inner loop and its registers (two separate symbols
-     leave fp with the %hi of the second table);
-   - the inner pointers are declared e, uvy, uvx, pos (retail's s0, s4, s3, s2).
-   What differs, and why it is not a source question:
-   - the clear `axis[0] = 0` (retail +0x1CC `addiu v0,sp,0xD0; sq $zero,0(v0)`): the zero store is
-     not a qcopy pattern, CSE folds the stack offset into the `sq` (the address-cost tie), and
-     rac2_fold_zero_ti_store only folds a register address, so this cc1 gives `por v0; sq
-     v0,0xD0(sp)`. Retail has 57 such `addiu rX,sp,N ; sq $zero,0(rX)` pairs and no C in src/
-     reproduces one;
-   - retail's copies and clear have the shape of volatile-asm macros (docs/COMPILER-NOTES.md), and
-     CSE flushes its table at a volatile asm: retail re-forms `addiu a1,sp,0x90` for func_00283738's arguments, while here
-     CSE reuses the first qcopy's address register across the call, which takes s1 and shifts vars
-     to s2 (the +0x78 difference) and every later callee-saved register. -frac2-qcopy-barrier
-     models the scheduling side of the macro only;
-   - in a SCRATCH copy only, with the clear written as `__asm__ __volatile__("sq $0,0(%0)" ::
-     "r"(axis))`, the copies, the clear, the call arguments and the callee-saved registers are
-     retail's (35 rows, 20 without registers). Those rows are the ALPHA word's schedule
-     (retail loads D_1BB0, D_1BAC, D_1BB4 then D_1BB8; here D_1BB4 comes second, and the sum
-     prints `addu a2,a2,a3` where retail has `addu a2,a3,a2`) and the outer
-     loop set-up: the colour lands in v1 instead of v0, so sched2 interleaves the four colour
-     stores with the set-up; the hoisted uv start pointers spill to 0x110/0x114 in the other order
-     (gcse's PRE creates uvx's start register, sp+0x50, first in every source order measured);
-     `i` is in a0 instead of v1.
-   What would unblock it: a qcopy-like opt-in pattern for 16-byte zero stores (register address,
-   zero displacement), and a CSE flush at the grouped copy and the clear.
-   Measured without effect today: the 24 orders of the four inner-loop declarations (only the
-   register rotation moves), do/while and while outer loops, `!=`/`<=` tests, the ALPHA word as one
-   expression or with `unsigned long` casts, `x` kept as a variable or as an s64, the colour
-   select as a ternary, with the mask outside the arms or with `0xFFFFFF & rgb`. */
-
-
-
-
-
-
-
-
-
-
-
-
 
 typedef int TI16 __attribute__((mode(TI)));
 
@@ -204,8 +147,7 @@ void func_L23_0042A018(u8 *moby) {
         vars->turn = func_00283B98(vars->turn, (float)D_L23_001B1480 * 0.00029088825f);
         f = func_00283198((float)(*(u16 *)(moby + 0x96) % D_L23_001B1474) * (1.0f / (float)D_L23_001B1474) * 3.1415927f);
         vars->alpha = D_L23_001B147C + (s32)(f * D_L23_001B1478);
-        reg = D_L23_001B1BAC;
-        reg |= (s64)D_L23_001B1BB0 << 2;
+        reg = D_L23_001B1BAC | ((s64)D_L23_001B1BB0 << 2);
         reg |= (s64)D_L23_001B1BB4 << 4;
         reg |= (s64)D_L23_001B1BB8 << 6;
         reg |= (s64)vars->alpha << 32;
@@ -223,7 +165,7 @@ void func_L23_0042A018(u8 *moby) {
         qcopy_nc(&m[2], hero + 0xE0);
         qcopy(&m[3], hero + 0x10);
         ((float *)&m[3])[3] = 1.0f;
-        qzero(axis);
+        qzero_nc(axis);
         ((float *)axis)[2] = vars->turn;
         func_002833F0(rot, axis);
         func_00283738(m, m, rot);
