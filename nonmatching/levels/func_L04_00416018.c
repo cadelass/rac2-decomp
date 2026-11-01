@@ -1,16 +1,19 @@
-/* Manual C near miss retained on 2026-10-24; no exact-C credit.
- * Measured unit: src/levels/shared/L04_00416018-g8.c
- * Game compiler profile: -O2 -G8 -ffunction-sections -mno-split-addresses
- * Compiled/US retail bytes: 892/884.
- * Actual release checks: US: 0/2 (exit 1); US2: 0/2 (exit 1); PAL: catalogue absent (exit 1).
- * Residual: 0xa0 frame agrees but six saved FPRs replace five. Record addressing, point/age cursors, FP allocation and callback schedule differ.
- * Reopen only for: A concrete cursor/live-range model eliminating the extra saved FPR without artificial dependencies.
- * The ASM marker and trial-only flags were restored after measurement.
+/* GPT-6.1 Sol (high), USA v1.01, 2026-10-29: retained near miss.
+ * tools/check.py: 884/884 bytes, 0 of 2 places match; first mismatch +0x74.
+ * Profile: -O2 -G8 -ffunction-sections -mno-split-addresses.
+ * The 0xA0 frame and five saved FPRs agree. Relative to the previous draft,
+ * an inner-loop widthStep initializer recovers retail's 0.0009/gravity constant
+ * order, and indexed points remove the premature cursor setup. Canonical
+ * catalogue callee names are retained; declarations are included below.
+ * Remaining: the floor-global base folds into an absolute lwc1 instead of
+ * lui/addiu plus lwc1 +0x318; loop preheader/pointer-increment scheduling,
+ * growth-condition branches, and callback argument setup also differ.
+ * Plain/typed global views, sda/nosda, and a context local did not fix the
+ * folded floor access or callback schedule. Explicit age/velocity cursors
+ * grew this to 892 bytes. Reopen with a real address/lifetime hypothesis.
  */
-
+#include "common.h"
 /* Eight-sample trail records; the retail loop visits 140 entries of stride 0x150. */
-typedef unsigned int u32;
-typedef unsigned int Quad416018 __attribute__((mode(TI)));
 typedef struct Trail416018 {
     float points[8][4];
     float velocities[8][4];
@@ -25,8 +28,8 @@ typedef struct Trail416018 {
 } Trail416018;
 extern Trail416018 D_L04_00254E10[];
 extern unsigned char D_00189E20[];
-extern int D_L04_001B08F0;
-extern void *D_L04_001B0914;
+extern int D_L04_001B08F0 __attribute__((sda));
+extern void *D_L04_001B0914 __attribute__((sda));
 extern void func_00282CC0(float *, float *, float *);
 extern void func_00282D30(float *, float *, float);
 extern void func_00283098(float *, float *, char *);
@@ -41,6 +44,7 @@ void func_L04_00416018(void)
     float floorZ, scale;
     Trail416018 *trail;
     float *point, *velocity;
+    float gravity;
     short *age;
     int i, j, count, last;
     char *owner;
@@ -54,14 +58,16 @@ void func_L04_00416018(void)
             floorZ = *(float *)(D_00189E20 + 0x318) + 0.1f;
         else
             floorZ = *(float *)(owner + 0x18) - 0.25f;
-        last = count - 1;
-        point = trail->points[0];
-        velocity = trail->velocities[0];
-        age = trail->ages;
         for (j = 0; j < count; j++) {
+            float widthStep = 0.0009f;
+            gravity = 0.0019444445f;
+            point = trail->points[j];
+            velocity = trail->velocities[j];
+            age = &trail->ages[j];
             if ((*age)++ > 10)
-                velocity[2] -= 0.0019444445f;
-            scale = 1.0f - (*age - 5) * 0.01f;
+                ((float *)((char *)point + 0x80))[2] -= gravity;
+            scale = 1.0f;
+            scale -= (*age - 5) * 0.01f;
             func_00282CC0(point, point, velocity);
             func_00282D30(local, trail->impulse, scale);
             func_00282CC0(point, point, local);
@@ -69,11 +75,9 @@ void func_L04_00416018(void)
                 point[2] = floorZ;
                 trail->landed[j] = 1;
             }
-            point[3] = trail->ages[0] * 0.0009f + 0.01f + *age * 0.0009f;
-            point += 4;
-            velocity += 4;
-            age++;
+            point[3] = trail->ages[0] * widthStep + 0.01f + *age * widthStep;
         }
+        last = count - 1;
         if (count < 8 &&
             ((*(short *)(trail->owner + 0xaa) == 0xbbc && D_L04_001B08F0) ||
              (*(short *)(trail->owner + 0xaa) == 0xb2d &&
@@ -84,7 +88,7 @@ void func_L04_00416018(void)
             func_00283098(local, trail->origin, trail->owner + 0xc0);
             func_00282CC0(point, trail->offset, local);
             func_00282CC0(point, point, trail->impulse);
-            *(Quad416018 *)trail->velocities[count] = *(Quad416018 *)local;
+            qcopy(trail->velocities[count], local);
             point[3] = 0.005f;
             trail->ages[count] = 0;
             trail->count++;
