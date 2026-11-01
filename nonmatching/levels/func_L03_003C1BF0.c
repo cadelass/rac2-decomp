@@ -1,3 +1,41 @@
+/* GPT-6.1 Sol high, task v1626 (2026-10-29): retained improved near miss.
+ * Current toolchain, -O2 -G8 -ffunction-sections -frac2-hazard-labels:
+ * 5680/5680 bytes; check.py: 0 of 2 USA v1.01 places match (L03/L14),
+ * first difference +0x1358. Eight instruction positions differ, excluding
+ * relocation address immediates; this is not a linked match.
+ *
+ * Improvements over the historical drafts below:
+ * - MotionInit's measured fields at +0x134/+0x144, with acceleration assigned
+ *   first, reproduce both initial FPR choices AND retail's load/store order.
+ * - State 22 uses qzero_nc for both independent, aligned local vectors. The
+ *   second bare clear invalidates CSE's address value, so the second vector's
+ *   address is rebuilt after its clear, as in retail. No surrounding accesses
+ *   depend on either cleared local's old contents.
+ * - A scoped pointer to other, initialized AFTER other.f[2] = height, keeps
+ *   &other in s6; inline object+0xC0 expressions spill the matrix pointer to
+ *   sp+0x30 and the rotation pointer to sp+0x34, matching retail allocation.
+ * - Reversing the two final zero assignments reproduces their retail schedule.
+ *
+ * Remaining state-22 differences:
+ * +0x1358..+0x1364: cc1 emits li.s 0.8 before li v0,0x940; retail reverses
+ * those independent constant preparations.
+ * +0x139C..+0x13A8: cc1 emits matrix-address add, other.z store, spill store,
+ * point argument; retail emits other.z store, matrix add, point argument, spill.
+ * Everything else aligns in check.py's side-by-side disassembly apart from
+ * unresolved address immediates. Relocation consistency and linked placement
+ * remain unqualified because the text differs. PAL/US2 and linking not run.
+ *
+ * New negative measurements: inline matrix alone was 5668 bytes; an explicit
+ * vector pointer introduced before its clear disturbed position allocation.
+ * Initializing that pointer before the class switch uses s7 instead of s6.
+ * Per-arm height initialization changes switch flow; loading the class into a
+ * local, a measured class struct field, and named vector component fields each
+ * tie this retained version. Stopped after 11 source candidates at this tie;
+ * reopen with a new scheduling hypothesis, not equivalent type spellings.
+ * All required declarations are included below. Older notes are dated history
+ * and their residual-difference descriptions are superseded by this block.
+ */
+#define MACRO_ADDR __attribute__((section(".sdata")))
 /* Finisher F1 (2026-10-26, base f5fab978 with qzero_nc): 1391 of 1420 instructions aligned with
  * registers (was 1363 on this head). What moved it:
  *  - qzero_nc(&point) in state 22 (qzero(&other) keeps the clobber);
@@ -52,6 +90,10 @@
  * object+0x10 kept in $fp, object+0xC0 / object+0xF0 spilled to sp+0x30/0x34, -1 and 0xF2D hoisted into s5/s7 for the member loop.
  */
 #include "common.h"
+typedef struct {
+    u8 reserved00[0x134]; float acceleration;
+    u8 reserved138[12]; float max_speed;
+} MotionInit;
 typedef int Quad __attribute__((mode(TI)));
 typedef union { Quad q; float f[4]; } MotionVector;
 typedef struct {
@@ -146,7 +188,8 @@ void func_L03_003C1BF0(u8 *object)
         if (func_002B3890(object)) {
             func_002B60B0(object, D_L03_001AFEF0 * 0.00027777778f, D_L03_001AFEF4 * 0.016666668f,
                           0.0034906589426100254f, 0.10471977293491364f);
-            SF(0x144) = D_L03_001AFEE0; SF(0x134) = 0.0016666667f;
+            ((MotionInit *)state)->acceleration = 0.0016666667f;
+            ((MotionInit *)state)->max_speed = D_L03_001AFEE0;
         }
         break;
     case 2:
@@ -432,9 +475,10 @@ void func_L03_003C1BF0(u8 *object)
             if (object[0x60] & 2) func_002A7750(object, 6, 1);
             else if (func_002AEB60((char *)object, 20.0f)) func_L00_003294F0(SP(0x358), 1);
             break;
-        case 22:
+        case 22: {
+            MotionVector *offset;
             func_00282CC0(object + 0x10, object + 0x10, state + 0x1B0);
-            qzero_nc(&point); qzero(&other);
+            qzero_nc(&point); qzero_nc(&other);
             height = 0.8f;
             switch (*(s16 *)(object + 0xAA)) {
             case 0x964:
@@ -448,8 +492,8 @@ void func_L03_003C1BF0(u8 *object)
                 break;
             }
             other.f[2] = height;
-            mtx = object + 0xC0;
-            func_00283098(&point, &point, mtx);
+            offset = &other;
+            func_00283098(&point, &point, object + 0xC0);
             if (SF(0x1B8) < 0.0f) {
                 SF(0x1B8) -= SF(0x398);
                 if (OF(0xF4) > 0.0f) func_002AA548(object + 0xF4, state + 0x39C, 0, 0.006981317885220051f, 0.006981317885220051f, 0.41887909173965454f);
@@ -469,17 +513,18 @@ void func_L03_003C1BF0(u8 *object)
             } else {
                 SF(0x1B8) -= SF(0x394); OF(0xF4) = func_00283BE0(OF(0xF4), 0.41887909173965454f);
             }
-            func_002833F0(mtx, object + 0xF0);
-            func_00283098(&other, &other, mtx);
-            func_00282CF0(&delta, &point, &other);
+            func_002833F0(object + 0xC0, object + 0xF0);
+            func_00283098(offset, offset, object + 0xC0);
+            func_00282CF0(&delta, &point, offset);
             func_00282CC0(object + 0x10, object + 0x10, &delta);
             break;
+        }
         }
     }
     code = object[0x20];
     if (code != 22 && code != 1 && code != 15 && code != 16 && (SF(0x1A0) < OF(0x18) - 0.05f || SP(0x198))) {
         float zero = 0.0f;
-        OF(0xF4) = zero; OF(0xF0) = zero; func_002B5258((char *)object);
+        OF(0xF0) = zero; OF(0xF4) = zero; func_002B5258((char *)object);
     }
     func_L03_003C4468(object);
     func_002A677C(object);

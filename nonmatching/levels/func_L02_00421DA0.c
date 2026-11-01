@@ -1,3 +1,21 @@
+/* GPT-6.1 Sol high, 29 October 2026: pinned upstream toolchain,
+ * -O2 -G8 -ffunction-sections; 1232/1232 bytes, 0/2 USA v1.01 places (02, 11).
+ * The retained typed integer/FP interleaving preserves the factory's physical
+ * seven-GPR/three-FP interface and fixes all four first-submission f13 moves
+ * and call delay slots. The earlier if (!sign) sign-- improvement is retained.
+ * Remaining: prologue save scheduling and base/axis/inner GPR allocation.
+ * Allocator evidence: the inferred base-address pseudo has 3 refs across 488
+ * instructions, versus the axis address's 3 across 227; the axis wins a saved
+ * register and the base is rematerialized. Retail preserves base in fp and
+ * rematerializes axis. Float arrays and a containing vector struct tie the
+ * original allocation. An explicit base pointer, even with the scalar store
+ * kept direct, preserves both addresses and spills inner (0xE0 frame, 1236 B).
+ * An adjacent basis struct does not remove that spill. No linked check run.
+ * Next useful evidence: a real base-pointer use/lifetime that changes this
+ * priority without adding the axis pointer or spilling the input flag.
+ * All declarations needed are below. Historical notes follow.
+ */
+
 /*
  * Retained complete manual C reconstruction; not linked or counted.
  * Profile: -O2 -G8 -ffunction-sections
@@ -32,7 +50,7 @@ extern void func_00282F20(void *,void *,float);
 extern float func_002A78D8(float,float);
 extern int func_001163B0(void);
 extern void func_00282D30(void *,void *,float);
-extern u8 *func_002C2210(void *,int,u32,int,int,void *,int,float,float,float);
+extern u8 *func_002C2210(void *,int,u32,float,float,int,int,void *,int,float);
 extern int func_00283CF0(float);
 extern void func_00282CC0(void *,void *,void *);
 
@@ -52,7 +70,7 @@ void func_L02_00421DA0(void *origin,int count,int inner)
         u8 *particle;
         size=func_002A7878(D_L02_001B1FBC,D_L02_001B1FC0);
         sign=func_002A77E0(2);
-        sign=sign?sign:sign-1;
+        if (!sign) sign--;
         func_002ACEC0(&velocity,&base,&axis,func_002A7878(-1.0471977f,1.0471977f));
         speed=func_002A7878(D_L02_001B1FA8,D_L02_001B1FAC)*0.016666668f;
         func_00282F20(&velocity,&velocity,speed);
@@ -65,30 +83,30 @@ void func_L02_00421DA0(void *origin,int count,int inner)
         if(!inner) {
             if(!(func_001163B0()&1)) {
                 func_00282D30(&velocity,&velocity,1.5f);
-                particle=func_002C2210(&position,60,D_L02_001B1FC8,0,sign,&velocity,0,size*0.35f,size,D_L02_001B1FB8);
+                particle=func_002C2210(&position,60,D_L02_001B1FC8,size*0.35f,size,0,sign,&velocity,0,D_L02_001B1FB8);
                 if(particle) particle[9]=(u8)(func_00283CF0(4.0f)+0x70);
-                particle=func_002C2210(&position,60,D_L02_001B1FCC,1,-sign,&velocity,0,size*0.245f,size*0.7f,D_L02_001B1FB8);
+                particle=func_002C2210(&position,60,D_L02_001B1FCC,size*0.245f,size*0.7f,1,-sign,&velocity,0,D_L02_001B1FB8);
             } else {
                 func_00282CF0(&toward,D_L02_001BA3C0.position,&position);
                 func_00282F20(&toward,&toward,speed);
                 func_00282CC0(&velocity,&velocity,&toward);
-                particle=func_002C2210(&position,40,D_L02_001B1FC8,0,sign,&velocity,0,size*2.05f,size,D_L02_001B1FB8);
+                particle=func_002C2210(&position,40,D_L02_001B1FC8,size*2.05f,size,0,sign,&velocity,0,D_L02_001B1FB8);
                 if(particle) particle[9]=(u8)(func_00283CF0(4.0f)+0x70);
-                particle=func_002C2210(&position,40,D_L02_001B1FCC,1,-sign,&velocity,0,size*1.4350001f,size*0.7f,D_L02_001B1FB8);
+                particle=func_002C2210(&position,40,D_L02_001B1FCC,size*1.4350001f,size*0.7f,1,-sign,&velocity,0,D_L02_001B1FB8);
             }
         } else {
             if(!(func_001163B0()&1)) {
                 func_00282D30(&velocity,&velocity,1.5f);
-                particle=func_002C2210(&position,60,D_L02_001B1FC8,0,sign,&velocity,0,size*0.3f,size,D_L02_001B1FB8);
+                particle=func_002C2210(&position,60,D_L02_001B1FC8,size*0.3f,size,0,sign,&velocity,0,D_L02_001B1FB8);
                 if(particle) particle[9]=(u8)(func_00283CF0(4.0f)+0x70);
-                particle=func_002C2210(&position,60,D_L02_001B1FCC,1,-sign,&velocity,0,size*0.21000001f,size*0.7f,D_L02_001B1FB8);
+                particle=func_002C2210(&position,60,D_L02_001B1FCC,size*0.21000001f,size*0.7f,1,-sign,&velocity,0,D_L02_001B1FB8);
             } else {
                 func_00282CF0(&toward,D_L02_001BA3C0.position,&position);
                 func_00282F20(&toward,&toward,speed);
                 func_00282CC0(&velocity,&velocity,&toward);
-                particle=func_002C2210(&position,40,D_L02_001B1FC8,0,sign,&velocity,0,size*0.25f,size,D_L02_001B1FB8);
+                particle=func_002C2210(&position,40,D_L02_001B1FC8,size*0.25f,size,0,sign,&velocity,0,D_L02_001B1FB8);
                 if(particle) particle[9]=(u8)(func_00283CF0(4.0f)+0x70);
-                particle=func_002C2210(&position,40,D_L02_001B1FCC,1,-sign,&velocity,0,size*0.175f,size*0.7f,D_L02_001B1FB8);
+                particle=func_002C2210(&position,40,D_L02_001B1FCC,size*0.175f,size*0.7f,1,-sign,&velocity,0,D_L02_001B1FB8);
             }
         }
         if(particle) particle[9]=(u8)(func_00283CF0(4.0f)+0x70);
