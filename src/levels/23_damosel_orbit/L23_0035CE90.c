@@ -161,9 +161,9 @@ finish:
 INCLUDE_ASM("asm/levels", func_L23_00399C10);
 
 
-INCLUDE_ASM("asm/levels", func_L23_003BDA20);
+/* func_L23_003BDA20 is defined in L23_003BDA20-g8.c ($gp, -ffast-math). */
 
-INCLUDE_ASM("asm/levels", func_L23_003BEA00);
+/* func_L23_003BEA00 is defined in L23_003BEA00-g8.c ($gp). */
 
 /* func_L23_003BF9B0 is defined in L23_003BF9B0-g8.c ($gp, and -g for its division padding). */
 
@@ -218,9 +218,9 @@ void func_L23_003C0028(char *arg0) {
 
 /* func_L23_003C01F8 is matched in L23_003C01F8.c (built with -frac2-qcopy -frac2-qcopy-barrier). */
 
-INCLUDE_ASM("asm/levels", func_L23_003C02C8);
+/* func_L23_003C02C8 is defined in L23_003C02C8-g8.c ($gp). */
 
-INCLUDE_ASM("asm/levels", func_L23_003C0A60);
+/* func_L23_003C0A60 is defined in L23_003C0A60-g8.c ($gp). */
 
 /* picks the nearest entry of the objects the index table names, and stores its index */
 void func_L23_003C0C78(char *arg0, int arg1) {

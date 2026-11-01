@@ -54,7 +54,7 @@ char *func_L23_00422540(char *pos, char *dir, float *damage) {
 
 /* func_L23_004234C0 is defined in L23_0041E418-g8.c (this unit has no $gp access for it). */
 
-INCLUDE_ASM("asm/levels", func_L23_004236B8);
+/* func_L23_004236B8 is matched in L23_004236B8-g8.c (built with -ffast-math). */
 
 /* func_L23_00425568 is matched in L23_00425568.c (built with -frac2-qcopy). */
 
@@ -145,7 +145,7 @@ void func_L23_004278B0(u8 *arg0) {
 
 /* func_L23_00428CF8 is matched in L23_00428CF8-g8.c (built with -frac2-qcopy -frac2-qcopy-barrier -frac2-no-annulled-wide-stores). */
 
-INCLUDE_ASM("asm/levels", func_L23_00429098);
+/* func_L23_00429098 is defined in L23_00429098-g8.c. */
 
 /* func_L23_00429430 is defined in its dedicated source unit. */
 
@@ -166,7 +166,7 @@ INCLUDE_ASM("asm/levels", func_L23_0042A018);
 
 INCLUDE_ASM("asm/levels", func_L23_0042A438);
 
-INCLUDE_ASM("asm/levels", func_L23_0042A8C0);
+/* func_L23_0042A8C0 is defined in L23_0042A8C0-g8.c. */
 
 /* Defined in L23_0042AD10.c. */
 
@@ -180,7 +180,7 @@ void func_L23_0042AD90(u8 *arg0) {
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L23_0042ADB0);
+/* func_L23_0042ADB0 is defined in L23_0042ADB0-g8.c. */
 
 extern void func_L00_004287E8(void);
 

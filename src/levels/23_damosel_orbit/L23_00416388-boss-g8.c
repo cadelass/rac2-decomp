@@ -1,18 +1,15 @@
-/* Retained complete C reconstruction; not linked or counted.
- * Profile: -O2 -G8 -ffunction-sections.
- * Compiled 5172 bytes; retail 5228 bytes.
- * us: 0/1 placements match (exit 1).
- * us2: canonical name absent; no match credit.
- * pal: canonical name absent; no match credit.
- * Remaining: All 21 state arms, shared cleanup and 161 static call sites are preserved, with the
- * correct 0x1A0 frame. Actual helper captures retain full player/position vectors and aligned
- * 64-byte transforms/joint outputs. The current int-return forwarding wrapper is preserved; the
- * historical void note is superseded. GPR/FPR allocation, store/address scheduling and branch
- * sharing still differ.
- * Reopen: Independent original state/local lifetime evidence or a qualified compiler
- * explanation; do not repeat the earlier ten CFG/cleanup/flag trials.
+/* Level 23 boss state update: a 21-way state switch, shared cleanup and the
+ * attached-object tables. "Boss" is inferred from its behaviour. It reads $gp
+ * data (hence -G8) and has its own jump table and constants, so it lives in a
+ * unit of its own.
+ * NOTE REVIEW: four initial values at declarations are dead stores that flow
+ * removes: jointPosition, enemy, mode and wasActive, all locals the function
+ * really uses. All four are needed: with three or none, only the PRE spill
+ * slots at 0x118-0x130 differ. They raise gcse's insn count, which sets the
+ * PRE hash-table size and so the order of the reaching registers taking those
+ * slots. No statement retail really has was identified to do this instead,
+ * and no substitute wording was compiled.
  */
-
 #include "common.h"
 
 typedef int Quad __attribute__((mode(TI)));
@@ -23,28 +20,35 @@ typedef struct {
 typedef struct LvlSlotNode { char prefix[0x1c]; struct LvlSlotNode *next; } LvlSlotNode;
 typedef struct LvlSlotCtx { char prefix[0x50]; LvlSlotNode *head; } LvlSlotCtx;
 extern unsigned char D_00189E20[];
+extern char D_00189EA0[];
 /* A partial resident view; the external byte array keeps its unknown full extent. */
 typedef struct {
     u8 prefix[0x80];
     float position[4];
-    u8 middle[0x2200];
+    u8 middle0[0x150];
+    short state1e0;
+    u8 middle1[0x168e];
+    struct LvlSlotNode *slotList;
+    u8 middle2[8];
+    int slotCount;
+    u8 middle3[0xa10];
     char *player;
+    int field2294;
 } ResidentHeroView;
-extern void *D_L23_002AB4C0[];
 extern u8 *D_L23_00259560[];
-extern float D_L23_001B36A0 NOT_SDA;
-extern float D_L23_001B36A4 NOT_SDA;
-extern int D_L23_001B36AC NOT_SDA;
-extern int D_L23_001B3710 NOT_SDA;
-extern int D_L23_001B3714 NOT_SDA;
-extern int D_L23_001B3718 NOT_SDA;
-extern float D_L23_001B36C0[4] NOT_SDA;
-extern float D_L23_001B36D0[4] NOT_SDA;
-extern float D_L23_001B3760[4] NOT_SDA;
-extern float D_L23_001B3770[4] NOT_SDA;
-extern float D_L23_001B3860[4] NOT_SDA;
-extern float D_L23_001B3880[4] NOT_SDA;
-extern float D_L23_001BA640[4] NOT_SDA;
+extern float D_L23_001B36A0[] __attribute__((sda));
+extern float D_L23_001B36A4[] __attribute__((sda));
+extern int D_L23_001B36AC[] __attribute__((sda));
+extern int D_L23_001B3710[] __attribute__((sda));
+extern int D_L23_001B3714[] __attribute__((sda));
+extern int D_L23_001B3718[] __attribute__((sda));
+extern float D_L23_001B36C0[4] __attribute__((sda));
+extern float D_L23_001B36D0[4] __attribute__((sda));
+extern float D_L23_001B3760[4] __attribute__((sda));
+extern float D_L23_001B3770[4] __attribute__((sda));
+extern float D_L23_001B3860[4] __attribute__((sda));
+extern float D_L23_001B3880[4] __attribute__((sda));
+extern float D_L23_001BA640[];
 extern Quad D_L23_001BA870[] NOT_SDA;
 extern Quad D_L23_001C87C0 NOT_SDA;
 extern Quad D_L23_001C87D0 NOT_SDA;
@@ -86,7 +90,7 @@ extern int D_L23_001B164C __attribute__((sda));
 extern float D_L23_001B168C __attribute__((sda));
 extern int D_L23_001B1694 __attribute__((sda));
 extern float D_L23_001B36FC __attribute__((sda));
-extern int D_L23_001B3758 __attribute__((sda));
+extern int D_L23_001B3758[] __attribute__((sda));
 extern int D_L23_001B3780 __attribute__((sda));
 
 extern int func_00282948(char *);
@@ -107,7 +111,7 @@ extern int func_002B3868(u8 *);
 extern void func_002AB6D8(float *, float *);
 extern int func_002E5CF8(int, int, char *);
 extern void func_002E59F8(int);
-extern unsigned long func_002B1C20(void *, DispatchContext *);
+extern int func_002B1C20(void *, DispatchContext *);
 extern void func_L00_002AF7D0(void);
 extern void func_L00_00310C88(LvlSlotCtx *, LvlSlotNode **);
 extern void func_L08_004356A0(u8 *, void *);
@@ -154,12 +158,18 @@ extern int func_L22_002C9898(int, int);
 extern char *func_L22_003F85A0(char *, char *);
 extern void func_00283898(char *, int, float);
 
-/* Measured accesses to the boss's private state, not a claim about its complete type. */
-#define S32(o) (*(int *)(state + (o)))
-#define SF(o) (*(float *)(state + (o)))
-#define SB(o) (*(u8 *)(state + (o)))
-#define SP(o) (*(char **)(state + (o)))
-#define SQ(o) (*(Quad *)(state + (o)))
+/* Measured accesses to the boss's private state, not a claim about its complete type:
+   each one is a member of the state structure. */
+typedef struct { int value; } StateInt;
+typedef struct { float value; } StateFloat;
+typedef struct { u8 value; } StateByte;
+typedef struct { char *value; } StatePointer;
+/* The five attached objects listed at state + 0x358. */
+typedef struct { char *entry[5]; } LinkTable;
+#define S32(o) (((StateInt *)(state + (o)))->value)
+#define SF(o) (((StateFloat *)(state + (o)))->value)
+#define SB(o) (((StateByte *)(state + (o)))->value)
+#define SP(o) (((StatePointer *)(state + (o)))->value)
 #define FLAGS(p) (*(unsigned short *)((p) + 0x34))
 #define AGE (*(unsigned short *)(object + 0x96))
 #define HERO ((ResidentHeroView *)D_00189E20)
@@ -168,34 +178,23 @@ extern void func_00283898(char *, int, float);
 
 void func_L23_00416388(u8 *object)
 {
-    static void *cases[21] = {&&state_default, &&state1, &&state2, &&state3, &&state4,
-        &&state5, &&state6, &&state7, &&state8, &&state9, &&state10, &&state11,
-        &&state12, &&state13, &&state14, &&state15, &&state16, &&state_default,
-        &&state_default, &&state19, &&state20};
     char direction[16] __attribute__((aligned(16)));
     float jointMatrix[16] __attribute__((aligned(16)));
     char jointOffset[16] __attribute__((aligned(16)));
     char blendedPosition[16] __attribute__((aligned(16)));
     char localPosition[16] __attribute__((aligned(16)));
-    char transform[64] __attribute__((aligned(16)));
-    char angles[16] __attribute__((aligned(16)));
-    char secondPosition[16] __attribute__((aligned(16)));
-    char thirdPosition[16] __attribute__((aligned(16)));
-    char extraPosition[16] __attribute__((aligned(16)));
     char *state = *(char **)(object + 0x68);
-    char *position;
-    char *jointPosition;
-    char *enemy;
-    int i;
+    char *jointPosition = 0;
+    char *enemy = 0;
     float height, distance;
-    unsigned int mode;
-    int wasActive;
+    unsigned int mode = 0;
+    int wasActive = 0;
 
     func_L23_004177F8(object);
     if (D_L23_001B1424 > 200)
         return;
     D_L23_001B1410 = 0.0f;
-    func_00282948((char *)&D_L23_001B3714);
+    func_00282948((char *)D_L23_001B3714);
     wasActive = S32(0x604);
     D_L23_001B13EC = wasActive != 0;
     if (!wasActive && S32(0x60c) != -1)
@@ -211,19 +210,18 @@ void func_L23_00416388(u8 *object)
     func_00282D30((char *)D_L23_001B36D0, PLAYER + 0xe0, D_L23_001B148C);
     func_00282CC0((char *)D_L23_001B36D0, (char *)D_L23_001B36D0, PLAYER_POS);
     qcopy(state+(0x3f0),PLAYER_POS);
-    position = (char *)object + 0x10;
     func_L23_00418650(state + 0x3f0, 0.0f);
-    qcopy(state+(0x3e0),position);
+    qcopy(state+(0x3e0),object + 0x10);
     func_L23_00418650(state + 0x3e0, 0.0f);
     {
-        float playerHeight = func_002B0360(PLAYER_POS) - D_L23_001B36A4;
+        float playerHeight = func_002B0360(PLAYER_POS) - D_L23_001B36A4[0];
         SF(0x5c0) = playerHeight;
-        D_L23_001B3710 = SF(0x588) < playerHeight;
+        D_L23_001B3710[0] = SF(0x588) < playerHeight;
     }
     func_00282CF0(direction, state + 0x3f0, state + 0x3e0);
     SF(0x5b8) = func_00282DF0(direction);
     func_L23_004183F0((char *)object);
-    SF(0x5bc) = func_00282E48(position, PLAYER_POS);
+    SF(0x5bc) = func_00282E48(((char *)object + 0x10), PLAYER_POS);
     func_0029FCC0((char *)object, 0x2a, jointOffset);
     func_0029FC20((char *)object, 0x27, (char *)jointMatrix);
     func_00282D30((char *)D_L23_001B3860, (char *)jointMatrix, D_L23_001B1600);
@@ -235,9 +233,7 @@ void func_L23_00416388(u8 *object)
     SB(0x404) = 0;
     if (SF(0x5bc) < D_L23_001B1634)
         SB(0x404) = !func_002761F8(D_L23_001B3880, D_L23_001B36C0, 0x10, PLAYER, 0);
-    if (D_L23_001B1648 / 2 < D_L23_001B36AC) {
-        SB(0x405) = 0;
-    } else {
+    if (!(D_L23_001B1648 / 2 < D_L23_001B36AC[0])) {
         func_00282948((char *)&D_L23_001B142C);
         if (object[0x20] == 7 &&
             (!SB(0x404) || !object[0x31] || D_L23_001B14E0 + 40.0f < SF(0x5bc)) &&
@@ -246,52 +242,77 @@ void func_L23_00416388(u8 *object)
             func_002A7750(D_L23_00259560[D_L23_001B164C], 6, 0);
             D_L23_001B164C = (D_L23_001B164C + 1) % 25;
         }
-        SB(0x405) = 0;
     }
+    SB(0x405) = 0;
     mode = object[0x20];
     if (mode != 4 && (SF(0x5bc) < D_L23_001B1634 || mode == 16) &&
-        (D_L23_001B168C <= SF(0x5b8) || SF(0x5c0) <= SF(0x588)))
-        SB(0x405) = func_L02_00332630((char *)object, PLAYER_POS);
+        (SF(0x5b8) >= D_L23_001B168C || SF(0x5c0) <= SF(0x588)))
+        SB(0x405) = func_L02_00332630((char *)object, D_00189EA0);
     mode = object[0x20];
-    if (mode < 21)
-        goto *D_L23_002AB4C0[mode];
-    goto state_default;
+    switch (mode) {
+    case 0: goto state_default;
+    case 4: goto state4;
+    case 2: goto state2;
+    case 3: goto state3;
+    case 1: goto state1;
+    case 7: goto state7;
+    case 8: goto state8;
+    case 9: goto state9;
+    case 10: goto state10;
+    case 11: goto state11;
+    case 13: goto state13;
+    case 14: goto state14;
+    case 15: goto state15;
+    case 12: goto state12;
+    case 19: goto state19;
+    case 5: goto state5;
+    case 6: goto state6;
+    case 16: goto state16;
+    case 20: goto state20;
+    default: goto state_default;
+    }
 state4:
     func_L23_0041BFF0((char *)object);
-    *(short *)(D_00189E20 + 0x1e0) = 10;
+    HERO->state1e0 = 10;
     if (func_002B3868(object)) {
         func_L23_0041D930();
         func_0027D330(D_L23_001B13E4);
-    } else if (D_L23_001B13E4 / 2 < AGE) {
-        func_L23_0041D398((char *)object);
-    } else if (AGE == D_L23_001B13E4 / 2 - 4) {
-        func_0027D330(1);
-        qcopy(transform+0x00,&D_L23_001BA870[0]);
-        qcopy(transform+0x10,&D_L23_001BA870[1]);
-        qcopy(transform+0x20,&D_L23_001BA870[2]);
-        qzero(transform + 0x30);
-        func_002AB6D8((float *)transform, (float *)localPosition);
-        func_00335438((char *)D_L23_001BA640, localPosition, 1, 0, 0);
-    } else if (D_L23_001B13E4 / 2 - 4 < AGE) {
-        func_0027D330(1);
-        qcopy((transform + 0x00) ,(object + 0xc0));
-        qcopy((transform + 0x10) ,(object + 0xd0));
-        qcopy((transform + 0x20) ,(object + 0xe0));
-        qzero(transform + 0x30);
-        func_002AB6D8((float *)transform, (float *)localPosition);
-        func_00282D30(secondPosition, (char *)object + 0xc0, -D_L23_001B13E0);
-        func_00282CC0(secondPosition, secondPosition, position);
-        func_L23_00418650(secondPosition, 0.0f);
-        func_L00_002B9D60(secondPosition, localPosition, 0x6f, 0);
-        func_003353C8(localPosition);
-        func_00282D30(thirdPosition, (char *)object + 0xc0, -D_L23_001B13D8);
-        func_00282CC0(thirdPosition, thirdPosition, position);
-        func_L23_00418650(thirdPosition, D_L23_001B13DC);
-        func_00335370(thirdPosition);
-        D_L23_001C87D0 = 0;
-        D_L23_001C87C0 = 0;
     } else {
-        func_0027D330(1);
+        char transform[64] __attribute__((aligned(16)));
+        char secondPosition[16] __attribute__((aligned(16)));
+        char thirdPosition[16] __attribute__((aligned(16)));
+
+        if (D_L23_001B13E4 / 2 < AGE) {
+            func_L23_0041D398((char *)object);
+        } else if (AGE == D_L23_001B13E4 / 2 - 4) {
+            func_0027D330(1);
+            qcopy(transform+0x00,&D_L23_001BA870[0]);
+            qcopy(transform+0x10,&D_L23_001BA870[1]);
+            qcopy(transform+0x20,&D_L23_001BA870[2]);
+            qzero_nc(transform + 0x30);
+            func_002AB6D8((float *)transform, (float *)localPosition);
+            func_00335438((char *)D_L23_001BA640, localPosition, 1, 0, 0);
+        } else if (D_L23_001B13E4 / 2 - 4 < AGE) {
+            func_0027D330(1);
+            qcopy((transform + 0x00) ,(object + 0xc0));
+            qcopy((transform + 0x10) ,(object + 0xd0));
+            qcopy((transform + 0x20) ,(object + 0xe0));
+            qzero_nc(transform + 0x30);
+            func_002AB6D8((float *)transform, (float *)localPosition);
+            func_00282D30(secondPosition, (char *)object + 0xc0, -D_L23_001B13E0);
+            func_00282CC0(secondPosition, secondPosition, ((char *)object + 0x10));
+            func_L23_00418650(secondPosition, 0.0f);
+            func_L00_002B9D60(secondPosition, localPosition, 0x6f, 0);
+            func_003353C8(localPosition);
+            func_00282D30(thirdPosition, (char *)object + 0xc0, -D_L23_001B13D8);
+            func_00282CC0(thirdPosition, thirdPosition, ((char *)object + 0x10));
+            func_L23_00418650(thirdPosition, D_L23_001B13DC);
+            func_00335370(thirdPosition);
+            qzero(&D_L23_001C87D0);
+            qzero(&D_L23_001C87C0);
+        } else {
+            func_0027D330(1);
+        }
     }
     ++AGE;
     return;
@@ -336,17 +357,17 @@ state7:
         func_002A7750(object, 6, 1);
         goto state_default;
     }
-    if (!(D_L23_001B1648 / 2 < D_L23_001B36AC) && !S32(0x608)) {
-        if (D_L23_001B3758 % 3 == 2)
+    if (!(D_L23_001B1648 / 2 < D_L23_001B36AC[0]) && !S32(0x608)) {
+        if (D_L23_001B3758[0] % 3 == 2)
             func_L23_0041B960(D_L23_001B14E0);
         else
             func_L23_0041B960(D_L23_001B14E0 + func_002A7878(25.0f, 55.0f));
         func_002A7750(object, 8, 1);
-        ++D_L23_001B3758;
+        ++D_L23_001B3758[0];
     } else {
         func_L23_0041B188((char *)object);
         if (AGE % 480 == 0) {
-            if (D_L23_001B36AC < 4)
+            if (D_L23_001B36AC[0] < 4)
                 func_L23_0041B960(D_L23_001B14E0 + 60.0f);
             else
                 func_L23_0041B960(D_L23_001B14E0 + func_002A7878(-4.0f, 80.0f));
@@ -372,26 +393,33 @@ state9:
             func_002A7750(object, 10, 1);
         } else {
             if (S32(0x598) == D_L23_001B14EC) {
-                int next = D_L23_001B164C;
+                int next;
+                int i;
                 func_002E5CF8(0, 0, (char *)object);
+                next = D_L23_001B164C;
                 for (i = 0; i < 4; ++i) {
+                    char jointVector[16] __attribute__((aligned(16)));
+                    float matrix[16] __attribute__((aligned(16)));
+                    char thirdPosition[16] __attribute__((aligned(16)));
+                    char extraPosition[16] __attribute__((aligned(16)));
+
                     enemy = (char *)D_L23_00259560[next];
                     func_002A7750((u8 *)enemy, 2, 0);
                     next = (next + 1) % 25;
-                    func_0029FCC0((char *)object, i + 30, transform);
-                    func_0029FC20((char *)object, i + 30, (char *)jointMatrix);
-                    func_00282D30(localPosition, (char *)jointMatrix + 0x20, -16.0f);
-                    qcopy(extraPosition ,transform);
+                    func_0029FCC0((char *)object, i + 30, jointVector);
+                    func_0029FC20((char *)object, i + 30, (char *)matrix);
+                    func_00282D30(localPosition, (char *)matrix + 0x20, -16.0f);
+                    qcopy_nc(extraPosition, jointVector);
                     func_L23_00418650(extraPosition, 0.0f);
-                    func_00282CF0(thirdPosition, extraPosition, position);
+                    func_00282CF0(thirdPosition, extraPosition, state + 0x3e0);
                     func_00282D30(thirdPosition, thirdPosition, D_L23_001B1420);
                     func_00282CC0(localPosition, localPosition, thirdPosition);
-                    func_00282CC0(transform, position, localPosition);
-                    func_L23_00418650(transform, 0.0f);
+                    func_00282CC0(jointVector, state + 0x3e0, localPosition);
+                    func_L23_00418650(jointVector, 0.0f);
                     qcopy((enemy + 0xc0) ,(object + 0xc0));
                     qcopy((enemy + 0xd0) ,(object + 0xd0));
                     qcopy((enemy + 0xe0) ,(object + 0xe0));
-                    qcopy((enemy + 0x10) ,transform);
+                    qcopy((enemy + 0x10) ,jointVector);
                 }
             }
             func_00282948(state + 0x598);
@@ -403,25 +431,30 @@ state10:
         func_L23_0041B8F8((char *)object);
     if (func_002B3868(object))
         func_L23_0041B668((char *)object, &D_L23_001B14C4);
-    if (D_L23_001B14CC < SF(0x588)) {
+    if (SF(0x588) > D_L23_001B14CC) {
         int enable;
+        int i;
+        char **children;
+        char **links;
         S32(0x598) = 0;
         S32(0x590) = 4;
         func_002A7750(object, 11, 1);
         enable = D_L23_001B14D8;
+        links = (char **)(state + 0x358);
+        children = (char **)(state + 0x36c);
         for (i = 0; i < 5; ++i) {
-            char *child = SP(0x36c + i * 4);
-            if (child) {
-                char *source = SP(0x358 + i * 4);
-                qcopy((child + 0xc0) ,(source + 0xc0));
-                qcopy((child + 0xd0) ,(source + 0xd0));
-                qcopy((child + 0xe0) ,(source + 0xe0));
-                qcopy((child + 0x10) ,(source + 0x10));
-                FLAGS(child) &= 0xbff9;
-                *(int *)(child + 0x98) = *(int *)(*(char **)(child + 0x24) + 0x10);
+            if (*children) {
+                qcopy_nc(*children + 0xc0, *links + 0xc0);
+                qcopy_nc(*children + 0xd0, *links + 0xd0);
+                qcopy_nc(*children + 0xe0, *links + 0xe0);
+                qcopy_nc(*children + 0x10, *links + 0x10);
+                FLAGS(*children) &= 0xbff9;
+                *(int *)(*children + 0x98) = *(int *)(*(char **)(*children + 0x24) + 0x10);
                 if (enable)
-                    FLAGS(child) &= 0xffbe;
+                    FLAGS(*children) &= 0xffbe;
             }
+            ++links;
+            ++children;
         }
     }
     goto state_default;
@@ -431,11 +464,12 @@ state11:
     if (S32(0x60c) == -1)
         func_L23_0041B8F8((char *)object);
     if (S32(0x5d8) && !S32(0x598) && !S32(0x590)) {
-        for (i = 0; i < 5; ++i) {
-            char *child = SP(0x36c + i * 4);
-            if (child) {
-                *(int *)(child + 0x98) = 0;
-                FLAGS(child) |= 0x41;
+        int i;
+        char **children = (char **)(state + 0x36c);
+        for (i = 0; i < 5; ++i, ++children) {
+            if (*children) {
+                *(int *)(*children + 0x98) = 0;
+                FLAGS(*children) |= 0x41;
             }
         }
         S32(0x608) = D_L23_001B1638;
@@ -488,7 +522,7 @@ state19:
     } else if (D_L23_001B14F8 < AGE) {
         func_002A7750(object, 7, 0);
     }
-    if (D_L23_001B36A0 < SF(0x588))
+    if (SF(0x588) > D_L23_001B36A0[0])
         func_L23_0041B188((char *)object);
     goto state_default;
 state5:
@@ -518,17 +552,22 @@ state16:
         func_L23_0041B668((char *)object, &D_L23_001B14D0);
     if (D_L23_001B1500 + D_L23_001B1500 * 0.6200000047683716f < SF(0x5b8)) {
         func_L23_0041A648((char *)object);
-        if (!S32(0x5b0))
-            goto state16_timer;
+        if (!S32(0x5b0)) {
+            func_00282948(state + 0x608);
+            if (!(D_L23_001B1648 / 2 < D_L23_001B36AC[0]) && !S32(0x608)) {
+                func_002A7750(object, 12, 2);
+                S32(0x598) = 0;
+                S32(0x590) = 4;
+            }
+        }
     } else if (!D_L23_001B3780) {
         if (*(float *)(*(char **)(SP(0x610) + 0x68) + 0x20) < D_L23_001B36FC ||
             SF(0x5b8) < D_L23_001B1500 * 0.5f) {
             func_L23_0041A7A0((char *)object);
             D_L23_001B3780 = 1;
         } else {
-state16_timer:
             func_00282948(state + 0x608);
-            if (!(D_L23_001B1648 / 2 < D_L23_001B36AC) && !S32(0x608)) {
+            if (!(D_L23_001B1648 / 2 < D_L23_001B36AC[0]) && !S32(0x608)) {
                 func_002A7750(object, 12, 2);
                 S32(0x598) = 0;
                 S32(0x590) = 4;
@@ -542,33 +581,38 @@ state20:
     func_L23_0041A648((char *)object);
     if (func_002B1C20(object, (DispatchContext *)(state + 0x140)) & 1) {
         func_002A7750(object, 4, 0);
-        *(int *)(D_00189E20 + 0x2294) = 0;
+        HERO->field2294 = 0;
         func_L00_002AF7D0();
-        func_L00_00310C88((LvlSlotCtx *)PLAYER, (LvlSlotNode **)(D_00189E20 + 0x1870));
-        *(int *)(D_00189E20 + 0x187c) = 0;
+        func_L00_00310C88((LvlSlotCtx *)PLAYER, &HERO->slotList);
+        HERO->slotCount = 0;
         func_L22_002C9898(0, 1);
         D_L23_001B1694 = 0;
         return;
     }
 state_default:
     S32(0x5a8) = 0;
-    for (i = 0; i < 5; ++i) {
-        char *child = SP(0x36c + i * 4);
-        if (child && !*(unsigned short *)(child + 0x7c))
-            *(unsigned short *)(child + 0x7c) = 0x3ff;
+    {
+        int i;
+        for (i = 0; i < 5; ++i) {
+            char *child = SP(0x36c + i * 4);
+            if (child && !*(unsigned short *)(child + 0x7c))
+                *(unsigned short *)(child + 0x7c) = 0x3ff;
+        }
     }
     func_L23_0041CD58((char *)object);
     func_L23_004180F0((char *)object);
-    for (i = 0; i < 5; ++i) {
-        if (SP(0x358 + i * 4)) {
-            func_002AF1D0(object, SP(0x358 + i * 4), i + 1, 0);
-            FLAGS(SP(0x358 + i * 4)) &= 0xfff9;
-            FLAGS(SP(0x358 + i * 4)) |= 0x4000;
+    {
+        int i;
+        LinkTable *links = (LinkTable *)(state + 0x358);
+        for (i = 0; i < 5; ++i) {
+            if (links->entry[i]) {
+                func_002AF1D0(object, links->entry[i], i + 1, 0);
+                FLAGS(links->entry[i]) &= 0xfff9;
+                FLAGS(links->entry[i]) |= 0x4000;
+            }
         }
     }
-    if (!SP(0x610)) {
-        FLAGS(object) |= 0x4000;
-    } else {
+    if (SP(0x610)) {
         func_002AF1D0(object, SP(0x610), 0x22, 0);
         FLAGS(SP(0x610)) &= 0xfff9;
         FLAGS(SP(0x610)) |= 0x800;
@@ -576,6 +620,8 @@ state_default:
             FLAGS(SP(0x610)) |= 0x4000;
         else
             FLAGS(SP(0x610)) &= 0xbfff;
+    } else {
+        FLAGS(object) |= 0x4000;
     }
     if (SP(0x614)) {
         func_002AF1D0(object, SP(0x614), 0x22, 0);
@@ -589,25 +635,25 @@ state_default:
     func_L23_0041A3B8((char *)object, localPosition);
     func_L23_0041C0E8((char *)object);
     if (!SP(0x40c))
-        SP(0x40c) = func_L22_003F85A0((char *)object, position);
+        SP(0x40c) = func_L22_003F85A0((char *)object, ((char *)object + 0x10));
     else
-        func_L08_004356A0((u8 *)SP(0x40c), position);
+        func_L08_004356A0((u8 *)SP(0x40c), ((char *)object + 0x10));
     func_L23_0041B5C8((char *)object);
-    if (D_L23_001B1410 == 0.0f)
-        func_L23_0041B5B0((char *)object);
-    else
+    if (D_L23_001B1410 != 0.0f)
         func_L23_0041B498((char *)object);
+    else
+        func_L23_0041B5B0((char *)object);
     if (func_L22_003B9428((unsigned int)PLAYER) && D_L23_001B3780 &&
         (object[0x20] == 16 || object[0x20] == 12) && D_L23_001B1500 < SF(0x5bc)) {
         char *attachment = (char *)func_L23_00423698((int)PLAYER) + 0x10;
-        height = func_002B0360(attachment) - D_L23_001B36A4;
+        height = func_002B0360(attachment) - D_L23_001B36A4[0];
         distance = func_00282E48(attachment, (char *)D_L23_001B3760);
         if (distance < D_L23_001B1500 * 0.6f && height < D_L23_001B14D0 - 2.0f) {
             func_0032C700(attachment, 0, 15, 10, 15, 15, 15, 1, 2.0f, 20.0f, 0, 0, 0, 0);
             func_L23_00423588((int)PLAYER, 1);
         }
     }
-    func_00282948((char *)&D_L23_001B3718);
-    if (D_L23_001B3718)
+    func_00282948((char *)&D_L23_001B3718[0]);
+    if (D_L23_001B3718[0])
         func_L00_002D6900(0x2b);
 }
