@@ -1,17 +1,8 @@
-/*
- * Complete manual reconstruction retained as nonmatching; no coverage credit.
- * Fresh qualified-compiler checks, 2026-10-25.
- * Profile: -O2 -G8 -ffunction-sections
- * Coverage: US: 0/1; US2: absent from catalogue; PAL: absent from catalogue.
- * Compiled text: 2756 bytes; retail: 2852 bytes.
- * Remaining difference: Separating the real state1/state2 paths and reconstructing the observed
- * kind dispatch improves2496 to2756/2852 while preserving frame0x60. Canonical int32/int16 timer
- * interfaces and the true bone integer argument are retained. State-specific constants, branches,
- * floating lifetimes and allocation remain different.
- * Reopen when: Independent source/dataflow evidence for the remaining state-specific calls and
- * float lifetimes, rather than remerging states or adding padding.
+/* Barlow object state and movement update. The object pool entries are 0x100
+ * bytes; the array declaration preserves the measured small-data and absolute
+ * references to its base. Integer and FP arguments to func_002A7CA0 retain their
+ * order within each EE register bank.
  */
-
 #include "common.h"
 
 typedef int Quad __attribute__((mode(TI)));
@@ -19,9 +10,10 @@ typedef int Quad __attribute__((mode(TI)));
 #define FLOAT(p,o) (*(float *)((char *)(p)+(o)))
 #define HALF(p,o) (*(short *)((char *)(p)+(o)))
 #define UHALF(p,o) (*(u16 *)((char *)(p)+(o)))
-extern int D_L04_001C9C00;
+typedef struct { u8 pad0[0xAA]; s16 oclass; u8 padAC[0xF8 - 0xAC]; float rotz; u8 padFC[0x100 - 0xFC]; } Moby;
+extern int D_L04_001C9C00[];
 extern int D_001A79F0 __attribute__((sda));
-extern char *D_L04_001B24DC __attribute__((sda));
+extern char *D_L04_001B24DC[] __attribute__((sda));
 extern float D_L04_001B1874 __attribute__((sda)), D_L04_001B1878 __attribute__((sda));
 extern void func_L04_0044D0C0(char *);
 extern void func_002A7750(void *,int,int);
@@ -33,14 +25,14 @@ extern int func_002A77E0(int);
 extern int func_002A7820(int,int);
 extern float func_002A7878(float,float);
 extern int func_00283CF0(float);
-extern unsigned long long func_002B1C20(void *,void *);
+extern unsigned int func_002B1C20(void *,void *);
 extern void func_002A6C58(void *,int,int);
 extern void func_L01_003E9CF8(void *,int,int);
 extern float func_002AA2E8(float *,float,float);
 extern float func_002AE8C0(void *,void *,float,float);
 extern float func_00283248(float,float);
 extern float func_00283B98(float,float);
-extern float func_002A7CA0(void *,float *,float,float,float,float);
+extern float func_002A7CA0(void *,float,float *,float,float,float);
 extern float func_00282E80(void *,void *);
 extern int func_002AEB60(char *,float);
 extern int func_002E5CF8(int,int,char *);
@@ -52,18 +44,60 @@ extern void func_L04_0044D428(char *);
 extern void func_L04_0044D6A0(u8 *);
 extern void func_0029F338(void *);
 
-void func_L04_0044C598(char *object)
+void func_L04_0044C598(u8 *object)
 {
-    char *vars, *other;
+    char *vars;
+    u8 *other;
     union { Quad q; float f[4]; } movement, position;
-    unsigned long long flags;
+    unsigned int flags;
     int kind, choice, state;
     float delay;
-    if (D_L04_001C9C00) return;
+    if (D_L04_001C9C00[0]) return;
     vars=*(char **)(object+0x68);
     func_L04_0044D0C0(object);
     kind=(u8)object[0x95];
     switch(kind) {
+    case 0:
+        if(INT(vars,0x328)==-1 || INT(vars,0x32c)==-1 || (other=(u8 *)D_L04_001B24DC[0]+INT(vars,0x32c)*256)==object ||
+            !other || other[0x20]==254 || other[0x20]==253) {
+            func_00282948((int *)(vars+0x31c));
+            if(INT(vars,0x254)==1) {
+                if(INT(vars,0x328)!=-1) {
+                    Moby *pool=(Moby *)D_L04_001B24DC[0];
+                    UHALF(object,0x34)&=0xffbe;
+                    INT(object,0x98)=INT(*(char **)(object+0x24),0x10);
+                    if(pool[INT(vars,0x328)].oclass==0x929) {
+                        func_002A7750(object,7,3); func_002A7398(object,7,0);
+                        FLOAT(object,0xf8)=FLOAT(D_L04_001B24DC[0]+INT(vars,0x328)*256,0xf8);
+                        INT(vars,0x328)=-1;
+                        goto heightCheck;
+                    }
+                    INT(vars,0x328)=-1;
+                    func_002A7750(object,4,2);
+                    if(object[0x43]!=7) func_002A7470(object,7,0,14);
+                } else {
+                    if(func_002A77E0(9)==0) {
+                        if(func_002A77E0(2)!=0) {
+                            func_002A7750(object,3,2);
+                            if(object[0x43]!=3) func_002A7470(object,3,0,14);
+                            if(func_002A77E0(2)==1 && object[0x43]!=4) func_002A7470(object,4,0,14);
+                        } else {
+                            func_002A7750(object,4,2);
+                            if(object[0x43]!=7) func_002A7470(object,7,0,14);
+                        }
+                    }
+                }
+                UHALF(object,0x34)&=0xffbe;
+                INT(object,0x98)=INT(*(char **)(object+0x24),0x10);
+            } else if(HALF(vars,0x306)!=0) {
+                func_002A7750(object,2,1);
+                HALF(vars,0x306)=0;
+                INT(vars,0x2fc)=func_00283CF0(func_002A7878(FLOAT(vars,0x2f8)*0.8f,FLOAT(vars,0x2f8)*1.2f)*60.0f);
+                HALF(vars,0x300)=0;
+            }
+        }
+
+        break;
     case 1:
         if(INT(vars,0x254)==1) {
             func_002A7750(object,4,2);
@@ -74,55 +108,10 @@ void func_L04_0044C598(char *object)
         }
 
         break;
-    case 0:
-        other=D_L04_001B24DC+INT(vars,0x32c)*256;
-        if(INT(vars,0x328)==-1 || INT(vars,0x32c)==-1 || other==object ||
-            !other || other[0x20]==-2 || other[0x20]==-3) {
-            func_00282948((int *)(vars+0x31c));
-            if(INT(vars,0x254)==1) {
-                if(INT(vars,0x328)==-1) {
-                    if(func_002A77E0(9)==0) {
-                        if(func_002A77E0(2)==0) {
-                            func_002A7750(object,4,2);
-                            if(object[0x43]!=7) func_002A7470(object,7,0,14);
-                        } else {
-                            func_002A7750(object,3,2);
-                            if(object[0x43]!=3) func_002A7470(object,3,0,14);
-                            if(func_002A77E0(2)==1 && object[0x43]!=4) func_002A7470(object,4,0,14);
-                        }
-                    }
-                } else {
-                    UHALF(object,0x34)&=0xffbe;
-                    INT(object,0x98)=INT(*(char **)(object+0x24),0x10);
-                    other=D_L04_001B24DC+INT(vars,0x328)*256;
-                    if(HALF(other,0xaa)==0x929) {
-                        func_002A7750(object,7,3); func_002A7398(object,7,0);
-                        FLOAT(object,0xf8)=FLOAT(D_L04_001B24DC+INT(vars,0x328)*256,0xf8);
-                        INT(vars,0x328)=-1;
-                        goto heightCheck;
-                    }
-                    INT(vars,0x328)=-1;
-                    func_002A7750(object,4,2);
-                    if(object[0x43]!=7) func_002A7470(object,7,0,14);
-                }
-                UHALF(object,0x34)&=0xffbe;
-                INT(object,0x98)=INT(*(char **)(object+0x24),0x10);
-            } else if(HALF(vars,0x306)!=0) {
-                func_002A7750(object,2,1);
-                HALF(vars,0x306)=0;
-                delay=FLOAT(vars,0x2f8);
-                goto resetTimer;
-            }
-        }
-
-        break;
     case 2:
         if(INT(vars,0x254)!=1 && func_002A77E0(19)==0) {
             func_002A7750(object,2,1);
-            delay=FLOAT(vars,0x2f8);
-resetTimer:
-            delay=func_002A7878(delay*0.8f,delay*1.2f);
-            INT(vars,0x2fc)=func_00283CF0(delay*60.0f);
+            INT(vars,0x2fc)=func_00283CF0(func_002A7878(FLOAT(vars,0x2f8)*0.8f,FLOAT(vars,0x2f8)*1.2f)*60.0f);
             HALF(vars,0x300)=0;
         }
 
@@ -137,8 +126,7 @@ resetTimer:
                 if(object[0x43]!=7) func_002A7470(object,7,0,14);
             } else {
                 func_002A7750(object,2,1);
-                delay=func_002A7878(FLOAT(vars,0x2f8)*0.8f,FLOAT(vars,0x2f8)*1.2f);
-                INT(vars,0x2fc)=func_00283CF0(delay*60.0f);
+                INT(vars,0x2fc)=func_00283CF0(func_002A7878(FLOAT(vars,0x2f8)*0.8f,FLOAT(vars,0x2f8)*1.2f)*60.0f);
                 HALF(vars,0x300)=func_002A7820(120,700);
             }
         }
@@ -147,20 +135,27 @@ resetTimer:
         break;
     }
 heightCheck:
-    if(FLOAT(object,0x18)-FLOAT(vars,0x2e8)>10.0f) goto removeObject;
-    if(FLOAT(object,0x18)<10.0f) goto removeObject;
-    if(FLOAT(object,0x18)<75.0f && D_001A79F0==11) goto removeObject;
+    if(FLOAT(object,0x18)-FLOAT(vars,0x2e8)>10.0f || FLOAT(object,0x18)<10.0f) {
+        HALF(vars,0x98)=0; qzero(object+0xf0);
+        func_002A6C58(object,0,3); func_0029F338(object); return;
+    }
+    if(FLOAT(object,0x18)<75.0f && D_001A79F0==11) {
+        HALF(vars,0x98)=0; qzero(object+0xf0);
+        func_002A6C58(object,0,3); func_0029F338(object); return;
+    }
     state=(u8)object[0x20];
     switch(state) {
     case 1:
         func_00282978((short *)(vars+0x300));
         if(object[0x43]==0 && HALF(vars,0x300)) func_002A7470(object,7,0,14);
-        func_002AA2E8((float *)(vars+0x124),HALF(vars,0x300)<21 ? 0.0f : D_L04_001B1878*0.01666666753590107f,0.0019444444915279746f);
+        if (HALF(vars,0x300)>=21)
+            func_002AA2E8((float *)(vars+0x124),D_L04_001B1878*0.01666666753590107f,0.0019444444915279746f);
+        else
+            func_002AA2E8((float *)(vars+0x124),0.0f,0.0019444444915279746f);
         if(object[0x43]==7) {
             FLOAT(object,0x48)=0.8f;
             if(HALF(vars,0x300)==0) {
-                choice=func_002A77E0(3)+(0);
-                if((u8)object[0x43]!=choice) {
+                if(object[0x43]!=func_002A77E0(3)) {
                     choice=func_002A77E0(3)+(0);
                     func_002A7470(object,choice,0,12);
                 }
@@ -174,12 +169,14 @@ heightCheck:
     case 2:
         func_00282978((short *)(vars+0x300));
         if(object[0x43]==0 && HALF(vars,0x300)) func_002A7470(object,7,0,14);
-        func_002AA2E8((float *)(vars+0x124),HALF(vars,0x300)<21 ? 0.0f : D_L04_001B1878*0.01666666753590107f,0.0019444444915279746f);
+        if (HALF(vars,0x300)>=21)
+            func_002AA2E8((float *)(vars+0x124),D_L04_001B1878*0.01666666753590107f,0.0019444444915279746f);
+        else
+            func_002AA2E8((float *)(vars+0x124),0.0f,0.0019444444915279746f);
         if(object[0x43]==7) {
             FLOAT(object,0x48)=0.8f;
             if(HALF(vars,0x300)==0) {
-                choice=func_002A77E0(2)+(5);
-                if((u8)object[0x43]!=choice) {
+                if(object[0x43]!=func_002A77E0(2)+5) {
                     choice=func_002A77E0(2)+(5);
                     func_002A7470(object,choice,0,12);
                 }
@@ -190,15 +187,6 @@ heightCheck:
             if(object[0x43]!=7) func_002A7470(object,7,0,12);
         }
         FLOAT(object,0x48)=1.0f;
-        break;
-    case 3:
-        delay=func_00283248(FLOAT(vars,0x240)-FLOAT(object,0x10),FLOAT(vars,0x244)-FLOAT(object,0x14));
-        delay=func_00283B98(delay,FLOAT(vars,0x314));
-        func_002A7CA0(object,(float *)(vars+0x310),delay,0.05f,0.3f,0.10471977293491364f);
-        if(object[0x60]&2) {
-            func_002A7750(object,4,-1);
-            if(object[0x43]!=7) func_002A7470(object,7,0,15);
-        }
         break;
     case 4:
         FLOAT(object,0x48)=1.0f;
@@ -234,17 +222,22 @@ heightCheck:
         func_00282CD8(&position,object+0x10,&movement);
         if(func_00282E80(object+0x10,vars+0x2e0)>6.0f) func_002A7750(object,4,2);
         break;
+    case 3:
+        delay=func_00283248(FLOAT(vars,0x240)-FLOAT(object,0x10),FLOAT(vars,0x244)-FLOAT(object,0x14));
+        delay=func_00283B98(delay,FLOAT(vars,0x314));
+        func_002A7CA0(object,delay,(float *)(vars+0x310),0.05f,0.3f,0.10471977293491364f);
+        if(object[0x60]&2) {
+            func_002A7750(object,4,-1);
+            if(object[0x43]!=7) func_002A7470(object,7,0,15);
+        }
+        break;
     case 8:
-        if(func_L04_0044D860(object)) goto destroyObject;
+        if(func_L04_0044D860(object)) {
+            func_002A6C58(object,0,3); func_0029F338(object); return;
+        }
         break;
     }
     if((unsigned)((u8)object[0x20]-7)>1) func_L04_0044D428(object);
     func_L04_0044D6A0((u8 *)object);
     return;
-removeObject:
-    HALF(vars,0x98)=0;
-    qzero((object+0xf0));
-destroyObject:
-    func_002A6C58(object,0,3);
-    func_0029F338(object);
 }

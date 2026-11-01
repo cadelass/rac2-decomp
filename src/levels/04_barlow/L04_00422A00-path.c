@@ -1,31 +1,6 @@
-/* M25 2026-10-26: 1648/1648 bytes (was 1640). The forward segment search is a
- * do/while whose top test exits without the subtraction (goto found), which gives
- * retail's loop shape and size. Left (119 lines): count/path in $a2/$a0 where retail
- * has $a0/$v1 (beq path,*currentPath operand order), progress in $f1 where retail
- * computes it straight into $f12, and the forward loop is strength-reduced (pointer
- * IVs) where retail indexes with sll/addu each pass.
- */
-/* Signature/interface follow-up, 23 October 2026.
- * Profile: -O2 -G0 -ffunction-sections.
- * USA v1.01: 1640/1648 bytes, 0/1 carrying placements.
- * USA v2.00: 1640/1648 bytes, 0/1 carrying placements.
- * PAL: 1640/1648 bytes, 0/1 carrying placements.
- * func_0026FEB8 follows the canonical const-char-pointer variadic logger interface.
- * This follows the current linked C contract; it does not independently prove the original
- * source declaration.
- * The retained C remains nonmatching. Earlier sizes and residual offsets below are
- * historical and superseded by this measurement; their reopening hypotheses remain
- * unqualified. No linked build was run for this follow-up.
- */
-
-/* Historical measurements, superseded where inconsistent with the follow-up above. */
-/* USA v1.01/v2.00/PAL 0/1 each; 1640/1648 bytes.
- * Profile: default -O2 -G0 -ffunction-sections.
- * Range dispatch and float/register allocation remain; small-data declaration eligibility resolved address forms. Tried scoped ratios and float-first vector scale ABI. Reopen with local lifetime evidence.
- */
 typedef unsigned char u8;
 typedef float f32;
-struct BarlowAnimation { int frames; u8 unused[24]; f32 duration; };
+struct BarlowAnimation { int frames; u8 unused[24]; f32 dustartn; };
 extern struct BarlowAnimation *D_L04_001FE340[];
 extern u8 D_L04_001B1280[];
 extern void func_0026FEB8(const char *, ...);
@@ -71,16 +46,15 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
     f32 point[4], movement[4];
     int (*points)[2];
     f32 (*vectors)[4], *lengths, *starts;
-    int count, path, segment;
+    int count, path = -1, segment;
     f32 progress, start;
     struct BarlowAnimation *timing;
     if (animation == -1 && frame >= 0 && frame <= 151) {
-        f32 ratio;
         timing = D_L04_001FE340[*(int *)(data + 0x1A8)];
-        ratio = (timing->duration * (f32)(frame - 0)) / (timing->duration * 151.0f);
-        if (ratio > 1.0f)
-            ratio = 1.0f;
-        progress = ratio * D_L04_001B3470;
+        start = (timing->dustartn * (f32)(frame - 0)) / (timing->dustartn * 151.0f);
+        if (start > 1.0f)
+            start = 1.0f;
+        progress = start * D_L04_001B3470;
         points = D_L04_001B12B0;
         vectors = D_L04_0026D370;
         lengths = D_L04_001B3300;
@@ -88,12 +62,11 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
         count = 7;
         path = 1;
     } else if (animation == -1 && frame >= 151 && frame <= 174) {
-        f32 ratio;
         timing = D_L04_001FE340[*(int *)(data + 0x1A8)];
-        ratio = (timing->duration * (f32)(frame - 151)) / (timing->duration * 23.0f);
-        if (ratio > 1.0f)
-            ratio = 1.0f;
-        progress = ratio * D_L04_001B3474;
+        start = (timing->dustartn * (f32)(frame - 151)) / (timing->dustartn * 23.0f);
+        if (start > 1.0f)
+            start = 1.0f;
+        progress = start * D_L04_001B3474;
         points = D_L04_001B12E8;
         vectors = D_L04_001B3280;
         lengths = D_L04_001B3320;
@@ -101,12 +74,11 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
         count = 3;
         path = 2;
     } else if (animation == -1 && frame >= 174 && frame <= 312) {
-        f32 ratio;
         timing = D_L04_001FE340[*(int *)(data + 0x1A8)];
-        ratio = (timing->duration * (f32)(frame - 174)) / (timing->duration * 138.0f);
-        if (ratio > 1.0f)
-            ratio = 1.0f;
-        progress = ratio * D_L04_001B3478;
+        start = (timing->dustartn * (f32)(frame - 174)) / (timing->dustartn * 138.0f);
+        if (start > 1.0f)
+            start = 1.0f;
+        progress = start * D_L04_001B3478;
         points = D_L04_002CA3E0;
         vectors = D_L04_0026D3E0;
         lengths = D_L04_001B3330;
@@ -114,12 +86,11 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
         count = 11;
         path = 3;
     } else if (animation == -1 && frame >= 312 && frame <= 500) {
-        f32 ratio;
         timing = D_L04_001FE340[*(int *)(data + 0x1A8)];
-        ratio = (timing->duration * (f32)(frame - 312)) / (timing->duration * 186.0f);
-        if (ratio > 1.0f)
-            ratio = 1.0f;
-        progress = ratio * D_L04_001B347C;
+        start = (timing->dustartn * (f32)(frame - 312)) / (timing->dustartn * 186.0f);
+        if (start > 1.0f)
+            start = 1.0f;
+        progress = start * D_L04_001B347C;
         points = D_L04_001B1300;
         vectors = D_L04_0026D490;
         lengths = D_L04_001B3360;
@@ -127,12 +98,11 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
         count = 6;
         path = 4;
     } else if (animation == 0) {
-        f32 ratio;
         timing = D_L04_001FE340[*(int *)(data + 0x1AC)];
-        ratio = (timing->duration * (f32)frame) / (timing->duration * (f32)timing->frames);
-        if (ratio > 1.0f)
-            ratio = 1.0f;
-        progress = ratio * D_L04_001B3480;
+        start = (timing->dustartn * (f32)frame) / (timing->dustartn * (f32)timing->frames);
+        if (start > 1.0f)
+            start = 1.0f;
+        progress = start * D_L04_001B3480;
         points = D_L04_002CA438;
         vectors = D_L04_0026D4F0;
         lengths = D_L04_001B3378;
@@ -140,12 +110,11 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
         count = 9;
         path = 5;
     } else if (animation == 2) {
-        f32 ratio;
         timing = D_L04_001FE340[*(int *)(data + 0x1B4)];
-        ratio = (timing->duration * (f32)frame) / (timing->duration * (f32)timing->frames);
-        if (ratio > 1.0f)
-            ratio = 1.0f;
-        progress = ratio * D_L04_001B3484;
+        start = (timing->dustartn * (f32)frame) / (timing->dustartn * (f32)timing->frames);
+        if (start > 1.0f)
+            start = 1.0f;
+        progress = start * D_L04_001B3484;
         points = D_L04_001B1330;
         vectors = D_L04_001B32B0;
         lengths = D_L04_001B33A0;
@@ -153,12 +122,11 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
         count = 3;
         path = 6;
     } else if (animation == 1) {
-        f32 ratio;
         timing = D_L04_001FE340[*(int *)(data + 0x1B0)];
-        ratio = (timing->duration * (f32)frame) / (timing->duration * (f32)timing->frames);
-        if (ratio > 1.0f)
-            ratio = 1.0f;
-        progress = ratio * D_L04_001B3488;
+        start = (timing->dustartn * (f32)frame) / (timing->dustartn * (f32)timing->frames);
+        if (start > 1.0f)
+            start = 1.0f;
+        progress = start * D_L04_001B3488;
         points = D_L04_001B1348;
         vectors = D_L04_001B32E0;
         lengths = D_L04_001B33B0;
@@ -173,22 +141,13 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
         *outY = 0;
         return;
     }
-    segment = 0;
-    if (*currentPath != path) {
+    if (path != *currentPath) {
         start = 0.0f;
-        if (progress >= 0.0f) {
-            start = lengths[0];
+        for (segment = 0; start <= progress; segment++) {
+            start += lengths[segment];
             if (progress < start) {
-                start = 0.0f;
-            } else {
-                do {
-                    segment++;
-                    if (!(start <= progress))
-                        goto found;
-                    start += lengths[segment];
-                } while (!(progress < start));
                 start -= lengths[segment];
-            found:;
+                break;
             }
         }
         *currentSegment = segment;
@@ -196,7 +155,7 @@ void func_L04_0043AD48(int *outX, int *outY, int animation, int frame, int *curr
     } else {
         segment = *currentSegment;
         start = starts[segment];
-        if (progress < start) {
+        if (start > progress) {
             while (progress < start) {
                 segment--;
                 if (segment < 0)
