@@ -2025,16 +2025,20 @@ src/levels/shared/L03_003D0AE0-g8.c	-O2 -G8 -ffunction-sections -g
 src/game/002BEE70-g.c	-O2 -G0 -ffunction-sections -g
 src/game/0029DDC0.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
 src/game/0029DD30.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/18_damosel/L18_003F80A0-state-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
 src/levels/shared/L00_002C3A40.c	-O2 -G0 -ffunction-sections -frac2-keep-block-order
 src/levels/shared/L00_002CA0B0-g8.c	-O2 -G8 -ffunction-sections -fno-thread-jumps -fno-strength-reduce -frac2-hazard-labels
 src/levels/shared/L19_003DCCC8-state-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
 src/game/0032EB28-damage-g8.c	-O2 -G8 -ffunction-sections -ffast-math
 src/game/0032EB28-spark.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/00294BC8-nosched.c	-O2 -G0 -ffunction-sections -fno-schedule-insns
+src/levels/19_grelbin/L19_00411890-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/0032EB28-ai-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/22_dobbo_orbit/L22_00413B70-g8.c	-O2 -G8 -ffunction-sections -ffast-math
 src/levels/shared/L00_00407E38-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/game/0032EB28-wander-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/shared/L00_003FFA70-wander-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/22_dobbo_orbit/L22_003B9450-g8.c	-O2 -G8 -ffunction-sections -ffast-math
 src/levels/shared/L06_00402570.c	-O2 -G0 -ffunction-sections -g
 src/core/00119BF8.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/levels/shared/L04_0040F8F0-route.c	-O2 -G0 -ffunction-sections -g
@@ -2055,10 +2059,12 @@ src/levels/shared/L00_003DB118-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -fr
 src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/levels/shared/L00_00418A80-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
 src/levels/shared/L04_00403530.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/19_grelbin/L19_0041B078-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/03_endako/L03_003F4638-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/12_todano/L12_0041B2A8-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/06_notak/L06_00420AE8-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/11_joba/L11_003D6270-state-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/19_grelbin/L19_004160A0-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/01_oozla/L01_003B9F30-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
 src/levels/12_todano/L12_003E0BF0-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections
 src/game/002F5220-7738.c	-O2 -G8 -fno-sched-interblock -ffunction-sections
@@ -2074,6 +2080,7 @@ src/levels/01_oozla/L01_003B5878-g8.c	-O2 -G8 -ffunction-sections -fno-expensive
 src/levels/01_oozla/L01_002BEB90-action-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/05_feltzin_system/L05_00421100-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/levels/10_hrugis_cloud/L10_004166E8-g8-dbg.c	-O2 -G8 -ffunction-sections -g -fstrict-aliasing
+src/levels/18_damosel/L18_00437190-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/00_aranos_tutorial/L00_002FC7A8-lift.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
 src/levels/11_joba/L11_00453358-curve.c	-O2 -G0 -ffunction-sections -ffast-math -frac2-hazard-labels
 src/levels/07_siberius/L07_0040FC88-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-hazard-labels

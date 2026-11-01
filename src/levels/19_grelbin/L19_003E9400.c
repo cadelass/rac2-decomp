@@ -3,15 +3,15 @@
 
 /* func_L19_003E9400 is defined in L19_003E9400-controller.c. */
 
-INCLUDE_ASM("asm/levels", func_L19_00411890);
+/* func_L19_00411890 is defined in L19_00411890-g8.c. */
 
 /* func_L19_00411EF0 is defined in L19_00411EF0-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L19_00412140);
 
-INCLUDE_ASM("asm/levels", func_L19_004160A0);
+/* func_L19_004160A0 is defined in L19_004160A0-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L19_004170D8);
+/* func_L19_004170D8 is defined in L19_004170D8-g8.c. */
 
 extern void func_2EB590();
 
@@ -41,7 +41,7 @@ void func_L19_00417A00(char *a0)
 
 INCLUDE_ASM("asm/levels", func_L19_00417F88);
 
-INCLUDE_ASM("asm/levels", func_L19_0041B078);
+/* func_L19_0041B078 is defined in L19_0041B078-g8.c. */
 
 /* func_L19_0041BFD0 is defined in L19_0041BFD0-g8.c. */
 
@@ -54,7 +54,74 @@ INCLUDE_ASM("asm/levels", func_L19_0041C328);
 
 INCLUDE_ASM("asm/levels", func_L19_004203F0);
 
-INCLUDE_ASM("asm/levels", func_L19_00420818);
+extern void func_00282F20(void *, void *, float);
+extern void func_00282CC0(void *, void *, void *);
+extern void func_002A7750(void *, int, int);
+extern s32 D_001A79F0 __attribute__((sda));
+extern u8 D_0019B2E8[];
+extern u8 *D_L19_001B2A1C[] __attribute__((sda));
+extern char D_00188660[];
+extern float D_L19_001A8F20[] MACRO_ADDR;
+extern void func_002AA458(void *, void *, void *, float, float, float);
+extern int func_002E5CF8(int, int, void *);
+extern float func_00282E48(void *, void *);
+extern void func_L00_002E6CF0(void (*)(void *), void *);
+extern void func_L19_00420B48(void *);
+extern void func_002A8C00(float, void *, void *, int, void *);
+extern int func_002761F8(void *, void *, int, void *, void *);
+
+/* Moves the object between two points. State 0 records its home position and builds the far
+   point (along the axis at 0xC0, raised by the first state word); state 1 waits for its trigger
+   flag or for its linked entity to leave state 0; states 2 and 3 move it out and back, keeping
+   its looping sound alive, and then cast a collision line along the axis at 0xE0. */
+void func_L19_00420818(char *obj)
+{
+    char *data = *(char **)(obj + 0x68);
+    float offset[4] __attribute__((aligned(16)));
+    char query[0x30] __attribute__((aligned(16)));
+    char *sound;
+
+    switch (*(u8 *)(obj + 0x20)) {
+    case 0:
+        func_00282F20(offset, obj + 0xC0, *(float *)(data + 4));
+        func_00282CC0(data + 0x30, offset, obj + 0x10);
+        *(float *)(data + 0x38) += *(float *)data;
+        qcopy(data + 0x20, obj + 0x10);
+        *(int *)(data + 0x40) = -1;
+    case 1:
+        if ((*(u8 *)(obj + 0xB0) != 0xFF && (D_0019B2E8[*(u8 *)(obj + 0xB0) + (D_001A79F0 << 4)] & 0x80)) ||
+            (*(int *)(data + 0x1C) != -1 &&
+             *(u8 *)((char *)((*(int *)(data + 0x1C) << 8) + (int)D_L19_001B2A1C[0]) + 0x20) != 0))
+            func_002A7750(obj, 2, -1);
+        break;
+    case 2:
+        func_002AA458(obj + 0x10, data + 0x30, data + 0x14, *(float *)(data + 8) * 0.00027777778f,
+                      *(float *)(data + 8) * 0.00027777778f, *(float *)(data + 8) * 0.016666668f);
+        sound = D_00188660 + *(int *)(data + 0x40) * 0x70;
+        if (*(char **)(sound + 0x88) != obj || !*(u8 *)(sound + 0x74))
+            *(int *)(data + 0x40) = func_002E5CF8(0, 4, obj);
+        if (func_00282E48(obj + 0x10, data + 0x30) < *(float *)(data + 8) * 0.016666668f)
+            func_002A7750(obj, 3, -1);
+        break;
+    case 3:
+        sound = D_00188660 + *(int *)(data + 0x40) * 0x70;
+        if (*(char **)(sound + 0x88) != obj || !*(u8 *)(sound + 0x74))
+            *(int *)(data + 0x40) = func_002E5CF8(0, 4, obj);
+        func_002AA458(obj + 0x10, data + 0x20, data + 0x14, *(float *)(data + 8) * 0.00027777778f,
+                      *(float *)(data + 8) * 0.00027777778f, *(float *)(data + 8) * 0.016666668f);
+        if (func_00282E48(obj + 0x10, data + 0x20) < *(float *)(data + 8) * 0.016666668f)
+            func_002A7750(obj, 2, -1);
+        break;
+    }
+    if (*(u8 *)(obj + 0x20) >= 2) {
+        func_L00_002E6CF0(func_L19_00420B48, obj);
+        func_002A8C00(4.0f, query, obj, 1, D_L19_001A8F20);
+        *(u16 *)(query + 0x1A) = *(u16 *)(obj + 0xAA);
+        func_00282F20(offset, obj + 0xE0, *(float *)(data + 0xC));
+        func_00282CC0(offset, obj + 0x10, offset);
+        func_002761F8(obj + 0x10, offset, 0, obj, query);
+    }
+}
 
 INCLUDE_ASM("asm/levels", func_L19_00420B48);
 
@@ -198,7 +265,90 @@ void func_L19_00422810(u8 *a0)
 
 /* func_L19_00422A98 is defined in L19_00422A98-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L19_00423270);
+extern char D_L19_001B9A40[];
+extern float D_L19_001B1ECC[] SDATA(D_L19_001B1ECC);
+extern float D_L19_001B1ED0[] SDATA(D_L19_001B1ED0);
+extern float D_L19_001B1ED4[] SDATA(D_L19_001B1ED4);
+extern float D_L19_001B1ED8[] SDATA(D_L19_001B1ED8);
+extern u8 D_L19_001B1EDC[] SDATA(D_L19_001B1EDC);
+extern int D_L19_001B1EE0[] SDATA(D_L19_001B1EE0);
+extern int D_L19_001B1EE4[] SDATA(D_L19_001B1EE4);
+extern float D_L19_001B1EE8[] SDATA(D_L19_001B1EE8);
+extern float D_L19_001B1EEC[] SDATA(D_L19_001B1EEC);
+extern u32 D_L19_001B1EF0[] SDATA(D_L19_001B1EF0);
+extern u32 D_L19_001B1EF4[] SDATA(D_L19_001B1EF4);
+extern int D_L19_001B1EFC[] SDATA(D_L19_001B1EFC);
+extern int D_L19_001B1F00[] SDATA(D_L19_001B1F00);
+extern int D_L19_001B2508[] __attribute__((sda));
+extern int func_002A77E0(int);
+extern void func_0029FCC0(void *, int, void *);
+extern void func_002A7A00(float *, float, float);
+extern void *func_002C3150(void *, void *, int, unsigned char, unsigned char, int, float);
+extern void func_00282CF0(void *, void *, void *);
+extern float func_00283CE0(int);
+extern float func_00282C48(float);
+extern int func_00283D38(unsigned int, unsigned int, float);
+extern unsigned char *func_002C2FD8(void *, int, unsigned char, int, int, int, int, float);
+
+/* Emits the glow of this object. Its origin is 1.5 units along the axis at 0xE0 for class
+   0x11C7 and joint 0 otherwise. On one call in four it bursts four anchored particles whose
+   velocities drift by random steps; every call it spawns four sprites in a line leading from
+   the origin away from the point D_L19_001B9A40, coloured and faded by the counter at
+   D_L19_001B2508 and scaled by the object's size. */
+void func_L19_00423270(char *obj)
+{
+    float origin[4] __attribute__((aligned(16)));
+    float velocity[4] __attribute__((aligned(16)));
+    float jitter[4] __attribute__((aligned(16)));
+    float point[4] __attribute__((aligned(16)));
+    float step[4] __attribute__((aligned(16)));
+    int i, color, alpha, spriteAlpha;
+    float inv255, half, three;
+
+    if (*(short *)(obj + 0xAA) == 0x11C7) {
+        func_00282F20(point, obj + 0xE0, 1.5f);
+        func_00282CC0(origin, obj + 0x10, point);
+    } else {
+        func_0029FCC0(obj, 0, origin);
+    }
+    if (!func_002A77E0(4)) {
+        func_002A7A00(velocity, D_L19_001B1ECC[0] * 0.016666668f, D_L19_001B1ED0[0] * 0.016666668f);
+        {
+            int glowAlpha = D_L19_001B1EDC[0];
+            func_002C3150(origin, velocity, D_L19_001B1EE0[0], glowAlpha, func_002A77E0(255), 0,
+                          D_L19_001B1EE8[0]);
+        }
+        for (i = 2; i >= 0; i--) {
+            func_002A7A00(jitter, D_L19_001B1ED4[0] * 0.016666668f, D_L19_001B1ED8[0] * 0.016666668f);
+            func_00282CC0(velocity, velocity, jitter);
+            {
+                int glowAlpha = D_L19_001B1EDC[0];
+                func_002C3150(origin, velocity, D_L19_001B1EE4[0], glowAlpha, func_002A77E0(255), 0,
+                              D_L19_001B1EEC[0]);
+            }
+        }
+    }
+    inv255 = 1.0f / 255.0f;
+    half = 0.5f;
+    three = 3.0f;
+    func_00282CF0(point, D_L19_001B9A40, origin);
+    func_00282F20(point, point, -0.3f);
+    func_00282F20(step, point, 0.1f);
+    func_00282CC0(point, point, origin);
+    for (i = 0; i < 4; i++) {
+        color = func_00283D38(D_L19_001B1EF0[0], D_L19_001B1EF4[0],
+                              func_00282C48(half - func_00283CE0(255 - ((D_L19_001B2508[0] + i * 20) & 255)) * inv255));
+        alpha = *(u8 *)D_L19_001B2508;
+        if (i & 2)
+            alpha *= 2;
+        if (i & 1)
+            alpha = 255 - alpha;
+        spriteAlpha = (u8)alpha;
+        func_002C2FD8(point, color, spriteAlpha, D_L19_001B1F00[0], D_L19_001B1EFC[0], 2, 0,
+                      (func_00283CE0(i) + three) * (*(float *)(obj + 0x2C) / *(float *)(*(char **)(obj + 0x24) + 0x24)));
+        func_00282CC0(point, point, step);
+    }
+}
 
 INCLUDE_ASM("asm/levels", func_L19_00423548);
 

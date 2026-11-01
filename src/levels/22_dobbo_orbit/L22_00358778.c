@@ -285,7 +285,6 @@ INCLUDE_ASM("asm/levels", func_L22_003955D8);
 
 /* func_L22_003A6620 lives in the -g8 sibling file (it reaches a global through $gp). */
 
-INCLUDE_ASM("asm/levels", func_L22_003B9450);
 
 
 INCLUDE_ASM("asm/levels", func_L22_003D0840);
@@ -324,7 +323,7 @@ void func_L22_003FA2A8(s32 a0) {
 }
 
 
-INCLUDE_ASM("asm/levels", func_L22_0040C888);
+/* func_L22_0040C888 is in L22_0040C888-g8.c. */
 
 /* func_L22_0040D638 lives in L22_00358778-state-g8.c. */
 
@@ -500,8 +499,8 @@ void func_L22_0040DF28(u8 *a0, u8 *a1) {
 
 INCLUDE_ASM("asm/levels", func_L22_0040F1C0);
 
-INCLUDE_ASM("asm/levels", func_L22_004135F8);
+/* func_L22_004135F8 is in L22_004135F8-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L22_00413B70);
+/* func_L22_00413B70 is in L22_00413B70-g8.c. */
 
 
