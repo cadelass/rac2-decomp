@@ -370,7 +370,7 @@ void func_L00_00373F40(void)
 
 INCLUDE_ASM("asm/levels", func_L00_00373F48);
 
-INCLUDE_ASM("asm/levels", func_L00_00374348);
+/* func_L00_00374348 is defined in L00_00374348.c. */
 
 extern int D_0022F810;
 
@@ -508,13 +508,54 @@ no_money:
     func_00280200(&copy, 0x80F0F0F0ULL, (unsigned char *)func_00288FB8(0x1128), -1);
 }
 
-INCLUDE_ASM("asm/levels", func_L00_00378C18);
+/* Measured rows of the confirmation prompt: the price is their first word. */
+typedef struct { int price; int rest[2]; } ConfirmRow;
+typedef struct {
+    char prefix[0x80];
+    int index;
+    int active;
+    char padding[0xBC];
+    ConfirmRow rows[0];
+} ConfirmModel;
+/* The call must reach the compiler's builtin: its argument setup order differs from a plain call. */
+extern void *memset(void *, int, unsigned int);
+
+/* Draws the confirmation prompt, with another message and layout when the price is affordable. */
+void func_L00_00378C18(void) {
+    TextLayout copy;
+    TextLayout layout;
+    ConfirmModel *model = (ConfirmModel *)&D_L00_0022F7C0;
+    int top;
+    float scale;
+    if (model->active == 0) return;
+    memset(&layout, 0, sizeof(layout));
+    top = 314;
+    scale = D_L00_001B25E0;
+    layout.field[0] = (short)(scale * 120.0f + 0.5f);
+    layout.field[1] = (short)(scale * top + 0.5f);
+    layout.field[2] = top;
+    layout.field[3] = 486;
+    layout.field[4] = 400;
+    layout.field[5] = (short)(scale * 217.0f + 0.5f);
+    layout.field[6] = 164;
+    layout.field[7] = (short)(scale * 186.0f + 0.5f);
+    layout.field[8] = 16;
+    layout.field[9] = 3;
+    copy = layout;
+    if (D_001A79F8 >= model->rows[model->index].price) {
+        copy.field[9] = 1;
+        copy.field[5] = (short)((float)(copy.field[0] + 40) * scale + 0.5f);
+        func_00280200(&copy, 0x80F0F0F0ULL, (unsigned char *)func_00288FB8(0x1129), -1);
+    } else {
+        func_00280200(&copy, 0x80F0F0F0ULL, (unsigned char *)func_00288FB8(0x1128), -1);
+    }
+}
 
 /* func_L00_00378DE0 is defined in L00_00378DE0-g8.c. */
 
 /* func_L00_00378E90 is defined in L00_00378E90.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_0037A2E8);
+/* func_L00_0037A2E8 is defined in L00_0037A2E8-qcopy.c. */
 
 /* func_L00_0037A610 is defined in L00_0037A610-g8.c. */
 

@@ -1,14 +1,3 @@
-/* Opus big36 draft, 26 October 2026: NOT MATCHING (supersedes the 25 October reconstruction).
- * Profile: -O2 -G0 -ffunction-sections. 751/751 instructions; about 15 differ.
- * Fixed here: u16 timers, arm order of the radius/colour cycles (pause and random arms last),
- * offset-mode arms, sphere-miss release reached by goto at the end, block-scoped saved words,
- * radiusReset set before the state test, light-create arguments precomputed.
- * Left: (1) the three colour random arms test `bnel $v0,$zero` after `li $v0,1` where the radius
- * arm tests radiusReset (`bnel $s6,$v0`): some per-colour flag that is a constant only at RTL
- * level (no spelling tried reproduces it); (2) init-block local allocation (interval[1] and the
- * flags save swap $v1/$t0) and the parent index/base pair ($a0/$v1 vs $v1/$v0).
- */
-
 #include "common.h"
 typedef int Quad __attribute__((mode(TI)));
 typedef union { Quad quad; float f[4]; } Vector;
@@ -28,14 +17,17 @@ typedef struct {
     u16 interval[4], timer[4];
     u8 delay[4];
 } LightState;
-extern char *D_L00_001B1E9C;
+/* Incomplete sda array read as [0]: retail's tied absolute macro load of the moby table base. */
+extern char *D_L00_001B1E9C[] __attribute__((sda));
 extern Vector D_L00_001C6F40[8][2];
 extern float func_00283CE0(int), func_002A7878(float, float);
 extern int func_00283CF0(float), func_00282948(int *), func_00282978(u16 *), func_002829A8(u8 *), func_00283DB8(void *, float);
 extern void func_00291450(int), func_0029F338(void *), func_00282D30(void *, void *, float), func_00283098(void *, void *, void *), func_00282CC0(void *, void *, void *);
 extern int func_L00_002FCF18(void *, float, float, float, float, float);
 /* The retail code checks flag pairs through the aligned lifetime/flags doubleword. */
-#define UPDATE_COLOR(n, randomFlag, pairMask, pairValue, pauseFlag, downFlag, topFlag, bottomFlag) \
+/* colorReset mirrors the radius cycle's reset flag but no colour path sets it: retail keeps the
+ * constant test (li v0,1; bnel v0,zero), so a nonzero interval never randomizes the channel. */
+#define UPDATE_COLOR(n, randomFlag, pairMask, pairValue, pauseFlag, downFlag, topFlag, bottomFlag) { int colorReset = 0; \
     if (s->interval[n] && func_00282978(&s->timer[n])) { \
         s->timer[n] = s->interval[n]; \
         s->rgb[n] = (float)s->color[n].minimum; \
@@ -64,11 +56,11 @@ extern int func_L00_002FCF18(void *, float, float, float, float, float);
             if (s->hold[n] && func_002829A8(&s->delay[n])) s->flags ^= (pauseFlag); \
         } \
     } else { \
-        if (!s->interval[n] || radiusReset == 1) { \
+        if (!s->interval[n] || colorReset == 1) { \
             s->rgb[n] = func_002A7878((float)func_00283CF0((float)s->color[n].minimum) * 0.01f, \
                                       (float)func_00283CF0((float)s->color[n].maximum) * 0.01f); \
         } \
-    }
+    } }
 /* Updates a configured animated point light: radius, RGB cycles and attachment. */
 void func_L00_0039D598(u8 *actor) {
     LightState *s;
@@ -84,12 +76,19 @@ void func_L00_0039D598(u8 *actor) {
         actor[0x30] = 0xFF;
         startup = *((u8 *)&s->origin + 12); actor[0xBC] = startup;
         qcopy(&s->origin, (actor + 0x10));
-        s->light = -1; *((u8 *)&s->origin + 12) = startup; s->timer[1] = s->interval[1]; s->timer[0] = s->interval[0]; *(u32 *)&s->offset.f[3] = s->flags; s->timer[2] = s->interval[2]; s->timer[3] = s->interval[3];
+        s->light = -1;
+        *((u8 *)&s->origin + 12) = startup;
+        *(u32 *)&s->offset.f[3] = s->flags;
+        s->timer[0] = s->interval[0];
+        s->timer[1] = s->interval[1];
+        s->timer[2] = s->interval[2];
+        s->timer[3] = s->interval[3];
         s->rgb[0] = func_00283CE0(s->color[0].initial) * 0.01f;
         s->rgb[1] = func_00283CE0(s->color[1].initial) * 0.01f;
         s->rgb[2] = func_00283CE0(s->color[2].initial) * 0.01f;
+        index = s->parentIndex;
         s->radius = s->initialRadius;
-        if (s->parentIndex != -1) s->parent = D_L00_001B1E9C + s->parentIndex * 0x100;
+        if (index != -1) s->parent = D_L00_001B1E9C[0] + index * 0x100;
         if (s->radiusRise < 0) s->radiusRise = -s->radiusRise;
         if (s->radiusFall < 0) s->radiusFall = -s->radiusFall;
         actor[0x20] = 1;

@@ -1,17 +1,4 @@
-/* Opus handoff (big44), 26 October 2026: rewritten from the retail listing.
- * Profile: -O2 -G8 -ffunction-sections -g (the -g line labels give the pre-div.s nop pair).
- * Score: 674 of 797 instructions identical before relocation; 10 register-blind,
- * relocation-blind lines differ (big42's sc.py --odiff), all in two spots:
- *  - case 2: retail has a nop before the rate div.s (load directly before it); the
- *    D_0013957F/0xE0 setup order differs by one slot.
- *  - muzzle light (end): retail builds &tbl[i].position from %hi/%lo(tbl+0x10) in s0,
- *    then reuses s0-0x10 as the base for every later field (offsets 0x1C, 4, 0, 8).
- *    Here cse keeps the +0x10 base for some stores and a second register for others.
- *    Writing the last store through a block-local MuzzleLight * gives 8 off but one
- *    instruction short (796/797).
- * Not tried yet: hand-scheduling the case-2 statements; -frac2-qcopy.
- * Callee names are catalogue names (mapped from level 0 addresses).
- */
+/* Scoped weapon update: targeting, zoom, firing, reload and muzzle light. */
 #include "common.h"
 
 typedef union { u8 b[0x2600]; s16 h[0x1300]; s32 i[0x980]; f32 f[0x980]; } Hero;
@@ -74,7 +61,7 @@ extern void func_00282F20(void *, void *, float);
 extern float func_00283248(float, float);
 extern float func_00283CE0(int);
 extern int func_00288E18(int, int);
-extern int func_00291308(void *, u32, float, float);
+extern int func_00291308(float, void *, u32, float);
 extern void func_00291450(s32);
 extern void func_0029FCC0(void *, int, void *);
 extern void func_002A7470(void *, int, int, int);
@@ -88,7 +75,7 @@ extern void func_L00_002C42E0(int, int);
 extern int func_L00_002D3F30(int, int);
 extern int func_L00_002D4040(int);
 extern int func_L00_002D6998(TargetRecord *);
-extern void func_L00_002D6B70(void);
+extern void func_L00_002D6B70(int);
 extern int func_L00_00329E90(void *, int, int *);
 extern int func_L00_00329FF0(char *);
 extern char *func_L00_0032A088(int, int);
@@ -270,8 +257,8 @@ void func_L00_003A2EE0(u8 *moby)
         }
         t = (st->zoom - 0.17453295f) / (st->zoom_max - 0.17453295f);
         D_L00_001B15D0 = (D_L00_001AF614 - 0.03f) * t + 0.03f;
-        D_L00_001B15CC = (D_L00_001AF620 - 0.010471977f) * t + 0.010471977f;
         D_L00_001B15D4 = (D_L00_001AF618 - 0.4f) * t + 0.4f;
+        D_L00_001B15CC = (D_L00_001AF620 - 0.010471977f) * t + 0.010471977f;
         if (HERO->b[0x22BC] == 0 && (GAME->i[0x1A4 / 4] & HERO->i[0x1230 / 4]) && fire) {
             if (func_L00_002D3F30(-1, 1) != 0) {
                 func_L00_002AF568();
@@ -285,7 +272,7 @@ void func_L00_003A2EE0(u8 *moby)
         }
         if (!(GAME->i[0x1A0 / 4] & HERO->i[0x1230 / 4]) || func_L00_002D4040(-1) == 0 || HERO->b[0x22B8] == 0) {
             if (st->hud >= 0) {
-                func_L00_002D6B70();
+                func_L00_002D6B70(st->hud);
                 st->hud = -1;
             }
         }
@@ -304,7 +291,10 @@ void func_L00_003A2EE0(u8 *moby)
             st->sound = -1;
             func_002E5CF8(0, 0, moby);
             func_L00_003A3B58(moby);
-            st->reload = 1.0f / D_L00_00262570[D_0013957F[0]].rate;
+            {
+                WeaponEntry *weapon = &D_L00_00262570[D_0013957F[0]];
+                st->reload = 1.0f / weapon->rate;
+            }
             moby[0x20] = 3;
             if (++st->shots == 5)
                 func_00288E18(0x9F3, 0x4A);
@@ -322,7 +312,7 @@ void func_L00_003A2EE0(u8 *moby)
             st->light = -1;
         } else {
             if (st->light == -1)
-                st->light = func_00291308(moby + 0x10, 0x7F608060, 15.0f, 0.0f);
+                st->light = func_00291308(15.0f, moby + 0x10, 0x7F608060, 0.0f);
             if (st->light >= 0) {
                 float f;
                 if (HERO->h[0x24EC / 2] == 1) {
@@ -332,12 +322,17 @@ void func_L00_003A2EE0(u8 *moby)
                     func_0029FCC0(moby, 0, a);
                     func_00282F20(b, &HERO->f[0x760 / 4], 1.5f);
                 }
-                func_00282CC0(D_L00_001C6F40[st->light].position, a, b);
-                D_L00_001C6F40[st->light].position[3] = 15.0f;
-                f = func_00283CE0(st->flash) / func_00283CE0(30);
-                D_L00_001C6F40[st->light].spread = f;
-                D_L00_001C6F40[st->light].radius = f * 0.75f;
-                D_L00_001C6F40[st->light].power = D_L00_001C6F40[st->light].radius;
+                {
+                    float (*positions)[8] = (float (*)[8])D_L00_001C6F40[0].position;
+                    MuzzleLight *lights;
+                    func_00282CC0(positions[st->light], a, b);
+                    lights = (MuzzleLight *)((char *)positions - 0x10);
+                    lights[st->light].position[3] = 15.0f;
+                    f = func_00283CE0(st->flash) / func_00283CE0(30);
+                    lights[st->light].spread = f;
+                    lights[st->light].radius = f * 0.75f;
+                    lights[st->light].power = lights[st->light].radius;
+                }
             }
         }
     }

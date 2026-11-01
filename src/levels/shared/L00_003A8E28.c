@@ -40,7 +40,7 @@ INCLUDE_ASM("asm/levels", func_L00_003A9C58);
 
 /* func_L00_003AA4C8 is defined in L00_003AA4C8-effects-g.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_003AA708);
+/* func_L00_003AA708 is defined in L00_003AA708-g.c. */
 
 /* func_L00_003AB388 is defined in L00_003AB388-hit.c. */
 

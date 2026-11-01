@@ -111,12 +111,12 @@ extern L00AimVector D_L00_001B8C80;
 
 /* func_L00_003D37E8 lives in L00_003D37E8-ribbon-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_003D3DE0);
+/* func_L00_003D3DE0 lives in L00_003D3DE0-g16.c. */
 
 
 /* func_L00_003D3FB0 lives in L00_003D3FB0-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_003D40D8);
+/* func_L00_003D40D8 lives in L00_003D40D8-g8.c. */
 
 /* func_L00_003D4548 is defined in L00_003D4548-g8.c. */
 
@@ -245,9 +245,8 @@ void func_L00_003DA2B0(char *p)
 
 
 
-INCLUDE_ASM("asm/levels", func_L00_003DB118);
 
-INCLUDE_ASM("asm/levels", func_L00_003DBF50);
+/* func_L00_003DBF50 lives in L00_003D37E8-g8.c. */
 
 
 
@@ -553,7 +552,7 @@ void func_L00_003DD680(char *p)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L00_003DD6A8);
+/* func_L00_003DD6A8 lives in L00_003DD6A8-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L00_003DDEC8);
 

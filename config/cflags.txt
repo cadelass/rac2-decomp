@@ -1943,13 +1943,17 @@ src/game/002977A8.c	-O2 -G0 -ffunction-sections -fno-strength-reduce
 src/levels/shared/L00_003E7E40-trails.c	-O2 -G0 -ffunction-sections -mno-split-addresses
 src/levels/shared/L22_002A8B98-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy
 src/levels/01_oozla/L01_002BEB90-nsa-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/levels/shared/L00_003A2EE0-g8.c	-O2 -G8 -ffunction-sections -g
 src/game/00300F58-g8.c	-O2 -G8 -ffunction-sections -g -frac2-keep-block-order
 src/game/002BF6F0-c5120-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/shared/L00_003D3DE0-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16 -fno-rerun-loop-opt
+src/levels/shared/L00_003D40D8-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L00_0033F678-spline.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
 src/game/00336A78-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
 src/levels/shared/L00_0032A530-g.c	-O2 -G0 -ffunction-sections -g
 src/game/002D0568-rc2.c	-O2 -G8 -fno-expensive-optimizations -ffunction-sections -fno-builtin
 src/game/00345358-input-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/shared/L00_0037E898-trail-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/002B50E0.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/002B41A8.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/0030CAD0-g8.c	-O2 -G8 -ffunction-sections -g -frac2-qcopy -frac2-qcopy-barrier
@@ -1957,6 +1961,7 @@ src/game/0030DE88-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/game/00308600-spawn.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -fno-gcse
 src/core/0011BEE0-kputchar.c	sdk -O2 -G2 -ffunction-sections -Wa,--r5900-swap-branch-slots
 src/game/0027BD70-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L00_0037A2E8-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/core/00132318-g8.c	-O2 -G8 -ffunction-sections -fno-gcse -fno-cse-follow-jumps
 src/game/0027F128-glow.c	-O2 -G0 -ffunction-sections -fno-rerun-loop-opt
 src/game/0027F128-quad.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
@@ -1979,8 +1984,10 @@ src/game/00294BC8-nosched.c	-O2 -G0 -ffunction-sections -fno-schedule-insns
 src/game/0032EB28-ai-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/game/0032EB28-wander-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/core/00119BF8.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
+src/levels/shared/L00_003AA708-g.c	-O2 -G0 -ffunction-sections -g
 src/levels/shared/L00_002C9448-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-hazard-labels
 src/game/002AA800-blast.c	-O2 -G0 -ffunction-sections -g
+src/levels/shared/L00_003DB118-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/game/002F5220-7738.c	-O2 -G8 -fno-sched-interblock -ffunction-sections
 src/game/00295F60-map-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -ffast-math -g

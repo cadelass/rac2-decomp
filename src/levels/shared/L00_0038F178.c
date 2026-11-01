@@ -467,8 +467,6 @@ void func_L00_0039D378(char *object)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L00_0039D598);
-
 INCLUDE_ASM("asm/levels", func_L00_0039E158);
 
 /* multiply binary32 field2C by exact1.025f then subtract3 modulo256 from byte23; call original pointer helper if updated byte below4; no original semantic field names recovered */

@@ -149,7 +149,7 @@ void func_L00_003CA470(void)
         D_L00_00241500[i].field_48 = 0;
 }
 
-INCLUDE_ASM("asm/levels", func_L00_003CA730);
+/* func_L00_003CA730 is defined in L00_003C6298-shot-g8.c. */
 
 
 
