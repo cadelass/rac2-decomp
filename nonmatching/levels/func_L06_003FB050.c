@@ -1,15 +1,18 @@
 /*
- * Complete manual reconstruction retained as nonmatching; no coverage credit.
- * Fresh qualified-compiler checks, 2026-10-25.
- * Profile: -O2 -G0 -ffunction-sections
- * Coverage: US: 0/1; US2: 0/1; PAL: absent from catalogue.
- * Compiled text: 1360 bytes; retail: 1356 bytes.
- * Remaining difference: A real five-state switch replaces the external computed-goto and unused
- * label-table workaround. The resident-player position prefix fixes its base formation; frame 0x60
- * matches. The body is 1360/1356; sound-handle address/register ownership and branches remain
- * different. A 0x70-stride sound-entry view did not solve it and was retained privately.
- * Reopen when: Recover sound-manager/header address lifetimes and source branching without
- * narrowing the sound-state predicate or rewriting the compiled jump table.
+ * GPT-6.1 Sol high-effort worker, 2026-10-29.
+ * Profile: -O2 -G0 -ffunction-sections, current task wrapper/toolchain.
+ * Best check: 1356/1356 bytes, 0/1 USA v1.01 places; six words differ.
+ * Separate sound-pointer lifetimes in each arm recover all sound addresses,
+ * branches and state-3 scheduling. State 2 must test !(height <= playerZ):
+ * the previous height > playerZ spelling lost retail's unordered path.
+ * MACRO_ADDR on the frame counter preserves the measured absolute FP load.
+ * Remaining differences: +0x4FC..+0x510 (003FB54C..003FB560), color-packing
+ * register ownership and final OR operand order. Text before/after is exact
+ * under check.py's relocation binding, including the store at +0x518.
+ * Sequential color assembly, commuted middle OR, and an ordinary inlined
+ * RGBA packer produce the same six-word mismatch: stop on this tie.
+ * Reopen with an independently supported color-value type/lifetime model.
+ * Required declarations are below. Other releases and linked builds untested.
  */
 
 #include "common.h"
@@ -19,7 +22,7 @@ extern char D_00188660[];
 typedef struct { unsigned char prefix[0x80]; Vector position; } PlayerPosition;
 extern PlayerPosition D_00189E20;
 extern char *D_L06_001BFC98;
-extern int D_L06_001B2348;
+extern int D_L06_001B2348 MACRO_ADDR;
 extern void func_002E59F8(int);
 extern int func_002E5CF8(int, int, void *);
 extern int func_L00_00324120(void *);
@@ -34,7 +37,6 @@ void func_L06_003FB050(char *moby)
 {
     Vector oldPosition, oldRotation, delta;
     char *state = *(char **)(moby + 0x68);
-    char *sound;
     int handle, phase, brightness;
     float time, wave;
     unsigned int selection;
@@ -56,7 +58,7 @@ void func_L06_003FB050(char *moby)
     case 1:
     handle = *(int *)(state + 0xB0);
     if (handle != -1) {
-        sound = D_00188660 + handle * 0x70;
+        char *sound = D_00188660 + handle * 0x70;
         if (*(char **)(sound + 0x88) == moby && *(unsigned char *)(sound + 0x74))
             func_002E59F8(handle);
     }
@@ -78,7 +80,7 @@ void func_L06_003FB050(char *moby)
     if (*(float *)(moby + 0x18) <= *(float *)(state + 0x88)) {
     handle = *(int *)(state + 0xB0);
     if (handle != -1) {
-        sound = D_00188660 + handle * 0x70;
+        char *sound = D_00188660 + handle * 0x70;
         if (*(char **)(sound + 0x88) == moby && *(unsigned char *)(sound + 0x74))
             func_002E59F8(handle);
     }
@@ -88,12 +90,14 @@ void func_L06_003FB050(char *moby)
         goto done;
     }
     if (func_00277258(moby + 0x10, 1, moby, 2.1f) &&
-        *(float *)(moby + 0x18) > D_00189E20.position[2] &&
+        !(*(float *)(moby + 0x18) <= D_00189E20.position[2]) &&
         (!D_L06_001BFC98 || *(short *)(D_L06_001BFC98 + 0xAA) != 0xEA3))
         goto stop;
-    sound = D_00188660 + *(int *)(state + 0xB0) * 0x70;
+    {
+        char *sound = D_00188660 + *(int *)(state + 0xB0) * 0x70;
     if (*(char **)(sound + 0x88) != moby || !*(unsigned char *)(sound + 0x74))
         *(int *)(state + 0xB0) = func_002E5CF8(0, 4, moby);
+    }
     func_002AA548(moby + 0x18, state + 0x64, *(float *)(state + 0x88),
                   0.001944444492f, 0.001666666707f, 0.1000000089f);
     goto done;
@@ -103,7 +107,7 @@ void func_L06_003FB050(char *moby)
     if (*(float *)(moby + 0x18) >= *(float *)(state + 0x98)) {
     handle = *(int *)(state + 0xB0);
     if (handle != -1) {
-        sound = D_00188660 + handle * 0x70;
+        char *sound = D_00188660 + handle * 0x70;
         if (*(char **)(sound + 0x88) == moby && *(unsigned char *)(sound + 0x74))
             func_002E59F8(handle);
     }
@@ -114,7 +118,7 @@ void func_L06_003FB050(char *moby)
             *(unsigned char *)(moby + 0x20) = 1;
         }
     } else {
-        sound = D_00188660 + *(int *)(state + 0xB0) * 0x70;
+        char *sound = D_00188660 + *(int *)(state + 0xB0) * 0x70;
         if (*(char **)(sound + 0x88) != moby || !*(unsigned char *)(sound + 0x74))
             *(int *)(state + 0xB0) = func_002E5CF8(0, 4, moby);
     }
@@ -123,7 +127,7 @@ stop:
     case 4:
     handle = *(int *)(state + 0xB0);
     if (handle != -1) {
-        sound = D_00188660 + handle * 0x70;
+        char *sound = D_00188660 + handle * 0x70;
         if (*(char **)(sound + 0x88) == moby && *(unsigned char *)(sound + 0x74))
             func_002E59F8(handle);
     }
@@ -136,7 +140,12 @@ done:
     if (!(phase & 1))
         wave = 1.0f - wave;
     brightness = (int)(wave * 255.0f);
-    *(int *)(moby + 0x78) = (brightness << 16) | (brightness << 8) | 0x7F000000 | brightness;
+    {
+        int color = (brightness << 8) | 0x7F000000;
+        color |= brightness << 16;
+        color |= brightness;
+        *(int *)(moby + 0x78) = color;
+    }
     func_00282CF0(delta, moby + 0x10, oldPosition);
     func_002AD6F0(state + 0x20, delta, oldRotation, moby + 0xF0);
 }

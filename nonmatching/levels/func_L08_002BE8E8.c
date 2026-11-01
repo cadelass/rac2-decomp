@@ -1,31 +1,37 @@
 /*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
+ * Retained near miss, GPT-6.1 Sol (high), task v0978, 29 October 2026.
+ * Compiler: pinned game EE-GCC 2.9-ee-991111b.
  * Profile: -O2 -G0 -ffunction-sections.
- * Reported final C / retail: 1072 / 1076 bytes; size equality is not a match.
- * us: 0/1 placements; 1072/1076 bytes.
- * us2: 0/1 placements; 1072/1076 bytes.
- * pal: 0/1 placements; 1072/1076 bytes.
- * Residual: Retail has unused player+0x340 load and mixed GP/absolute reads. Address lifetimes/joins remain; no volatile or alias invented.
- * Reopening condition: New concrete supported compiler/API/identity hypothesis only; see retained source comment. No repeated flag or permutation sweep.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
+ * check.py: 1072/1076 bytes, 0/1 places in US, US2 and PAL.
+ * No linked build was run; complete retail semantics remain unverified.
+ *
+ * New hypothesis from MATCHING-BLOCKERS.md (func_L00_00303418): ordinary
+ * __attribute__((sda)) on D_001A79F0 reproduces the mixed GP/absolute reads.
+ * The GP load fills the floating branch delay slot; the other load expands
+ * absolutely. Reversing the equivalent 0x24CC and level-index selections also
+ * reproduces retail's branch direction and argument setup. All variants stay
+ * 1072 bytes, but these suffix instructions now agree apart from relocation
+ * operands and the existing four-byte displacement of the whole suffix.
+ *
+ * Still missing: retail's dead lw v0,0x340(s1) at US 0x002BE938. Earlier base
+ * lifetimes and action-14/action-0 store/address scheduling also differ.
+ * No volatile qualifier, alias, artificial dependency or extra read was added.
+ * Reopen only with evidence for the original field/control-flow contract or
+ * supported compiler behavior retaining that dead read.
+ *
+ * Historical attempts: persistent base 1012, no-GCSE tie 1012, direct globals
+ * 1072, G8/combined animation choice 1064 bytes. Do not repeat flag sweeps.
+ * Required declarations are included below. The clear takes two GPR arguments;
+ * the animation helper takes two GPR arguments and returns an integer boolean.
+ * RAC1's apply_hero_selected_flags_and_state_transitions in
+ * src/overlays/shared/hero_idle_and_animation.c corroborates the flag-update
+ * and follow-up movement-state structure, but not the dead RAC2 +0x340 read.
  */
-
-/* Complete retained C, 1072/1076 bytes at -O2 -G0 -ffunction-sections.
-   Four meaningful trials: persistent base 1012, no-GCSE tie 1012, direct global
-   accesses 1072, G8/combined final animation selection 1064. All carrying releases
-   remain nonmatching. Retail includes an unused load at player+0x340 and retains
-   different address lifetimes, plus both GP and absolute reads of D_001A79F0.
-   No invented volatile access or data alias is used to reproduce those effects.
-   Reopen with evidence for the original player field contract or supported
-   optimization behavior; ordinary clear helper takes two GPRs, animation helper
-   takes two GPRs and returns a deliberate integer boolean. */
 #include "common.h"
 
 extern u8 D_00189E20[];
 extern u8 D_001A7B0B;
-extern s32 D_001A79F0;
+extern s32 D_001A79F0 __attribute__((sda));
 extern void func_00282A88(void *, s32);
 extern float func_00282C48(float);
 extern s32 func_L08_002D2ED8(s32, s32);
@@ -86,18 +92,18 @@ void func_L08_002BE8E8(void)
         *(float *)(D_00189E20 + 0x334) - *(float *)(D_00189E20 + 0x88) > 0.0f &&
         (*(s32 *)(D_00189E20 + 0x2294) != 0x66 || D_00189E20[0x49E]) &&
         (*(float *)(D_00189E20 + 0x118) < 0.0f || *(s32 *)(D_00189E20 + 0x2294) == 0x7B)) {
-        if (*(s32 *)(D_00189E20 + 0x24CC))
-            func_L08_002D2ED8(0x65, 1);
-        else
+        if (!*(s32 *)(D_00189E20 + 0x24CC))
             func_L08_002D2ED8(0x78, 1);
+        else
+            func_L08_002D2ED8(0x65, 1);
     } else if (D_00189E20[0x149B] && *(s32 *)(D_00189E20 + 0x2294) != 0x78 &&
         *(s32 *)(D_00189E20 + 0x2294) != 0x74 &&
         func_00282C48(*(float *)(D_00189E20 + 0x334) - (*(float *)(D_00189E20 + 0x88) + 0.25f)) < 1.0f &&
         *(float *)(D_00189E20 + 0x334) - *(float *)(D_00189E20 + 0x88) > 0.0f &&
         (*(float *)(D_00189E20 + 0x118) < 0.0f || *(s32 *)(D_00189E20 + 0x2294) == 0x7B)) {
-        if (D_001A79F0 != 13)
-            func_L08_002D2ED8(0x78, 1);
-        else
+        if (D_001A79F0 == 13)
             func_L08_002D2ED8(0x74, 1);
+        else
+            func_L08_002D2ED8(0x78, 1);
     }
 }
