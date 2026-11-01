@@ -1,22 +1,22 @@
 /*
- * Retained complete manual reconstruction; not linked or counted.
- * Profile: -O2 -G0 -ffunction-sections
- * Retail: 1124 bytes; compiled: 1100 bytes.
- * Final coverage: us: 0/1; us2: 0/1; pal: catalogue absent.
- * Residual: 1100/1124 bytes. The initial field group has a measured prefix view without
- * implying the whole state size; owner-table storage is an actual pointer. Full
- * state-vector capture uses qcopy. Initialization constant/store ordering and
- * damage/animation selector control flow still differ.
- * Reopen: A retail-backed initializer grouping and selector lifetime witness. Preserve
- * the metadata-word interpretation of the canonical integer first input to AB800 and
- * actual pointer return of the damage selector; do not permute prototypes for
- * scheduling.
+ * GPT-6.1 Sol worker v0594; retained near miss, not linked.
+ * Current pinned compiler: -O2 -G0 -ffunction-sections -mno-split-addresses.
+ * USA v1.01: 1128/1124 bytes, 0/1 places match (check.py --diff).
+ * Corrected damage-counter storage to existing D_L02_001FF6B8 + 0xE0.
+ * Default split-address profile is 1104 bytes; disabling split addresses restores
+ * repeated owner-table address setup and gives 1128 bytes. Initial float/store
+ * ordering, owner-table register allocation and animation-selector branching
+ * remain different. Raw scalar initializer accesses also give 1128 bytes with
+ * worse ordering. Reversing the selector and guarding source-load under part
+ * gives 1132 bytes, so that trial is not retained. Next useful evidence: actual
+ * initializer grouping and selector lifetimes. No release checks or link run.
+ * Required declarations and prefix layout follow below.
  */
 #include "common.h"
 
 typedef int Vector __attribute__((mode(TI)));
 extern char *D_L02_001B359C;
-extern int D_L02_001FF798[];
+extern int D_L02_001FF6B8[];
 extern int func_00283CF0(float);
 extern void func_002A04B8(char *, void *, void *, void *);
 extern void func_00282A60(void *, int, int);
@@ -92,7 +92,7 @@ void func_L02_003D91A0(char *self) {
         if (*(unsigned char *)(self + 0x20) >= 5 && *(unsigned char *)(self + 0x20) != 10 &&
             *(unsigned char *)(self + 0x20) != 11) {
             *(float *)(state + 0x20) -= amount;
-            D_L02_001FF798[*(unsigned char *)(state + 0x37)] += (int)(amount * 32.0f);
+            D_L02_001FF6B8[0x38 + *(unsigned char *)(state + 0x37)] += (int)(amount * 32.0f);
             if (*(short *)(state + 0x140) == 0)
                 func_002AB800((int)self, state + 0x140);
             if (amount > 3.0f && *(unsigned char *)(self + 0x20) == 6 && *(unsigned char *)(self + 0x42) == 7) {

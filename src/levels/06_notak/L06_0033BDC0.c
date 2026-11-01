@@ -530,7 +530,7 @@ INCLUDE_ASM("asm/levels", func_L06_00402230);
 /* func_L06_00403F60 is matched in L06_0033BDC0-g8.c (it reaches a global through $gp). */
 
 
-INCLUDE_ASM("asm/levels", func_L06_00419CA8);
+/* func_L06_00419CA8 is defined in L06_00419CA8-g8.c. */
 
 /* clears one word of a 0xA58 moby's state block when it is neither dying nor gone */
 void func_L06_0041CAB0(char *a0, char *a1)

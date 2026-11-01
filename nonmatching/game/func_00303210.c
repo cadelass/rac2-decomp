@@ -1,33 +1,26 @@
-/*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
- * Profile: -O2 -G0 -ffunction-sections (reported default game profile).
- * Reported final C / retail: 888 / 856 bytes; size equality is not a match.
- * us: 0/28 placements; 888/856 bytes.
- * us2: 0/28 placements; 888/856 bytes.
- * pal: 0/28 placements; 888/856 bytes.
- * Residual: List/grid allocation; faithful raw control-word copies and actual selector reloads retained over shorter less faithful form.
- * Reopening condition: Reopen only after independent source, data-layout, ABI or compiler evidence specifically explains the residual above; then test that single hypothesis. Do not repeat tied source forms or flag sweeps.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
+/* GPT-6.1 Sol high, worker v0912, 29 October 2026.
+ * Pinned game EE-GCC, -O2 -G0 -ffunction-sections: 856/856 bytes,
+ * 0/28 USA v1.01 placements; 19 non-relocation instruction words differ.
+ * Improved from 888 bytes: an explicit list test/back edge prevents the
+ * duplicated initial checks; genuine floating-point control transfers retain
+ * all selector reloads, without volatile. Scratch order first, second, right,
+ * left recovers all four retail vector slots and the complete grid loop.
+ * Residual: nine list-preheader words are allocated/scheduled differently;
+ * ten selector-use words swap v0/v1. Named field views recover state-first
+ * address addition. A byte list index, a declared volatile selector, and
+ * integer-address table indexing do not change the remaining instructions.
+ * Next: independently evidenced list-base/selector temporary lifetimes.
+ * No linked build or other-release check was run for this revision.
+ * Required declarations follow. This is not a match.
  */
-
-/* Nonmatching manual reconstruction, 2026-10-23.
- * 00303210: 888 bytes versus retail 856; frame 0xB0.
- * Profile: default -O2 -G0 -ffunction-sections.
- * All carrying US/US2/PAL checks returned zero matches and exit 1;
- * catalogue absence is recorded separately and never counted as success.
- * Control-point values are copied as raw words with each measured selector reload. List and grid-loop allocation/scheduling differ.
- * Reopen only with new measured source/type/scheduling evidence. No artificial
- * barriers, register pins, generated decompiler C or omitted behavior were used.
- */
-
 typedef unsigned char u8;
 typedef int s32;
 typedef unsigned int u32;
 typedef int ParticleWord __attribute__((mode(TI)));
 typedef union { ParticleWord word; float f[4]; } ParticleVector;
 typedef struct { float x,y,z,w; } V4_F213135aa;
+typedef struct { char pad00[0x14]; u32 selector; } SurfaceControlSettings;
+typedef struct { char pad00[0x50]; float x[4], y[4], z; } SurfaceGridControl;
 extern void func_00282CC0(void *, void *, void *);
 extern void func_00282CF0(void *, void *, void *);
 extern void func_00282D30(void *, void *, float);
@@ -38,33 +31,38 @@ extern char *D_001B1B5C __attribute__((sda));
 extern V4_F213135aa ref_00303210_00[];
 extern int func_002A8508(int, int);
 
-/* Read the surface's four control points and regenerate its 8 by 8 mesh. */
+/* Regenerate the 8 by 8 mesh from four surface control points. */
 void func_00303210(char *object)
 {
     char *state=*(char **)(object+0x68);
     unsigned short *entry;
-    char *control, *settings;
-    ParticleVector first, second, left, right;
+    char *control;
+    SurfaceControlSettings *settings;
+    ParticleVector first, second, right, left;
     float columnWeight;
     int column, row, surface;
-    unsigned int list;
+    u8 list;
     if (func_002A8508((u8)object[0x21],-1)==5) {
-        entry=D_001EE5A0[(u8)object[0x21]];
-        for (;;) {
-            list=(u8)object[0x21];
-            if (list==0xff || D_001B1B78<(int)list || !entry) break;
-            if ((short)entry[-1]<0 && entry!=D_001EE5A0[list]) break;
-            control=(char *)((u32)D_001B1B5C+(*entry&0x7fff)*0x100);
-            if (!control) break;
-            if (*(short *)(control+0xaa)==0x1130) {
-                settings=*(char **)(control+0x68);
-                if (*(u32 *)(settings+0x14)>3) *(int *)(settings+0x14)=0;
-                *(u32 *)(state+0x50+*(int *)(settings+0x14)*4)=*(u32 *)(control+0x10);
-                *(u32 *)(state+0x60+*(int *)(settings+0x14)*4)=*(u32 *)(control+0x14);
-                ++entry;
-                if (!*(int *)(settings+0x14)) *(u32 *)(state+0x70)=*(u32 *)(control+0x18);
-            } else ++entry;
-        }
+        list=(u8)object[0x21];
+        entry=D_001EE5A0[list];
+        goto checkList;
+listBody:
+        control=(char *)((u32)D_001B1B5C+(*entry&0x7fff)*0x100);
+        if (!control) goto doneList;
+        if (*(short *)(control+0xaa)==0x1130) {
+            settings=*(SurfaceControlSettings **)(control+0x68);
+            if (settings->selector>3) settings->selector=0;
+            ((SurfaceGridControl *)state)->x[settings->selector]=*(float *)(control+0x10);
+            ((SurfaceGridControl *)state)->y[settings->selector]=*(float *)(control+0x14);
+            ++entry;
+            if (!settings->selector) *(float *)(state+0x70)=*(float *)(control+0x18);
+        } else ++entry;
+checkList:
+        list=(u8)object[0x21];
+        if (list==0xff || D_001B1B78<(int)list || !entry) goto doneList;
+        if ((short)entry[-1]>=0 || entry==D_001EE5A0[list]) goto listBody;
+doneList:
+        ;
     } else {
         *(int *)(state+0x50)=0; *(int *)(state+0x60)=0;
         *(int *)(state+0x54)=0; *(int *)(state+0x64)=0;

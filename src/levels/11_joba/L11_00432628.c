@@ -232,7 +232,7 @@ void func_L11_00435228(char *p)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L11_00435600);
+/* func_L11_00435600 is defined in L11_00435600-g8.c. */
 
 /* func_L11_00436350 is defined in L11_00436350-g8.c. */
 

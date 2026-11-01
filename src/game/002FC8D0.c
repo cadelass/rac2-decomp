@@ -307,7 +307,119 @@ void func_002FE8D8(void *object, float *destination)
     }
 }
 
-INCLUDE_ASM("asm/game", func_002FE9D0);
+/* A sphere moved along a velocity and tested for collisions: the contact
+   normal, the position and velocity it updates, the moby it belongs to (then
+   the moby it hit) and the ids of mobys to ignore. Field names describe how
+   func_002FE9D0 uses them. */
+typedef struct {
+    float normal[4];
+    float position[4];
+    float velocity[4];
+    char *moby;
+    int *ignoredIds;
+    int ignoredCount;
+    float radius;
+    float bounce;
+    float minFacing;
+    int pad48;
+    int collisionFlags;
+    int slideOnCreatures;
+    int surface;
+    int useOffset;
+    float offset;
+} SweptSphere;
+
+/* The collision queries' output: the moby hit, the contact point, the
+   sphere centre at contact and the surface normal. */
+typedef struct {
+    char pad[0x18];
+    char *moby;
+    int pad1C;
+    float point[4];
+    float center[4];
+    float normal[4];
+} CollisionOutput;
+
+extern CollisionOutput ref_L00_002FE9D0_00;
+extern void func_002FE8D8(void *, float *);
+extern void func_00282F20(float *, float *, float);
+extern void func_00282D30(float *, float *, float);
+extern void func_00282CF0(float *, float *, float *);
+extern void func_00282CC0(float *, float *, float *);
+extern void func_00283028(float *, float *, float *);
+extern float func_00282DB0(float *, float *);
+extern int func_00277258(float, float *, int, void *);
+extern int func_002761F8(void *, void *, int, void *, int);
+extern int func_00278E78(void);
+
+/* One collision step: tests the sphere (or a point offset from it) and,
+   on a hit that is not ignored, moves it to the contact and either bounces
+   its velocity off the surface, scaling the normal part by `bounce`
+   (returns 1), or stops it at the contact point (returns 2); 0 otherwise. The query pointer and the
+   separate dot product statement give retail's register use. */
+int func_002FE9D0(SweptSphere *sphere)
+{
+    float facing[4] __attribute__((aligned(16)));
+    float point[4] __attribute__((aligned(16)));
+    float along[4] __attribute__((aligned(16)));
+    float across[4] __attribute__((aligned(16)));
+    float *position;
+    float *query;
+    float *velocity;
+    float dot;
+    int result = 0, hit, i;
+    char *moby;
+
+    func_002FE8D8(sphere->moby + 0x10, facing);
+    if (sphere->useOffset) {
+        func_00282F20(point, (float *)(sphere->moby + 0xE0), sphere->offset);
+        func_00282CC0(point, sphere->position, point);
+        position = sphere->position;
+        query = point;
+    } else {
+        qcopy(point, sphere->position);
+        query = point;
+        position = sphere->position;
+    }
+    hit = func_00277258(sphere->radius, query, sphere->collisionFlags, sphere->moby);
+    if (hit) {
+        hit = 1;
+    } else {
+        hit = 0;
+        if (func_002761F8(sphere, position, sphere->collisionFlags, sphere->moby, 0)) hit = 2;
+    }
+    sphere->moby = 0;
+    if (hit) {
+        sphere->surface = func_00278E78();
+        moby = ref_L00_002FE9D0_00.moby;
+        if (moby) {
+            for (i = 0; i < sphere->ignoredCount; i++) {
+                if (*(short *)(moby + 0xAA) == sphere->ignoredIds[i]) return 0;
+            }
+            sphere->moby = ref_L00_002FE9D0_00.moby;
+        }
+        if (hit == 1) qcopy(position, ref_L00_002FE9D0_00.center);
+        else qcopy(position, ref_L00_002FE9D0_00.point);
+        func_00282D30(sphere->normal, ref_L00_002FE9D0_00.normal, 0.0009765625f);
+        func_00282F20(sphere->normal, sphere->normal, 1.0f);
+        if (func_00282DB0(facing, sphere->normal) < sphere->minFacing ||
+            (sphere->moby && *(short *)(*(char **)(sphere->moby + 0x24) + 0x46) == 5 &&
+             sphere->slideOnCreatures)) {
+            velocity = sphere->velocity;
+            func_00283028(velocity, velocity, sphere->normal);
+            result++;
+            dot = func_00282DB0(velocity, sphere->normal);
+            func_00282D30(along, sphere->normal, dot);
+            func_00282CF0(across, velocity, along);
+            func_00282D30(velocity, along, sphere->bounce);
+            func_00282CC0(velocity, across, velocity);
+        } else {
+            qcopy(position, ref_L00_002FE9D0_00.point);
+            result = 2;
+        }
+    }
+    return result;
+}
 
 extern char D_0021F9C0[];
 
@@ -417,11 +529,169 @@ void func_002FF3F8(void)
 
 INCLUDE_ASM("asm/game", func_002FF450);
 
-INCLUDE_ASM("asm/game", func_002FF968);
+/* The camera's eye position and view direction. */
+typedef struct {
+    char reserved00[0x140];
+    float position[4];
+    char reserved150[0x220];
+    float forward[4];
+} PreviewCameraPrefix;
+
+/* State of the object preview. Retail reaches these fields at offsets from
+   the start of one small-data object: each access is an absolute two-word
+   macro that never fills a delay slot, while code elsewhere stores the
+   first halfword through $gp. */
+typedef struct {
+    short s00;
+    short frames;
+    float rate;
+    char pad08[0x34 - 0x08];
+    unsigned char phase;
+    unsigned char spin;
+} PreviewState;
+
+typedef struct {
+    char reserved00[0x10];
+    float position[4];
+    char reserved20[0x8A];
+    short classId;
+    char reservedAC[0x44];
+    float rotation[4];
+} PreviewObjectPrefix;
+
+extern PreviewCameraPrefix D_001B5200;
+extern PreviewState D_001B2310 __attribute__((sda));
+/* Distances along the preview's basis rows, separate small-data floats
+   (retail loads D_001AD814 in a branch delay slot, so it is not an offset
+   from a common base). */
+extern float D_001AD808 SDATA(D_001AD808) __attribute__((sda));
+extern float D_001AD80C SDATA(D_001AD80C) __attribute__((sda));
+extern float D_001AD810 SDATA(D_001AD810) __attribute__((sda));
+extern float D_001AD814 SDATA(D_001AD814) __attribute__((sda));
+extern float D_001AD818 SDATA(D_001AD818) __attribute__((sda));
+extern float func_00283B98(float, float);
+extern void func_002833F0(float *, float *);
+extern void func_00300048(void *);
+
+/* Places the previewed object in front of the camera, turns it a little
+   (about x when spinning, else about z) and offsets it along its own basis.
+   The two spinning branches end in the same scale-and-add, which cc1's
+   cross-jumping merges into one tail as in retail. */
+void func_002FF968(PreviewObjectPrefix *object)
+{
+    float offset[4] __attribute__((aligned(16)));
+    float basis[12] __attribute__((aligned(16)));
+    float temporary[4] __attribute__((aligned(16)));
+    int special = object->classId == 0xC5A || object->classId == 0xA65;
+    int compact = 0;
+    if (object->classId == 0x879 || object->classId == 0xAF6 ||
+        object->classId == 0x907 || object->classId == 0xE7A || special)
+        compact = 1;
+    if (special) {
+        func_00282D30(offset, D_001B5200.forward, 2.5f);
+    } else if (compact) {
+        func_00282D30(offset, D_001B5200.forward, 2.0f);
+    } else {
+        func_00282D30(offset, D_001B5200.forward, 3.0f);
+    }
+    func_00282CC0(object->position, D_001B5200.position, offset);
+    if (D_001B2310.spin)
+        object->rotation[0] = func_00283B98(object->rotation[0], 0.03490659f);
+    else
+        object->rotation[2] = func_00283B98(object->rotation[2], 0.03490659f);
+    func_002833F0(basis, object->rotation);
+    if (D_001B2310.spin) {
+        if (compact) {
+            func_00282D30(temporary, basis + 4, D_001AD818);
+            func_00282CC0(object->position, object->position, temporary);
+            func_00282D30(temporary, basis, D_001AD814);
+            func_00282CC0(object->position, object->position, temporary);
+        } else {
+            func_00282D30(temporary, basis + 4, D_001AD80C);
+            func_00282CC0(object->position, object->position, temporary);
+            func_00282D30(temporary, basis, D_001AD808);
+            func_00282CC0(object->position, object->position, temporary);
+        }
+    } else {
+        func_00282D30(temporary, basis + 8, D_001AD810);
+        func_00282CC0(object->position, object->position, temporary);
+    }
+    func_002A0F48(object);
+    func_00300048(object);
+}
 
 INCLUDE_ASM("asm/game", func_002FFCF8);
 
-INCLUDE_ASM("asm/game", func_002FFD78);
+typedef struct {
+    float velocity[3], gravity, size_delta;
+    unsigned char alpha_delta, phase_delta;
+    unsigned short pad16;
+    int pad18;
+    void (*update)(char *);
+} ParticleContext_C65A0;
+typedef struct {
+    unsigned char byte0, byte1, shade, kind;
+    unsigned int color;
+    unsigned char phase, variation;
+    short timer;
+    float size, position[4];
+    ParticleContext_C65A0 context;
+} Particle_C65A0;
+extern float D_001AD81C SDATA(D_001AD81C) __attribute__((sda));
+extern float D_001A8BD0[] MACRO_ADDR;
+extern unsigned char *D_001F2614;
+extern float func_00283CE0(int);
+extern void func_00282D08(float *, float *, float *, float);
+extern int func_00283CF0(float);
+/* The particle constructor of 002BF6F0-c65a0.c, declared with its three
+   float parameters after the first five integers (as 0032DD40-g8.c does):
+   each register bank keeps its order, and retail sets up the arguments in
+   this order. */
+extern Particle_C65A0 *func_002C65A0(const float *, const float *, int, unsigned int, int, int, int,
+                                   float, float, float, int);
+
+/* Emits three particles between 0.1 and 9 units in front of the camera,
+   at the point the preview timer has reached; their phase advances once
+   per call. */
+void func_002FFD78(void)
+{
+    float offset[4] __attribute__((aligned(16)));
+    float farPoint[4] __attribute__((aligned(16)));
+    float nearPoint[4] __attribute__((aligned(16)));
+    float position[4] __attribute__((aligned(16)));
+    int phase = D_001B2310.phase;
+    int secondPhase;
+    float size, interpolation;
+    Particle_C65A0 *particle;
+    func_00282D30(offset, D_001B5200.forward, 9.0f);
+    func_00282CC0(farPoint, D_001B5200.position, offset);
+    func_00282D30(offset, D_001B5200.forward, 0.1f);
+    func_00282CC0(nearPoint, D_001B5200.position, offset);
+    interpolation = func_00283CE0(D_001B2310.frames) * D_001B2310.rate;
+    func_00282D08(position, nearPoint, farPoint, interpolation);
+    size = D_001AD81C * 210000.0f;
+    particle = func_002C65A0(position, D_001A8BD0, 4, 0xFF2020, phase, 127, 127,
+                            size, size, 0.0f, 0);
+    if (particle) {
+        particle->shade = *D_001F2614;
+        particle->variation = func_00283CF0(0.4f) + 64;
+    }
+    secondPhase = (phase + 128) % 255;
+    particle = func_002C65A0(position, D_001A8BD0, 4, 0xFF2020, secondPhase, 127, 127,
+                            size, size, 0.0f, 0);
+    if (particle) {
+        particle->shade = *D_001F2614;
+        particle->variation = func_00283CF0(0.4f) + 64;
+    }
+    size *= 0.5f;
+    particle = func_002C65A0(position, D_001A8BD0, 4, 0xFFFFFF, secondPhase, 127, 127,
+                            size, size, 0.0f, 0);
+    if (particle) {
+        particle->shade = *D_001F2614;
+        particle->variation = func_00283CF0(0.4f) + 64;
+    }
+    D_001B2310.phase++;
+}
 
 extern short D_001B2346;
 

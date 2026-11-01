@@ -297,7 +297,7 @@ void func_L07_00408338(u8 *a0)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L07_0040E198);
+/* func_L07_0040E198 is defined in L07_0040E198-g8.c. */
 
 /* func_L07_0040E980 is defined in L07_0040E980-g8.c. */
 
@@ -369,7 +369,7 @@ INCLUDE_ASM("asm/levels", func_L07_0040F8F8);
 
 INCLUDE_ASM("asm/levels", func_L07_0040FA90);
 
-INCLUDE_ASM("asm/levels", func_L07_0040FC88);
+/* func_L07_0040FC88 is defined in L07_0040FC88-g16.c. */
 
 /* func_L07_00410588 is defined in L07_00410588-snapshot.c. */
 

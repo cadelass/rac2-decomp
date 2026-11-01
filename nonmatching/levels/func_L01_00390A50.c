@@ -1,82 +1,70 @@
-/* Complete C near miss; NOT linked and no exact-C credit.
- * Measured source unit: src/levels/shared/L01_00390A50.c
- * Game profile: -O2 -G0 -ffunction-sections
- * Compiled/retail bytes: 520/528. US: 0/6; US2: 0/6; PAL: 0/6.
- * Residual and reopening condition: The state/flag saved registers, boolean selection and short-loop padding differ. The three walks and transition condition are complete; scoped flag initialization and G8 tied. Reopen with measured state/flag lifetimes and inline call contracts.
- * Field views describe only measured prefixes, not complete game-object extents.
+/*
+ * func_L01_00390A50: exact in 6 of 6 places, all releases, but only with a non-empty do { } while (0) around the forced arm, not landed: that wrapper stays disallowed pending the maintainers' open question (docs/MATCHING-BLOCKERS.md). Without it: 528/528 bytes, 0/6 places, 25 instructions differ, all flag/settings s3/s4 swaps. local-alloc doubles flag's live length (first set is a constant), so flag needs 16 weighted refs, has 14; find retail's own source of those 2 refs.
  */
-
-#include "common.h"
-typedef int Quad __attribute__((mode(TI)));
-extern char D_L01_001B94C0[];
-extern char D_00189EA0[];
-extern char *D_L01_001FE180[];
-extern float func_00282E48(void *a, void *b);
-extern int func_002A8AF0(float *point, float *points, int count);
-extern int func_002ACBC8(void *point, int index);
-extern void func_L01_003909E0(void *object, void *state, int index, int enabled);
-extern void func_L01_003907B8(int index, void *state, int enabled);
-
-void func_L01_00390A50(unsigned char *object)
+void func_L01_00390A50(char *object)
 {
-    char *state = *(char **)(object + 0x68);
-    float point[4] __attribute__((aligned(16)));
-    char *source;
-    char *path;
-    int enabled;
+    SpatialTriggerSettings *settings;
+    ClosestPointQuad point;
+    int flag = 0;
     int i;
-    int remaining;
-    int *entry;
-    int *second;
-    object[0x30] = 255;
-    if ((signed char)state[0x7E])
-        source = D_L01_001B94C0;
+    int j;
+    int k;
+    int *mobys;
+    int forced;
+    char *path;
+
+    settings = *(SpatialTriggerSettings **)(object + 0x68);
+    *(unsigned char *)(object + 0x30) = 0xFF;
+    if (settings->switches[2])
+        qcopy(&point, D_L01_001B94C0);
     else
-        source = D_00189EA0;
-    *(Quad *)point = *(Quad *)source;
-    enabled = 0;
-    if (object[0x95] == 0) {
-        if (0.0f < *(float *)(state + 4) && func_00282E48(object + 0x10, point) < *(float *)(state + 4))
-            enabled = 1;
-        if (!enabled && *(int *)state != -1) {
-            path = D_L01_001FE180[*(int *)state];
-            enabled = func_002A8AF0(point, (float *)(path + 0x10), *(int *)path) != 0;
-        }
-        if (!enabled) {
-            for (i = 0; i < 6; i++) {
-                int index = ((int *)(state + 8))[i];
-                if (index != -1 && func_002ACBC8(point, index)) {
-                    enabled = 1;
-                    break;
-                }
+        qcopy(&point, D_00189EA0);
+    forced = *(unsigned char *)(object + 0x95);
+    if (forced == 0) {
+        if (settings->radius > 0.0f && func_002E3618(object + 0x10, &point) < settings->radius)
+            flag = 1;
+        if (!flag) {
+            if (settings->path != -1) {
+                path = D_L01_001FE180[settings->path];
+                flag = func_311B48((char *)&point, path + 0x10, *(int *)path) != 0;
             }
         }
-    } else {
-        if (object[0x95] == 1)
-            enabled = 1;
-    }
-    if ((enabled && !object[0xBC]) || (!enabled && object[0xBC]) || !object[0x20]) {
-        if (enabled)
-            object[0xBC] = 1;
+        if (!flag) {
+            for (i = 0; ; i++) {
+                if (i >= 6)
+                    goto done;
+                if (settings->volumes[i] == -1)
+                    continue;
+                if (func_3163C8((char *)&point, (void *)settings->volumes[i]))
+                    break;
+            }
+            goto set;
+        }
+    } else do {
+        if (forced == 1) {
+set:
+            flag = 1;
+        } else {
+            flag = 0;
+        }
+    } while (0);
+done:
+    if ((flag && !*(unsigned char *)(object + 0xBC)) ||
+        (!flag && *(unsigned char *)(object + 0xBC)) ||
+        !*(unsigned char *)(object + 0x20)) {
+        if (flag)
+            *(unsigned char *)(object + 0xBC) = 1;
         else
-            object[0xBC] = 0;
-        second = (int *)(state + 0x50);
-        object[0x20] = object[0xBC] + 1;
-        entry = (int *)(state + 0x20);
-        remaining = 11;
-        do {
-            if (*entry != -1)
-                func_L01_003909E0(object, state, *entry, enabled);
-            remaining--;
-            entry++;
-        } while (remaining >= 0);
-        entry = second;
-        remaining = 10;
-        do {
-            if (*entry != -1)
-                func_L01_003907B8(*entry, state, enabled);
-            remaining--;
-            entry++;
-        } while (remaining >= 0);
+            *(unsigned char *)(object + 0xBC) = 0;
+        *(unsigned char *)(object + 0x20) = *(unsigned char *)(object + 0xBC) + 1;
+        mobys = settings->mobys;
+        for (j = 0; j < 12; j++) {
+            if (settings->lists[j] != -1)
+                func_L01_003909E0((int)object, (int)settings, settings->lists[j], flag);
+        }
+        for (k = 0; k < 11; k++) {
+            if (mobys[k] != -1)
+                func_003907B8(mobys[k], (int)settings, flag);
+        }
     }
 }

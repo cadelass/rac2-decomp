@@ -1,4 +1,15 @@
 /*
+ * GPT-6.1 Sol worker v1617, 2026-10-29: recompiled this retained draft with
+ * upstream pinned toolchain, dedicated -O2 -G16 -Wa,-G16 -ffunction-sections
+ * unit. USA: 5,716/5,716 bytes, 0/3 places; first mismatch +0xEF0 (case 13
+ * a0/a1 setup order). The case 13 loop still hoists the group mask/shift.
+ * Independent -g, -frac2-gcse-unsplit-edges and -frac2-keep-block-order probes
+ * do not improve the first mismatch (0/3 each). No C body change retained.
+ * USA v2.00: 0/3 places, same first mismatch +0xEF0. PAL: neither catalogue.
+ * Six checker runs total; no linked build (no match).
+ * All required declarations follow below. See older detailed analysis.
+ */
+/*
  * func_L18_003F5650 (5,716 B; levels 18, 19, 20): Opus near miss, 2026-10-26 (slates big5,
  * big12). Profile: -O2 -G16 -Wa,-G16 -ffunction-sections, as its own unit
  * (src/levels/shared/L18_003F5650-g16.c). check.py: 5,716 of 5,716 bytes, opcodes 1,424 of

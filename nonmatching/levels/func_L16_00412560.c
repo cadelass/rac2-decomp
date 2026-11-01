@@ -1,19 +1,19 @@
-/*
- * Complete manual reconstruction retained as nonmatching; no coverage credit.
- * Fresh qualified-compiler checks, 2026-10-25.
- * Profile: -O2 -G32 -Wa,-G32 -ffunction-sections
- * Coverage: US: 0/1; US2: 0/1; PAL: absent from catalogue.
- * Compiled text: 1384 bytes; retail: 1420 bytes.
- * Remaining difference: The full64-byte bone output,two144-byte batches,48-byte request and32-byte
- * UV table remain. The observed UV fields are floats and explicit color/U/V source and destination
- * streams restore frame0x2B0 without shrinking any buffer. The body is1384/1420; cursor/register
- * scheduling and mixed GP/absolute source forms still differ. Texture results remain64-bit and
- * C16C0/C6DD8 are pointer/null factories with ignored results.
- * Reopen when: An independently measured batch/cursor lifetime or original global-field layout
- * explaining the mixed UV address forms; no duplicated data aliases or narrowed texture
- * descriptor.
+/* GPT-6.1 Sol high, task v1118, 2026-10-29: NOT MATCHED.
+ * Current pinned compiler: -O2 -G8 -Wa,-G32 -ffunction-sections.
+ * USA v1.01 check.py: 1424/1420 bytes, 0/1 places; frame 0x2B0.
+ * Independent field bases for the two real 144-byte packets reproduce the
+ * retail outer-invariant bases (+0x40, +0x50, +0x54). qcopy_nc on the collision
+ * endpoint transfer restores the branch and instruction order through +0x1BC;
+ * intervening opaque calls separate the following reads of that local vector.
+ * Remaining: spill slot order, inner cursor/index register lifetimes, GP U vs
+ * absolute V sources, packet store order and particle-loop allocation.
+ * Retained complete bone/packet/request/UV storage and existing call contracts.
+ * Explicit layer-color/next-index/second-packet variables regressed allocation;
+ * an indexed packet form added a position-W stream and grew the frame to 0x2C0.
+ * -G32 instead of -G8 did not repair the mixed UV forms. No flag sweep or linked
+ * build was run. Reopen with independent source/field-lifetime evidence.
+ * Declarations required are included below.
  */
-
 #include "common.h"
 typedef int BeamQuadword __attribute__((mode(TI)));
 typedef struct { int word[4]; } BeamDamageData __attribute__((aligned(16)));
@@ -26,7 +26,7 @@ typedef struct {
 extern float D_L16_001B16D0[4] __attribute__((sda));
 extern float D_L16_001B17F8[2] __attribute__((sda));
 extern int D_L16_001B17E8[2] __attribute__((sda));
-extern float D_L16_001B1800[4][2] __attribute__((sda));
+extern float D_L16_001B1800[4][2] MACRO_ADDR;
 extern u32 D_L16_001B1820[2] __attribute__((sda));
 extern int D_L16_001B1828 __attribute__((sda));
 extern u32 D_L16_001B182C __attribute__((sda));
@@ -89,35 +89,41 @@ void func_L16_00412560(u8 *moby)
     func_00282CC0(end, end, target);
     func_002A8C00(effect, (int)moby, 0x90001, (float)state[0x36], &D_L16_001A8F20);
     if (func_002761F8(start, end, 0, moby, effect))
-        qcopy(end, D_L16_001BFF60);
+        qcopy_nc(end, D_L16_001BFF60);
     func_00282CF0(camera, D_L16_001B9B00, start);
+    i = 0;
     func_00282CF0(ray, end, start);
     func_00282DD8(side, ray, camera);
     func_00282F20(side, side, 1.0f);
-    for (i = 0; i < 2; i++) {
-        float *u = &batch[i].uv[0][0];
-        float *v = &batch[i].uv[0][1];
-        float *source_u = &D_L16_001B1800[0][0];
-        float *source_v = &D_L16_001B1800[0][1];
-        u32 *color = batch[i].color;
-        float (*vertex)[4] = batch[i].position;
-        for (j = 0; j < 4; j++) {
-            *color = func_00283D38(D_L16_001B1820[i] & 0xff000000,
-                D_L16_001B1820[i], *(float *)(state + 0x254));
-            *u = *source_u;
-            *v = *source_v;
-            if ((j & 1) == 0)
-                func_00282D30(*vertex, side, -D_L16_001B17F8[i]);
-            else func_00282D30(*vertex, side, D_L16_001B17F8[i]);
-            if (j < 2) func_00282CC0(*vertex, *vertex, start);
-            else func_00282CC0(*vertex, *vertex, end);
-            (*vertex)[3] = 1.0f;
-            ++vertex; ++color; u += 2; v += 2; source_u += 2; source_v += 2;
+    {
+        u32 *color_base = batch[0].color;
+        float *u_base = &batch[0].uv[0][0];
+        float *v_base = &batch[0].uv[0][1];
+        for (; i < 2; i++) {
+            float *u = (float *)(i * sizeof(BeamBatch) + (u8 *)u_base);
+            float *v = (float *)(i * sizeof(BeamBatch) + (u8 *)v_base);
+            float *source_u = &D_L16_001B1800[0][0];
+            float *source_v = &D_L16_001B1800[0][1];
+            u32 *color = (u32 *)(i * sizeof(BeamBatch) + (u8 *)color_base);
+            float (*vertex)[4] = batch[i].position;
+            for (j = 0; j < 4; j++) {
+                *color = func_00283D38(D_L16_001B1820[i] & 0xff000000,
+                    D_L16_001B1820[i], *(float *)(state + 0x254));
+                *u = *source_u;
+                *v = *source_v;
+                if (j & 1)
+                    func_00282D30(*vertex, side, D_L16_001B17F8[i]);
+                else func_00282D30(*vertex, side, -D_L16_001B17F8[i]);
+                if (j < 2) func_00282CC0(*vertex, *vertex, start);
+                else func_00282CC0(*vertex, *vertex, end);
+                (*vertex)[3] = 1.0f;
+                ++vertex; ++color; u += 2; v += 2; source_u += 2; source_v += 2;
+            }
+            batch[i].packet[1] = func_0027C878(D_L16_001B17E8[i]);
+            batch[i].packet[3] = 0x8000000048UL;
+            batch[i].packet[2] = 0xff9000000260UL;
+            batch[i].packet[0] = 0;
         }
-        batch[i].packet[1] = func_0027C878(D_L16_001B17E8[i]);
-        batch[i].packet[3] = 0x8000000048UL;
-        batch[i].packet[2] = 0xff9000000260UL;
-        batch[i].packet[0] = 0;
     }
     func_00280B90(&batch[0], 0, 1);
     func_00280B90(&batch[1], 0, 1);

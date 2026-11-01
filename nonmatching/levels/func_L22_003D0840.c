@@ -58,3 +58,25 @@ void func_L22_003D0840(s32 a0) {
    same copy in $a3 and it has a second pointer in its body, so the
    allocation seems to want a second live value - that is the next thing to
    try. */
+/* Opus 5.5 xhigh, 31 October 2026: best is still this draft, 60/60 bytes, 0/1
+   places, four slots differ, all the object pointer in $v1 against $a3.  The
+   callee is func_002A7750 (level 22 place 0x31FBB8), three parameters.
+
+   Measured: regalloc gives the pointer conflicts with $v0, $a0, $a1, $a2 and
+   $sp only, so the allocator's next free register is $v1; retail needs $v1
+   excluded.  Same bytes, still $v1: single-case switch; inlined flag setter;
+   inlined setter plus call; call through a named copy with `p = obj` as the
+   argument; argument read through `*pp`; struct by value; typed struct
+   parameter; u32 temporary; u16 * view; interior pointer; s32 result returned
+   (18 instructions, adds $s0).  A fourth argument (false prototype, not usable)
+   gives 64 bytes and still $v1.  An s64 parameter adds a shift pair.  None of 24
+   single extra flags on the plain wording gives $a3 (-O1 and -fno-schedule-insns
+   lose the copy altogether).
+   Retail scan: of the level catalogue's functions up to 160 bytes that copy $a0
+   to $a3 near the start, this is the only one that never touches $v1.
+
+   Hypothesis, not demonstrated: a local pseudo held $v1 during allocation and its
+   instructions were deleted after reload: `$v1 = pointer`, then `$a0 = $v1`
+   removed as a no-op by reload_cse (entry copy means $a0 already holds it), then
+   the first move removed as dead.  That needs a copy CSE does not merge, and no
+   wording here keeps one. */

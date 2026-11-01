@@ -85,7 +85,7 @@ extern float func_00282C48(float);
 
 extern void func_002A8E20(s32, void *);
 
-INCLUDE_ASM("asm/levels", func_L16_00403900);
+/* func_L16_00403900 is in L16_00403900-update-g8.c. */
 
 /* func_L16_00404A60 is in the sibling file L16_00403900-g8.c: its body
    reaches the level's small-data floats through $gp. */
@@ -213,7 +213,7 @@ void func_L16_0040D188(u8 *arg0)
 }
 
 
-INCLUDE_ASM("asm/levels", func_L16_0040D4E8);
+/* func_L16_0040D4E8 is compiled from L16_0040D4E8-g16.c. */
 
 
 
@@ -237,7 +237,7 @@ void func_L16_00410C80(u8 *arg)
 
 INCLUDE_ASM("asm/levels", func_L16_00410E40);
 
-INCLUDE_ASM("asm/levels", func_L16_00410FA8);
+/* func_L16_00410FA8 is in L16_00410CC0.c. */
 
 /* func_L16_004110D0 is compiled from L16_004110D0-g8.c. */
 
@@ -277,15 +277,52 @@ void func_L16_004116C8(u8 *arg0, s32 arg1, s32 duration, float f)
 
 /* func_L16_00411D00 is defined in L16_00411D00-g8.c. */
 
-/* Builds a 16-byte query record from the game speed and the handle's byte field and
-   hands it with a prepared buffer to the generic path. */
-INCLUDE_ASM("asm/levels", func_L16_00411F80);
+/* func_L16_00411F80 is defined in L16_00411F80.c. */
 
 INCLUDE_ASM("asm/levels", func_L16_00412560);
 
 /* func_L16_00412AF0 is defined in L16_00403900-g8.c (this unit has no $gp access for it). */
 
-INCLUDE_ASM("asm/levels", func_L16_00412BA8);
+/* The voice-load state the level shares with the engine (see L03VoiceState in L03_003F09C0.c). */
+typedef struct {
+    u8 pad[0x24];
+    s32 key;
+    s32 selection;
+    u8 pad2[0x3C];
+    s32 active;
+} L16VoiceState;
+
+extern L16VoiceState D_001A63A8;
+extern int D_L16_001B1888[];
+extern void func_002A6170(void *);
+
+/* Asks the engine to load voice line idx, from the first table below 20 and the second from 20 up,
+   unless a load is active or pending or that line is already the current one. The arms are written
+   out: cross-jump merges their stores after allocation, which leaves them before the shared tail. */
+void func_L16_00412BA8(u8 *arg, s32 idx)
+{
+    L16VoiceState *voice = &D_001A63A8;
+    u8 *s;
+
+    s = *(u8 **)(arg + 0x68);
+    if (voice->active == 0) {
+        if (voice->key == -1 && idx != *(s32 *)(s + 0x354)) {
+            if (idx < 20) {
+                s32 v = *(s32 *)(s + (idx << 2) + 0x280);
+                voice->selection = 0;
+                voice->key = (v & 0x3FFF) + 0x7D0;
+            } else {
+                s32 v = *(s32 *)(s + ((idx - 20) << 2) + 0x2D0);
+                voice->selection = 0;
+                voice->key = (v & 0x3FFF) + 0x7D0;
+            }
+            func_002A6170(D_L16_001B1888);
+            *(u8 *)(s + idx + 0x310) = 1;
+            *(s32 *)(s + 0x350) = 0x384;
+            *(s32 *)(s + 0x354) = idx;
+        }
+    }
+}
 
 /* Walks a rotating candidate index over the measured byte table until a free slot
    is found, arms it, and clears the whole window when none is. */

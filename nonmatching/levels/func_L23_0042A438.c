@@ -1,15 +1,21 @@
-/*
- * Updated manual-C near miss, 2026-10-25.
- * Measured standalone unit: src/levels/23_damosel_orbit/L23_0042A438-g8.c
- * Game profile: -O2 -G8 -ffunction-sections
- * Release coverage: US 0/1 (exit1); US2 0/1 (exit1); PAL 0/1 (exit1).
- * Current residual: 1132/1156 bytes. Approved qcopy/qzero retain full matrix and packet
- * extents. Shortening the matrix-pointer lifetime and holding the source only across
- * stack-row writes still leaves loop stack-slot versus register allocation, ALPHA reload
- * and global-float scheduling differences.
- * Reopen only for: A true counter/matrix lifetime model and explanation of the ALPHA field
- * reloads across the divisor check.
- * Older notes below are historical. ASM marker and trial-only profiles were restored.
+/* Retained reconstruction; not linked or counted.
+ * Tier: GPT-6.1 Sol (high effort), task v1008, 29 October 2026.
+ * Current US profile: -O2 -G8 -ffunction-sections -g -fno-rerun-loop-opt
+ * -frac2-qcopy -frac2-qcopy-barrier. Best valid result: 1136/1156 bytes,
+ * 0/1 places match. Other releases not checked for this draft.
+ * A complete matrix object, independent basis pointer and early alpha-scale
+ * snapshot improve the matrix/FP lifetimes. Separating scaledLength from the
+ * final ribbonWidth also recovers the retail f0 intermediate and f12 product.
+ * Remaining: the alpha word is forwarded into the packed GS value instead of
+ * reloaded; global stores, packet colors, pointer allocation and scheduling differ.
+ * Signed full-width bitfield and signed/unsigned union views did not restore the
+ * alpha reload. A volatile field adds a GPR load/mtc1 sequence instead of lwc1.
+ * A 1152-byte diagnostic used qzero_nc(axis), but it was rejected because the
+ * later axis Z store overlaps that clear. This retained draft uses qzero(axis).
+ * Keep qcopy for row 3, whose W component is then written. qzero_nc on row 3
+ * precedes the external matrix call; surrounding C does not access that row.
+ * Reopen with evidence for the extra alpha reload and the two matrix lifetimes.
+ * All required declarations are included below. The October 22 notes are historical.
  */
 
 #include "common.h"
@@ -76,7 +82,7 @@ extern float D_L23_001B1470;
 
 extern s32 D_L23_001B1474;
 
-extern float D_L23_001B39D0;
+extern float D_L23_001B39D0 __attribute__((sda));
 
 extern float D_L23_001B3930;
 
@@ -179,8 +185,9 @@ extern void func_00280B90(void *, void *, s32);
 void func_L23_0042A438(u8 *moby) {
     L23Spin3 *vars;
     L23Quad pkt;
-    TI16 m[4];
+    struct { TI16 rows[4]; } matrix;
     TI16 *mp;
+    float *basis;
     TI16 w[1];
     TI16 axis[1];
     TI16 rot[3];
@@ -194,6 +201,9 @@ void func_L23_0042A438(u8 *moby) {
     float fc;
     float f;
     float t;
+    float alphaScale;
+    float scaledLength;
+    float ribbonWidth;
     s32 i;
     u8 *hero;
     s64 reg;
@@ -220,11 +230,9 @@ void func_L23_0042A438(u8 *moby) {
         }
         i = *(u16 *)(moby + 0x96) % (D_L23_001B1474 >> 2);
         vars->alpha = D_L23_001B1C24;
-        reg = D_L23_001B1BAC;
-        reg |= (s64)D_L23_001B1BB0 << 2;
-        reg |= (s64)D_L23_001B1BB4 << 4;
-        reg |= (s64)D_L23_001B1BB8 << 6;
-        reg |= (s64)vars->alpha << 32;
+        reg = D_L23_001B1BAC | ((s64)D_L23_001B1BB0 << 2)
+            | ((s64)D_L23_001B1BB4 << 4) | ((s64)D_L23_001B1BB8 << 6)
+            | ((s64)vars->alpha << 32);
         pkt.tail[3] = reg;
         D_L23_001B1C18 = (float)vars->alpha * D_L23_001B1C1C;
         tex = func_0027C878(D_L23_001B1C14);
@@ -233,36 +241,40 @@ void func_L23_0042A438(u8 *moby) {
         pkt.tail[0] = 0;
         func_002FC560(0x47, 0x53001);
         hero = D_L23_001B1484_2;
-        qcopy(&m[0], hero + 0xC0);
-        qcopy(&m[1], hero + 0xD0);
-        qcopy(&m[2], hero + 0xE0);
-        qzero(&m[3]);
-        mp = m;
+        qcopy_nc(&matrix.rows[0], hero + 0xC0);
+        qcopy_nc(&matrix.rows[1], hero + 0xD0);
+        qcopy_nc(&matrix.rows[2], hero + 0xE0);
+        qzero_nc(&matrix.rows[3]);
+        mp = matrix.rows;
         func_L03_002EFB60(mp, mp, D_L23_001B1C0C);
-        qcopy(&m[3], D_L23_001B1484_2 + 0x10);
-        ((float *)&m[3])[3] = 1.0f;
+        qcopy(&matrix.rows[3], D_L23_001B1484_2 + 0x10);
+        ((float *)&matrix.rows[3])[3] = 1.0f;
+        basis = (float *)mp;
         qzero(axis);
         ((float *)axis)[2] = vars->turn;
         func_002833F0(rot, axis);
-        func_00283738(m, m, rot);
+        func_00283738(basis, basis, rot);
         pkt.col[0] = D_L23_001B1BC4;
         pkt.col[2] = D_L23_001B1BC8;
         pkt.col[1] = D_L23_001B1BC4;
         pkt.col[3] = D_L23_001B1BC8;
         for (i = 0; i < 0x48; i++) {
             if (D_L23_0025E8B0[i] != 0) {
-                func_002830C0(v120, &D_L23_002A75F0[i], m);
+                alphaScale = D_L23_001B1C18;
+                func_002830C0(v120, &D_L23_002A75F0[i], &matrix);
                 func_00283098(v140, &D_L23_002A7170[i], mp);
                 func_00282CF0(v150, v120, D_L23_001BA640);
                 func_00282DD8(v160, v140, v150);
-                func_00282F20(v160, v160, D_L23_001B1C18);
+                func_00282F20(v160, v160, alphaScale);
                 f = func_00282DF0(v150);
+                scaledLength = f * D_L23_001B1C10;
                 t = D_L23_001B3930;
+                ribbonWidth = scaledLength * t;
                 D_L23_001B3930 = t + D_L23_001B1C20;
                 if (D_L23_001B3930 > 1.0f) {
                     D_L23_001B3930 = 1.0f;
                 }
-                func_00282D30(v130, v140, f * D_L23_001B1C10 * t);
+                func_00282D30(v130, v140, ribbonWidth);
                 func_00282CC0(v130, v130, v120);
                 func_00282CC0(&pkt.pos[0], v120, v160);
                 func_00282CF0(&pkt.pos[1], v120, v160);

@@ -224,8 +224,6 @@ dflt:
     return -1;
 }
 
-INCLUDE_ASM("asm/levels", func_L02_003F9C10);
-
 void func_L02_003FAF28(char *a0) {
     char *s0 = a0;
     char *obj = *(char **)(s0 + 0x68);
@@ -1103,4 +1101,3 @@ INCLUDE_ASM("asm/levels", func_L02_00401638);
 
 /* func_L02_00401D38 is defined in L02_003F5430-g8.c ($gp accesses). */
 
-INCLUDE_ASM("asm/levels", func_L02_00409D78);

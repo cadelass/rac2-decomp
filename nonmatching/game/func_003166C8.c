@@ -1,80 +1,101 @@
-/* 28 October 2026: 772/772 bytes at -O2 -G0 -ffunction-sections.
- * MACRO_ADDR on the vector constant removes one saved address and
- * reaches retail size. The first qcopy address is retained across the
- * angular updates, shifting record/index/position allocation. A plain
- * TI first copy is 760 bytes and folds the measured store address.
- * Reopen with measured source lifetime evidence for the base vector.
- * No strict match is claimed. */
+/* Tier: opus-1 (v0922), USA v1.01. No strict match is claimed.
+ * Best check.py, default profile -O2 -G0 -ffunction-sections (gcse on):
+ * 792/772 bytes, 0 of 28 places. The same C with -fno-gcse: 776/772 bytes,
+ * 0 of 28 places, about five aligned instructions off.
+ * What still differs:
+ * - gcse on: PRE makes the second p->origin (func_00282D08's second argument)
+ *   redundant with the origin qcopy's destination address and keeps p + 0x20
+ *   in a saved register across every call; retail recomputes addiu a1,s1,0x20.
+ *   That one extra saved register shifts owner/pool-high to s6/s7 and grows the
+ *   frame to 0x80. Everything else matches structurally, including the
+ *   then-branch's s0 temp plus s3 position copy (position assigned after the
+ *   func_00282CC0 call) and the else-branch qcopy.
+ * - gcse off: retail's split pool address (lui s6 hoisted, addiu a0,s6,%lo in
+ *   the loop) becomes a fully hoisted base (lui v0; addiu s6,v0) and a nop
+ *   before the mult; nothing else differs.
+ * Tried without success: array-indexed origin copy (reassociates to
+ * base+0x20+i*0xA0 and hoists the full base), TI copy with -frac2-qcopy (same),
+ * a second pointer copy (gcse cprop folds it back), -frac2-gcse-unsplit-edges,
+ * -frac2-keep-block-order. Next: a source shape where the origin copy's
+ * address and the later &p->origin are different expressions at gcse time but
+ * the record base is still one register, or a gcse model that leaves the
+ * second address computed.
+ * Declarations needed (also used by func_00316400 in src/game/0030F7B0.c):
+ */
 #include "common.h"
 
-extern char D_0022AA10[];
+typedef struct {
+    float offset[4], rotation[4], origin[4], position[4];
+    float angle[3], speed[3], amplitude[3];
+    float angle2[3], speed2[3], amplitude2[3];
+    int fade;
+    void *owner;
+    char *object;
+    int timer, duration, expired;
+} PoolEffect;
+extern PoolEffect D_0022AA10[3];
 extern char D_001B2520[] MACRO_ADDR;
-extern float func_00283B98(float, float);
-extern float func_00283180(float);
-extern float func_00283198(float);
 extern char *func_002AB1F0(void *);
 extern void func_002B00B0(void *, void *, int);
 extern void func_00282D30(void *, void *, float);
 extern void func_00282CC0(void *, void *, void *);
-extern float func_00283CE0(int);
+extern float func_00283B98(float, float);
+extern float func_00283180(float);
+extern float func_00283198(float);
 extern void func_00282D08(void *, void *, void *, float);
+extern float func_00283CE0(int);
 extern int func_00282948(void *);
 
-#define RF(offset) (*(float *)(record + (offset)))
-#define RI(offset) (*(int *)(record + (offset)))
-
-void func_003166C8(int type)
+void func_003166C8(void *owner)
 {
-    float offset[4] __attribute__((aligned(16)));
     int i;
+    PoolEffect *p;
+    char *info, *position;
+    char local[16] __attribute__((aligned(16)));
+    float ratio;
     for (i = 0; i < 3; i++) {
-        char *record = D_0022AA10 + i * 0xA0;
-        char *position;
-        char *owner;
-        char *attachment;
-        float fraction;
-        if (RI(0x8C) != type) continue;
-        qcopy(record + 0x20, D_001B2520);
-        if (RI(0x94)) {
-            RF(0x40) = func_00283B98(RF(0x40), RF(0x4C) * 100.0f);
-            RF(0x44) = func_00283B98(RF(0x44), RF(0x50) * 100.0f);
-            RF(0x48) = func_00283B98(RF(0x48), RF(0x54) * 100.0f);
-            RF(0x64) = func_00283B98(RF(0x64), RF(0x70) * 100.0f);
-            RF(0x68) = func_00283B98(RF(0x68), RF(0x74) * 100.0f);
-            RF(0x6C) = func_00283B98(RF(0x6C), RF(0x78) * 100.0f);
+        p = &D_0022AA10[i];
+        if (p->owner != owner) continue;
+        qcopy(p->origin, D_001B2520);
+        if (p->timer) {
+            p->angle[0] = func_00283B98(p->angle[0], p->speed[0] * 100.0f);
+            p->angle[1] = func_00283B98(p->angle[1], p->speed[1] * 100.0f);
+            p->angle[2] = func_00283B98(p->angle[2], p->speed[2] * 100.0f);
+            p->angle2[0] = func_00283B98(p->angle2[0], p->speed2[0] * 100.0f);
+            p->angle2[1] = func_00283B98(p->angle2[1], p->speed2[1] * 100.0f);
+            p->angle2[2] = func_00283B98(p->angle2[2], p->speed2[2] * 100.0f);
         } else {
-            RF(0x40) = func_00283B98(RF(0x40), RF(0x4C) * 50.0f);
-            RF(0x44) = func_00283B98(RF(0x44), RF(0x50) * 50.0f);
-            RF(0x48) = func_00283B98(RF(0x48), RF(0x54) * 50.0f);
-            RF(0x64) = func_00283B98(RF(0x64), RF(0x70) * 50.0f);
-            RF(0x68) = func_00283B98(RF(0x68), RF(0x74) * 50.0f);
-            RF(0x6C) = func_00283B98(RF(0x6C), RF(0x78) * 50.0f);
+            p->angle[0] = func_00283B98(p->angle[0], p->speed[0] * 50.0f);
+            p->angle[1] = func_00283B98(p->angle[1], p->speed[1] * 50.0f);
+            p->angle[2] = func_00283B98(p->angle[2], p->speed[2] * 50.0f);
+            p->angle2[0] = func_00283B98(p->angle2[0], p->speed2[0] * 50.0f);
+            p->angle2[1] = func_00283B98(p->angle2[1], p->speed2[1] * 50.0f);
+            p->angle2[2] = func_00283B98(p->angle2[2], p->speed2[2] * 50.0f);
         }
-        RF(0x00) = func_00283180(RF(0x40)) * RF(0x58);
-        RF(0x04) = func_00283198(RF(0x44)) * RF(0x5C);
-        RF(0x08) = -func_00283198(RF(0x48)) * RF(0x60);
-        RF(0x10) = func_00283180(RF(0x64)) * RF(0x7C);
-        RF(0x14) = func_00283198(RF(0x68)) * RF(0x80);
-        RF(0x18) = -func_00283198(RF(0x6C)) * RF(0x84);
-        owner = *(char **)(record + 0x90);
-        if (owner) {
-            attachment = func_002AB1F0(owner);
-            if (attachment) {
-                func_002B00B0(*(char **)(record + 0x90), offset, 1);
-                position = record + 0x30;
-                func_00282D30(offset, offset, *(float *)(attachment + 0x10));
-                func_00282CC0(position, offset, *(char **)(record + 0x90) + 0x10);
+        p->offset[0] = func_00283180(p->angle[0]) * p->amplitude[0];
+        p->offset[1] = func_00283198(p->angle[1]) * p->amplitude[1];
+        p->offset[2] = -func_00283198(p->angle[2]) * p->amplitude[2];
+        p->rotation[0] = func_00283180(p->angle2[0]) * p->amplitude2[0];
+        p->rotation[1] = func_00283198(p->angle2[1]) * p->amplitude2[1];
+        p->rotation[2] = -func_00283198(p->angle2[2]) * p->amplitude2[2];
+        if (p->object) {
+            info = func_002AB1F0(p->object);
+            if (info) {
+                func_002B00B0(p->object, local, 1);
+                func_00282D30(local, local, *(float *)(info + 16));
+                func_00282CC0(p->position, local, p->object + 16);
+                position = (char *)p->position;
             } else {
-                position = record + 0x30;
-                qcopy(position, *(char **)(record + 0x90) + 0x10);
+                qcopy(p->position, p->object + 16);
+                position = (char *)p->position;
             }
-            fraction = func_00283CE0(RI(0x94));
-            fraction /= func_00283CE0(RI(0x98));
-            func_00282D08(position, record + 0x20, position, 1.0f - fraction);
+            ratio = func_00283CE0(p->timer);
+            ratio /= func_00283CE0(p->duration);
+            func_00282D08(position, p->origin, position, 1.0f - ratio);
         }
-        if (func_00282948(record + 0x94)) {
-            if (!RI(0x9C)) RI(0x9C) = 1;
-            if (func_00282948(record + 0x88)) RI(0x8C) = 0;
+        if (func_00282948(&p->timer)) {
+            if (!p->expired) p->expired = 1;
+            if (func_00282948(&p->fade)) p->owner = 0;
         }
     }
 }

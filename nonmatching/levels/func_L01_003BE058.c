@@ -1,18 +1,17 @@
-/* Retention review: external whole-object extents remain incomplete.
- * Declaration-only corrections below were not recompiled. Measurements in the
- * retained header describe the original private trial, not this revised text.
+/* GPT-6.1 Sol (high), task v0799; USA v1.01.
+ * Profile: -O2 -G0 -ffunction-sections -ffast-math.
+ * 1072/1072 bytes, 0/1 places. Seven non-relocation instructions differ:
+ * five register/order differences in the acceleration products and clamp
+ * at +0xD8..+0xF0; two final steering-call setup instructions at +0x3D0/+0x3DC.
+ * The inline scaling helper preserves the intermediate product under fast-math.
+ * The established D_00189EA8 scalar view supplies the height maximum without
+ * hoisting the full D_00189EA0 vector address. Keep all eight FP inputs.
+ * Reopen with a first-scheduler/allocation explanation for cap versus scaled
+ * distance, and a call setup hypothesis. Disabling gcse or scheduling worsens;
+ * equivalent cap/step wordings tie. No linked build; source marker restored.
  */
-/* Retained manual C reconstruction; not linked and not matching.
- * Profile: -O2 -G0 -ffunction-sections -mno-split-addresses -ffast-math
- * Local tools/check.py measurements: us: 1084 compiled bytes, 0/1 placements, exit 1; us2: 1084 compiled bytes, 0/1 placements, exit 1; pal: catalogue absent (exit 1).
- * Retail extent: 1072 bytes. No exact-C credit and no full build performed.
- * Residual: 1084 versus 1072 bytes (+12), with the correct 0xB0 frame under no-split-addresses. Scalar clamp/call setup and register scheduling differ. Eight live FP inputs f12-f19 are retained.
- * Reopen: Reopen after identifying the remaining scalar clamp/max and call-setup scheduling differences using compiler RTL, retaining all eight FP inputs and measured literals.
- * Arrays with unknown total extent remain incomplete. Pointer-offset views do
- * not establish the full sizes or ownership of game records.
- */
-/* Steers toward the target, clamps speed, then resolves the proposed movement. */
-typedef unsigned char u8;
+#include "common.h"
+
 #define I32(p,o) (*(int *)((p)+(o)))
 #define F32(p,o) (*(float *)((p)+(o)))
 extern float func_00283248(float,float),func_00282E20(void *),func_00282E80(void *,void *);
@@ -22,10 +21,16 @@ extern float func_002A7CA0(struct family_27f9_object *,float *,float,float,float
 extern float func_00283180(float),func_00283198(float);
 extern float func_L01_003BD560(void *,float,float,float,float);
 extern float D_00189EA0[];
+extern float D_00189EA8;
 extern void func_002AF000(float *,float,float,float);
 extern int func_002A8240(void *,void *,int,float,float,float);
 extern float func_L01_00310BC0(float *,float,float,float,float,float);
-extern int func_L01_003165E8(char *,int,char *,char *,char *);
+extern int func_L01_003165E8(void *,int,int,int,int);
+static __inline__ float ScaleAcceleration(float acceleration, float distance)
+{
+    return acceleration * distance;
+}
+
 int func_L01_003BE058(u8 *object,float turn,float turn2,float rate,float acceleration,float brake,float maxspeed,float altitude,float deadzone)
 {
     u8 *state=*(u8 **)(object+0x68);
@@ -37,8 +42,8 @@ int func_L01_003BE058(u8 *object,float turn,float turn2,float rate,float acceler
     func_00282CF0(direction,state+0x1e0,object+0x10);
     distance=func_00282E20(direction)-deadzone;
     if(distance<0.0f) distance=0.0f;
-    cap=acceleration*0.00027777778450399637f;
-    step=acceleration*(distance*0.00027777778450399637f);
+    cap=ScaleAcceleration(acceleration,0.00027777778450399637f);
+    step=ScaleAcceleration(acceleration,distance*0.00027777778450399637f);
     if(cap<step) step=cap;
     F32(state,0x240)+=step;
     if(distance<F32(state,0x240)*10.0f)
@@ -54,7 +59,7 @@ int func_L01_003BE058(u8 *object,float turn,float turn2,float rate,float acceler
     proposed[2]=0.0f;
     func_00282CC0(proposed,proposed,object+0x10);
     height=F32(state,0x27c);
-    if(object[0x20]==8 && height<D_00189EA0[2]) height=D_00189EA0[2];
+    if(object[0x20]==8) height = height > D_00189EA8 ? height : D_00189EA8;
     proposed[2]=func_L01_003BD560(proposed,F32(state,0x1d8)+2.0f,F32(state,0x1d8)-3.0f,height,F32(state,0x288));
     if(func_00282E80(object+0x10,D_00189EA0)<5.0f && D_00189EA0[2]<proposed[2]) proposed[2]=D_00189EA0[2];
     proposed[2]+=altitude;
@@ -68,7 +73,7 @@ int func_L01_003BE058(u8 *object,float turn,float turn2,float rate,float acceler
     flags|=func_002A8240(object,state+0x1f0,0,0.0f,0.3f,0.0f);
     F32(object,0xf4)=func_L01_00310BC0((float *)(state+0x248),F32(object,0xf4),-pitch,
         0.0017453294713050127f,0.0008726647356525064f,0.0008726647356525064f);
-    if(I32(state,0x238)>0 && func_L01_003165E8((char *)(object+0x10),I32(state,0x210),*(char **)(state+0x218),*(char **)(state+0x21c),(char *)-1)==0) flags|=7;
+    if(I32(state,0x238)>0 && func_L01_003165E8((char *)(object+0x10),I32(state,0x210),I32(state,0x218),I32(state,0x21c),-1)==0) flags|=7;
     if(flags&7) func_002A7CA0((struct family_27f9_object *)object,(float *)(state+0x244),angle,
         turn*0.000014544411897077225f,turn2*0.000004848137450608192f,rate*0.0008726647356525064f);
     return flags;

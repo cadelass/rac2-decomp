@@ -1,19 +1,40 @@
-/* Retained nonmatching C (Opus big40), measured 26 October 2026; replaces the earlier draft.
- * Profile: -O2 -G0 -ffunction-sections -g (the -g statement nops before both div.s).
- * us 0/27, pal catalogue absent. 2712/2708 bytes, about 40 instruction lines differ.
- * Agrees: hero fields through one D_00189E20 view (retail's la+offset everywhere), the
- * MACRO_ADDR reads of D_L00_001B2864/D_L00_001A8F00, qcopy for the three quad copies, the
- * locked/candidate arms in retail order, the light stores (last source store first),
- * block-local `scale` in each flash arm, the weapon row as a pointer statement, the target
- * reusing the candidate variable (retail $s1), func_L00_00324D18 with its int last
- * (a2 in the call slot), func_L00_002D6B70 taking the handle.
- * Left: (1) retail cross-jumps the 0.75 func_00282D30 call of the two aim arms; here the
- * else arm ends in a call followed by flow's (use 0), so the arms keep separate calls
- * (+2 insns) and the $s0/$s1 roles of the hero base and &origin swap. (2) light block:
- * retail keeps &muzzle in $s0 across func_0029FCC0 and copies it to $s3 after the call,
- * &offset in $s1; here &offset is $s0 and the muzzle copy is made before the call.
- * (3) first hero test $v0/$v1. Sister func_L00_0040F6A0 is exact with the same idioms.
- * Reopen: an arm ending that survives flow's (use 0), or the permuter (queued).
+/* Retained nonmatching C (opus-1, Claude Opus 5.5 xhigh), measured 31 October 2026; replaces the Opus big40 draft.
+ * Profile: a unit of its own (src/levels/shared/L00_003A48D0.c, because this Vector typedef conflicts with
+ * L00_003A0F30.c), -O2 -G0 -ffunction-sections -g. Only the declarations below are needed.
+ * Best legitimate result: us 0/27, 2700/2708 bytes, 9 rows differ once aligned with retail. PAL has no such function.
+ *
+ * Exact bytes exist but use forbidden forms, so this is not landed: us 27/27 and us2 27/27 with both of these edits:
+ *  (a) else arm: Vector *known = &direction; if (known) func_00282D30(&origin, HERO->ptr[0x2290 / 4] + 0xE0, 0.75f);
+ *      (an always-true test on a known address);
+ *  (b) first hero test, replacing the plain if (a register pin and an empty asm barrier):
+ *      { register int pinned __asm__("$2") = HERO->i[0x2294 / 4];
+ *        if (pinned == 1) { __asm__("" : : : "$2"); func_L00_002C42E0(0x1D, 1); } }
+ * Everything else below is therefore confirmed, relocations included.
+ *
+ * What the structure below settles, each measured against dumps from tools/regalloc.py:
+ *  - Each aim arm has its own scale and add calls and ends in point = &origin. CSE then sees HERO+0x760 / HERO live
+ *    across the scale call ($s0), and the add's address is a fresh lui at +0x80. point lands in $a0, a non-call last
+ *    insn, so flow2 adds no (use 0) and jump2 cross-jumps the arms. An arm ending in a call never merges.
+ *  - Each light arm ends in the joint call, pos = &muzzle and off = &offset. The block boundary keeps the $s3 copy
+ *    after the call (in one block sched1 lifts it above), and the later $a2 set ranks $a2 before $a1 in sched2.
+ *
+ * Still differing, without the edits above:
+ *  (1) +0x88: the first hero test has $v0/$v1 swapped. Inferred from the dump's reference counts: local-alloc ranks
+ *      the HERO quantity (hi+lo: 5 refs, life 8, about 1.25) above the loaded value (2/2 = 1.0), and retail ranks the
+ *      value first, which would take two more hidden insns inside the hi..lo span or one more reference to the value.
+ *      None of these fixes it: a block-local mode variable, passing it as the argument, a one-case switch, an inline
+ *      accessor, the separate D_00189EA0 symbol, -frac2-gcse-unsplit-edges, -frac2-keep-block-order,
+ *      -frac2-no-null-pointer-checks, -fno-gcse (which also makes other rows worse).
+ *  (2) +0x1C4: `addiu $s1` fills the then arm's `b` slot; retail has `daddu $a0,$s1` there, branching one word later.
+ *      Inferred, and reproduced by edit (a): retail's else arm keeps a free (use 0) in its join block. With no other
+ *      work to place, it lands in the load-delay
+ *      cycle between `daddu $a0,$s1` and `addiu $a1,$a1,0xE0`, stopping the cross-jump there. It comes from a scale
+ *      or add call that ended a block before cse, behind a label cse then removes; edit (a) reproduces that. The then
+ *      arm's copy can float above the qcopy asm, so the source may be symmetric, e.g. a helper used in both arms.
+ *  (3) The loop-head alignment nop at +0x5CC is missing only because (2) shifts the code by one word.
+ * -frac2-qcopy with -frac2-qcopy-barrier changes nothing with the helper, and plain quad assignments are worse.
+ * Reopen: a real, non-placeholder test that cse resolves behind a scale or add call for (2), and a natural source
+ * of the extra span or reference for (1). Also reopen if the maintainers rule on these forms; (b) is a pin either way.
  */
 
 #include "common.h"
@@ -153,8 +174,9 @@ void func_L00_003A48D0(Moby *moby)
             color = 0x600FFF0F;
         func_00273318(moby, 1.25f, color, 0, 0x27, 0.0f, -1, 90.0f, 4);
         qcopy(&direction, &HERO->q[0x760 / 16]);
+        func_00282D30(&origin, HERO->ptr[0x2290 / 4] + 0xE0, 0.75f);
+        func_00282CC0(&origin, &HERO->q[0x80 / 16], &origin);
         point = &origin;
-        func_00282D30(point, HERO->ptr[0x2290 / 4] + 0xE0, 0.75f);
     } else {
         vars->aiming = 0;
         horizontal = 0.3141593039f;
@@ -163,10 +185,10 @@ void func_L00_003A48D0(Moby *moby)
             func_00282D30(&direction, &moby->forward, -1.0f);
         else
             qcopy(&direction, &HERO->q[0x760 / 16]);
+        func_00282D30(&origin, HERO->ptr[0x2290 / 4] + 0xE0, 0.75f);
+        func_00282CC0(&origin, &HERO->q[0x80 / 16], &origin);
         point = &origin;
-        func_00282D30(point, HERO->ptr[0x2290 / 4] + 0xE0, 0.75f);
     }
-    func_00282CC0(point, &D_00189EA0, point);
     candidate = func_L00_00324D18(point, &direction, horizontal, vertical, 75.0f, horizontal, horizontal, 1);
 
     if (vars->target != 0) {
@@ -301,14 +323,16 @@ void func_L00_003A48D0(Moby *moby)
             power = func_00283CE0(vars->flash) * (scale * 0.5f);
         }
         if (HERO->h[0x24EC / 2] != 0) {
+            func_00282D30(&offset, &moby->forward, -1.0f);
+            func_0029FCC0(moby, 0, &muzzle);
+            pos = &muzzle;
             off = &offset;
-            func_00282D30(off, &moby->forward, -1.0f);
         } else {
+            qcopy(&offset, &HERO->q[0x760 / 16]);
+            func_0029FCC0(moby, 0, &muzzle);
+            pos = &muzzle;
             off = &offset;
-            qcopy(off, &HERO->q[0x760 / 16]);
         }
-        func_0029FCC0(moby, 0, &muzzle);
-        pos = &muzzle;
         func_00282CC0(pos, pos, off);
         func_00282D30(&lift, HERO->ptr[0x2290 / 4] + 0xE0, 0.3f);
         func_00282CC0(pos, pos, &lift);

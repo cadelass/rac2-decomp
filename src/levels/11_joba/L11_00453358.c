@@ -324,7 +324,7 @@ void func_L11_00454DD8(char *p)
     *(int *)(q + 0x1C4) = 0;
 }
 
-INCLUDE_ASM("asm/levels", func_L11_00454F18);
+/* func_L11_00454F18 lives in L11_00454F18-g8.c. */
 
 /* Sets up the actor's tuning on its first stage, handles contacts while active, and runs the
    attack-state update. */
@@ -637,7 +637,7 @@ void func_L11_00457600(void) {
 }
 
 
-INCLUDE_ASM("asm/levels", func_L11_004577F8);
+/* func_L11_004577F8 is defined in L11_00453358-curve.c. */
 
 INCLUDE_ASM("asm/levels", func_L11_004580E8);
 
@@ -665,9 +665,7 @@ void func_L11_00458F58(char *p)
 
 INCLUDE_ASM("asm/levels", func_L11_004590F0);
 
-INCLUDE_ASM("asm/levels", func_L11_00459640);
-
-/* func_L11_00459D48 lives in the sibling small-data unit (L11_00453358-g8.c). */
+/* func_L11_00459640 and func_L11_00459D48 live in the sibling small-data unit (L11_00453358-g8.c). */
 
 void func_L11_00459E48(char *p)
 {

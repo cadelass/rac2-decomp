@@ -20,7 +20,7 @@ extern float func_L00_0031CDD0(void *, void *, int, float, float);
 extern u8 *func_L18_00437AA0(void *, void *, void *, int, float, float);
 
 
-INCLUDE_ASM("asm/levels", func_L18_003F80A0);
+/* func_L18_003F80A0 is in L18_003F80A0-state-g8.c. */
 
 /* func_L18_003F8A98 is in L18_003F8A98.c. */
 
@@ -65,7 +65,7 @@ void func_L18_003F9018(u8 *a0) {
     func_00281EB8(buf, 0xC, 0x80F0F020u, 1, 0.25f, 0.0f, 0.0f);
 }
 
-INCLUDE_ASM("asm/levels", func_L18_003F90A0);
+/* func_L18_003F90A0 is in L18_003F90A0-g8.c. */
 
 /* func_L18_003FB308 is in L18_003FB308-g8.c. */
 
@@ -214,7 +214,7 @@ s32 func_L18_003FDD68(u8 *a0, u8 *a1)
     return ok && any;
 }
 
-INCLUDE_ASM("asm/levels", func_L18_0042EBB8);
+/* func_L18_0042EBB8 is in L18_0042EBB8-g8.c. */
 
 /* func_L18_0042F308 is in L18_0042F308.c. */
 

@@ -1,33 +1,35 @@
 /*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
- * Profile: -O2 -G32 -ffunction-sections -Wa,-G32 -frac2-qcopy -frac2-qcopy-barrier.
- * Reported final C / retail: 992 / 984 bytes; size equality is not a match.
- * us: 0/28 placements; 992/984 bytes.
- * us2: 0/28 placements; 992/984 bytes.
- * pal: absent from catalogue (not a match).
- * Residual: Switch/address/allocation; truthful 28-byte palette, full signed64 input and full-word kind narrowed at actual store.
- * Reopening condition: Reopen only after independent source, data-layout, ABI or compiler evidence specifically explains the residual above; then test that single hypothesis. Do not repeat tied source forms or flag sweeps.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
+ * GPT-6.1 Sol (high), USA v1.01, 2026-10-29.
+ * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
+ * check.py: 976/984 bytes, 0 of 28 places match; no linked build.
+ * Remaining: the far-distance count update reuses its address and occupies
+ * branch slots; retail materializes the store address separately and restores
+ * s0 in the early exit slot. Byte-store scheduling around the parent/basis
+ * setup also differs. Prologue allocation and denomination-case order agree.
+ * New ABI evidence: all seven direct boot calls (0x002AE560..0x002AE688)
+ * pass signed immediate denominations in t0; existing matched callers declare
+ * int, as does RAC1's spawn_bolt_by_value in bolts_and_wrench.c. The old long
+ * declaration added two narrowing shifts not present in retail's count update.
+ * Data layouts follow the measured offsets and RAC1's Moby/BoltVars views.
+ * Seven scalar scale symbols preserve each observed GP load and its schedule.
+ * The retained source includes its required declarations. The previous draft
+ * recompiles to 992/984 with its recorded G32 profile. This draft improves
+ * ordered identical nonrelocated words from 143 to 198 (diagnostic only).
+ * Reopen with independently measured count/address or store-lifetime evidence;
+ * no flag sweep or added volatile accesses. Existing name: SpawnBoltByValue.
  */
+#include "common.h"
 
-/* Nonmatching manual reconstruction, 2026-10-23.
- * 00302470: 992 bytes versus retail 984; frame 0xA0.
- * Profile: -O2 -G32 -ffunction-sections -Wa,-G32 -frac2-qcopy -frac2-qcopy-barrier.
- * All carrying US/US2/PAL checks returned zero matches and exit 1;
- * catalogue absence is recorded separately and never counted as success.
- * The seven-float palette is 28 bytes. The signed64-bit denomination, full-word kind input and pointer result are preserved. Switch layout, addressing and allocation still differ.
- * Reopen only with new measured source/type/scheduling evidence. No artificial
- * barriers, register pins, generated decompiler C or omitted behavior were used.
- */
-
-typedef unsigned char u8;
-typedef unsigned int u32;
 typedef int ParticleWord __attribute__((mode(TI)));
 typedef union { ParticleWord word; float f[4]; } ParticleVector;
-extern float ref_00302470_00[7] __attribute__((sda));
-extern int ref_00302470_01 __attribute__((sda));
+extern float ref_00302470_03 SDATA(ref_00302470_03);
+extern float ref_00302470_04 SDATA(ref_00302470_04);
+extern float ref_00302470_05 SDATA(ref_00302470_05);
+extern float ref_00302470_06 SDATA(ref_00302470_06);
+extern float ref_00302470_07 SDATA(ref_00302470_07);
+extern float ref_00302470_08 SDATA(ref_00302470_08);
+extern float ref_00302470_09 SDATA(ref_00302470_09);
+extern int ref_00302470_01 SDATA(ref_00302470_01);
 extern ParticleVector ref_00302470_02 __attribute__((nosda));
 extern int D_001A7A14 __attribute__((nosda));
 extern char *D_0018C0B0 __attribute__((nosda));
@@ -49,58 +51,96 @@ extern void func_002AB668(void *, int, float);
 extern int func_003022A0(char *, char *, float, float);
 extern void func_002A0F48(void *);
 
+typedef struct BoltVars {
+    u8 pad00[0x20];
+    ParticleVector velocity, spin;
+    u8 kind;
+    u8 pad41[0xF];
+    float angle;
+    u8 pad54;
+    u8 flags;
+    u8 pad56[2];
+    float phase;
+    u8 pad5c[0xC];
+    float startZ;
+} BoltVars;
+typedef struct BoltClass { u8 pad00[0x24]; float scale; } BoltClass;
+typedef struct BoltSpawnObject {
+    u8 pad00[0x10];
+    ParticleVector position;
+    u8 state, pad21[3];
+    BoltClass *objectClass;
+    u8 pad28[4];
+    float scale;
+    u8 updateDistance, visible;
+    short drawDistance;
+    unsigned short flags;
+    u8 pad36[0x2d];
+    u8 life;
+    u8 pad64[4];
+    BoltVars *vars;
+    u8 pad6c[0x4c];
+    struct BoltSpawnObject *parent;
+    u8 padbc[4];
+    ParticleVector orientation[3];
+    ParticleVector rotation;
+} BoltSpawnObject;
 /* Allocate the denomination near the camera and initialize its pickup motion. */
-char *func_00302470(char *source, void *position, void *velocity, u32 flags, long value, int kind)
+BoltSpawnObject *func_00302470(BoltSpawnObject *source, void *position, void *velocity, u32 flags, int value, int kind)
 {
-    char *object, *state, *parent, *sourcePosition;
-    ParticleVector difference, crossed;
+    BoltSpawnObject *object, *parent;
+    BoltVars *state;
+    ParticleVector *orientation;
+    ParticleVector crossed, difference;
     u32 red, green, blue;
-    float scale, angle;
+    float scale, spin, angle;
     if (func_00282E48(position,&ref_00302470_02)>=64.0f) {
-        D_001A7A14=(u32)D_001A7A14+(unsigned long)value;
+        D_001A7A14+=value;
         return 0;
     }
     switch (value) {
-    case 5: object=func_0029EFD0(14); scale=ref_00302470_00[1]; break;
-    case 20: object=func_0029EFD0(15); scale=ref_00302470_00[2]; break;
-    case 50: object=func_0029EFD0(16); scale=ref_00302470_00[3]; break;
-    case 100: object=func_0029EFD0(17); scale=ref_00302470_00[4]; break;
-    case 500: object=func_0029EFD0(18); scale=ref_00302470_00[5]; break;
-    case 1000: object=func_0029EFD0(19); scale=ref_00302470_00[6]; break;
-    default: object=func_0029EFD0(13); scale=ref_00302470_00[0]; break;
+    default:
+    case 1: object=(BoltSpawnObject *)func_0029EFD0(13); scale=ref_00302470_03; break;
+    case 5: object=(BoltSpawnObject *)func_0029EFD0(14); scale=ref_00302470_04; break;
+    case 20: object=(BoltSpawnObject *)func_0029EFD0(15); scale=ref_00302470_05; break;
+    case 50: object=(BoltSpawnObject *)func_0029EFD0(16); scale=ref_00302470_06; break;
+    case 100: object=(BoltSpawnObject *)func_0029EFD0(17); scale=ref_00302470_07; break;
+    case 500: object=(BoltSpawnObject *)func_0029EFD0(18); scale=ref_00302470_08; break;
+    case 1000: object=(BoltSpawnObject *)func_0029EFD0(19); scale=ref_00302470_09; break;
     }
-    sourcePosition=(char *)((u32)source+0x10);
-    if (!object) return 0;
-    state=*(char **)(object+0x68);
-    state[0x40]=(u8)kind;
+    if (object) {
+    state=object->vars;
+    state->kind=(u8)kind;
+    orientation=object->orientation;
     parent=source;
-    if (parent) while (*(char **)(parent+0xb8)) parent=*(char **)(parent+0xb8);
-    *(unsigned short *)(object+0x34)|=0x100;
-    object[0x63]=0x14; object[0x20]=1; object[0x31]=1;
-    object[0x30]=0x40; *(short *)(object+0x32)=0x40;
-    *(char **)(object+0xb8)=parent;
-    *(float *)(object+0x2c)=*(float *)(*(char **)(object+0x24)+0x24)*scale;
-    func_002833F0(object+0xc0,object+0xf0);
+    if (parent) while (parent->parent) parent=parent->parent;
+    object->parent=parent;
+    object->flags|=0x100;
+    object->life=0x14; object->visible=1; object->state=1;
+    object->updateDistance=0x40; object->drawDistance=0x40;
+    object->scale=object->objectClass->scale*scale;
+    func_002833F0(orientation,&object->rotation);
     func_002AEC18(object,ref_00302470_01);
     func_002A04B8(object,&red,&green,&blue);
     func_002A0468((unsigned long long *)object,0,13,0,0);
     func_002A0488(object,red,green,blue);
-    *(ParticleWord *)(object+0x10)=*(ParticleWord *)position;
-    *(ParticleWord *)(state+0x20)=*(ParticleWord *)velocity;
-    if (func_002A77E0(2)) state[0x55]|=1;
-    *(float *)(state+0x50)=func_002A7940();
-    *(float *)(state+0x58)=func_002A7940();
-    *(float *)(state+0x68)=*(float *)(object+0x18);
-    angle=func_002A7878(0.0f,720.0f);
-    func_00282CF0(&difference,sourcePosition,object+0x10);
-    func_00282DD8(&crossed,state+0x20,&difference);
-    func_00282F20(state+0x30,&crossed,1.0f);
-    func_002AB668(state+0x30,(int)(state+0x30),angle*0.00029088825f);
+    qcopy(&object->position,position);
+    qcopy(&state->velocity,velocity);
+    if (func_002A77E0(2)) state->flags|=1;
+    state->angle=func_002A7940();
+    state->phase=func_002A7940();
+    state->startZ=object->position.f[2];
+    spin=func_002A7878(0.0f,720.0f)*0.00029088825f;
+    func_00282CF0(&difference,&source->position,&object->position);
+    func_00282DD8(&crossed,&state->velocity,&difference);
+    func_00282F20(&state->spin,&crossed,1.0f);
+    func_002AB668(&state->spin,(int)(&state->spin),spin);
     if (flags&2) {
         angle=0.0f;
         if (flags&0x10) angle=func_002A7878(-30.0f,30.0f)*0.017453294f;
-        func_003022A0(object,D_0018C0B0,angle,0.0f);
+        func_003022A0((char *)object,D_0018C0B0,angle,0.0f);
     }
     func_002A0F48(object);
+    }
     return object;
 }

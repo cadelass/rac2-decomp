@@ -181,7 +181,7 @@ void func_L00_003A2BB8(char *p, int v, char *a, char *b)
 
 /* func_L00_003A2C60 is defined in L00_003A2C60-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L00_003A2EE0);
+/* func_L00_003A2EE0 is defined in L00_003A2EE0-g8.c. */
 
 
 

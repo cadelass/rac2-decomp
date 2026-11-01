@@ -1,11 +1,31 @@
-/* M20, 26 October 2026: 2488/2516 B, aligned score 91 (was 166).
- * Profile: -O2 -G16 -Wa,-G16 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * Found: the D_0018xxxx scalars are fields of D_00189E20 (retail addresses them off one lui/addiu base),
- * D_00138320/4 are fields of D_00138180, D_00139582 is D_00139568[0x1A], the pulse state is
- * D_L00_001B8C80 + 0x160 with one local amount, color is an if/else, ready = 1 then cleared.
- * Left: retail keeps &D_00189E20 in $fp from the aa18 test to the hit loop (a pointer local gets
- * CSE'd with the earlier base and shrinks the function), saves f20 and f21 (frame 0x2C0 vs 0x2D0),
- * lays the ray scratch arrays out differently, and loads state+8 with lwu.
+/* GPT-6.1 Sol high, 29 October 2026, task v1432: 2516/2516 bytes,
+ * 0 of 27 USA v1.01 placements match with the current pinned toolchain.
+ * Profile for a dedicated unit:
+ * -O2 -G16 -Wa,-G16 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -g
+ * First mismatch +0x3D8: lw instead of lwu for the packed timers at state+8.
+ * There are 40 different non-relocation instructions in level 00, predominantly
+ * the permutation of scratch-pointer spill slots; the pulse base/30 setup also
+ * has its two instructions reversed. The frame is the retail 0x2C0 and the
+ * owner/state/ray-loop allocations agree. Relocations are not yet qualified.
+ * Improvements over v1289: snapshot the timer constants before storing them;
+ * pass state+0x4C's handle to func_L00_002D6B70; use explicit WeaponEntry row
+ * pointers; load the tuning word before storing the random phase; snapshot
+ * the damage id/power before filling its record; interleave the collision
+ * helper's float first, preserving the integer and FP bank interfaces; and
+ * reorder pulse assignments to reproduce retail's five field stores.
+ * The final WeaponEntry pointer statement plus -g supplies the exact missing
+ * pre-div.s nop. A separate rate temporary under -g instead adds two nops.
+ * An explicit camera pointer before the amount test worsens allocation;
+ * placing it after the test is neutral. A 32-bit unsigned long long bitfield
+ * still emits lw. A typed damage struct is neutral without an extra pointer;
+ * retaining a damage pointer grows the frame to 0x2D0. A measured weapon-prefix
+ * struct is also neutral. Do not repeat these without changed input.
+ * The final separate-array, aggregate-scratch and late-camera-pointer forms
+ * emit identical instruction listings: stop on this tie. Reopen with evidence
+ * about GCSE address-pseudo/spill ordering or the zero-extension source form.
+ * Sixteen check.py invocations (one syntax failure), one regalloc diagnostic.
+ * Final check.py: 0 of 27 places match. Assembly marker restored; no linked build.
+ * All required declarations follow.
  */
 #include "common.h"
 typedef int VectorBits __attribute__((mode(TI)));
@@ -63,15 +83,16 @@ extern void func_002A75E0(void *,int,int,int,int),func_002A7470(void *,int,int,i
 extern void func_L00_002C42E0(int,int);
 extern int func_L00_002D4040(int),func_L00_002D3F30(int,int);
 extern void func_00273318(void *,unsigned int,void *,int,int,int,float,float,float);
-extern void func_L00_002AF568(void),func_L00_002D6B70(void);
+extern void func_L00_002AF568(void);
+extern void func_L00_002D6B70(int);
 extern int func_L00_002D6998(struct Rac2Native_5f824a0e369ccf7b_src_record *);
 extern float func_002A7940(void),func_00283CE0(int),func_002A7878(float,float),func_00283B98(float,float);
 extern void func_L00_003A6538(void *);
 extern void func_L00_002E6EF8(void (*)(void *),void *);
-extern void func_L00_0032A1A8(char *,char *,char *,float);
+extern void func_L00_0032A1A8(char *,char *,void *,float);
 extern void func_0029FCC0(char *,int,char *),func_L00_003A5FC0(void *,void *);
 extern void func_00282D30(void *,void *,float),func_00282CC0(void *,void *,void *);
-extern int func_00277F48(void *,int,void *,int,float);
+extern int func_00277F48(float,void *,int,void *,int);
 extern void func_002A8E20(void *,void *),func_0032D758(void *,int,void *);
 extern void func_00283410(void *,void *),func_00283678(void *,void *),func_00283738(void *,void *,void *);
 extern void func_002AB668(void *,int,float),func_002ACDE8(void *,void *,void *);
@@ -84,9 +105,11 @@ void func_L00_003A53E8(char *moby)
     char damage[0x30];
     float probe[4], side[4], forward[4], up[4], bias[4];
     float frame[3][4], orientation[3][4], matrix[4][4];
-    float origin[4], rotatedBias[4], rotation[4], ray[4], start[4], end[4];
+    float origin[4], rotatedBias[4];
     char *hits[20]; int masks[20];
+    float rotation[4], ray[4], start[4], end[4];
     int ready, count, i;
+    float step, angle;
     if (*(u8 *)(moby + 0x20) == 0) {
         *(u8 *)(moby + 0x20) = 1;
         *(int *)(state + 0x4C) = -1;
@@ -121,16 +144,22 @@ void func_L00_003A53E8(char *moby)
     if (*(u8 *)(moby + 0x20) == 1 && !D_00189E20.c0dc && *(float *)state == 0.0f &&
         D_00189E20.b060 >= 23 && ready) {
         if ((D_00138180.b320 & D_00189E20.b050) && func_L00_002D3F30(-1,1)) {
-            if (*(u8 *)(D_00189E20.c0b0 + 0x43) == D_L00_00262570[D_00139568[0x1A]].animation ||
+            WeaponEntry *weapon = D_L00_00262570 + D_00139568[0x1A];
+            if (*(u8 *)(D_00189E20.c0b0 + 0x43) == weapon->animation ||
                 D_00189E20.c0bc || D_00189E20.c30c) {
-                *(short *)(state + 6) = (unsigned short)D_L00_001AF680;
-                *(short *)(state + 8) = (unsigned short)D_L00_001AF688;
-                *(short *)(state + 10) = (unsigned short)D_L00_001AF690;
+                unsigned short startup = D_L00_001AF680;
+                unsigned short delay = D_L00_001AF688;
+                unsigned short cooldown = D_L00_001AF690;
+                *(short *)(state + 6) = startup;
+                *(short *)(state + 8) = delay;
+                *(short *)(state + 10) = cooldown;
                 *(int *)(state + 0x48) = 1;
             } else {
+                unsigned short delay = D_L00_001AF684;
+                unsigned short cooldown = D_L00_001AF68C;
                 *(short *)(state + 6) = 2;
-                *(short *)(state + 8) = (unsigned short)D_L00_001AF684;
-                *(short *)(state + 10) = (unsigned short)D_L00_001AF68C;
+                *(short *)(state + 8) = delay;
+                *(short *)(state + 10) = cooldown;
                 *(int *)(state + 0x48) = 0;
             }
             func_L00_002AF568();
@@ -141,9 +170,10 @@ void func_L00_003A53E8(char *moby)
             *(float *)(state + 0x20) = 1.0f / func_00283CE0(*(short *)(state + 8));
             *(float *)(state + 0x24) = 1.0f / func_00283CE0(*(short *)(state + 10));
             *(float *)(state + 0x28) = func_002A7940();
-            *(float *)(state + 0x2C) = func_002A7940();
             {
+                float phase = func_002A7940();
                 int t = D_L00_001AF6B4;
+                *(float *)(state + 0x2C) = phase;
                 *(int *)(state + 0x40) = t;
                 *(float *)(state + 0x44) = 1.0f / func_00283CE0(t);
             }
@@ -152,7 +182,7 @@ void func_L00_003A53E8(char *moby)
         }
         if (!((D_00138180.b320 & D_00189E20.b050) && func_L00_002D4040(-1) && D_00189E20.c0d8) &&
             *(int *)(state + 0x4C) >= 0) {
-            func_L00_002D6B70();
+            func_L00_002D6B70(*(int *)(state + 0x4C));
             *(int *)(state + 0x4C) = -1;
         }
     }
@@ -160,7 +190,7 @@ void func_L00_003A53E8(char *moby)
         func_00282978(state + 10);
         func_00282978(state + 8);
         func_00282948(state + 0x40);
-        if (*(int *)(state + 8))
+        if (*(unsigned int *)(state + 8))
             func_L00_002E6EF8(func_L00_003A6538,moby);
     }
     if ((unsigned int)(*(u8 *)(moby + 0x20) - 2) >= 2 || !func_00282978(state + 6))
@@ -180,28 +210,33 @@ void func_L00_003A53E8(char *moby)
             float amount = 0.06f;
             if (*(int *)(state + 0x48))
                 amount = 0.12f;
+            D_L00_001B8C80.pulse.start = amount;
+            D_L00_001B8C80.pulse.ticks = 30;
             D_L00_001B8C80.pulse.next = amount;
             D_L00_001B8C80.pulse.nextTicks = 30;
             D_L00_001B8C80.pulse.mode = 0;
-            D_L00_001B8C80.pulse.start = amount;
-            D_L00_001B8C80.pulse.ticks = 30;
         }
         return;
     }
     *(u8 *)(moby + 0x20) = 6;
     *(short *)(state + 4) = 28;
-    *(short *)(damage + 0x1A) = *(short *)(moby + 0xAA);
-    *(float *)(damage + 0x1C) = D_L00_00262570[D_00139568[0x1A]].power;
+    {
+    unsigned short id = *(unsigned short *)(moby + 0xAA);
+    WeaponEntry *weapon = D_L00_00262570 + D_00139568[0x1A];
+    float power = weapon->power;
     *(int *)(damage + 0x14) = 0x10000;
     *(int *)(damage + 0x20) = 1;
     *(u8 *)(damage + 0x18) = 3;
     *(u8 *)(damage + 0x19) = 2;
+    *(short *)(damage + 0x1A) = id;
+    *(float *)(damage + 0x1C) = power;
     *(char **)(damage + 0x10) = moby;
+    }
     func_00282D30(probe,moby + 0xD0,-1.35f);
     func_00282CC0(probe,probe,moby + 0x10);
     func_00282D30(side,moby + 0xC0,0.275f);
     func_00282CC0(probe,probe,side);
-    count = func_00277F48(probe,1,D_00189E20.c0b0,0,1.5f);
+    count = func_00277F48(1.5f,probe,1,D_00189E20.c0b0,0);
     for (i = 0; i < count; i++) {
         if (D_L00_001C3280[i] != D_00189E20.c0b0) {
             func_00282D30(damage,moby + 0xD0,-1.5f);
@@ -225,17 +260,20 @@ void func_L00_003A53E8(char *moby)
         func_00283738(frame,D_00189E20.a550,orientation);
     }
     qcopy(state + 0x30, forward);
-    count = 0;
-    for (i = 0; i < 20; i++) { hits[i] = 0; masks[i] = 0; }
     {
-        float angle = 0.0f;
-        for (i = 19; i >= 0; i--) {
+    int rayCount, rayIndex, clearIndex, restoreIndex;
+    step = 1.0471977f;
+    angle = 0.0f;
+    rayCount = 0;
+    for (clearIndex = 0; clearIndex < 20; clearIndex++) { hits[clearIndex] = 0; masks[clearIndex] = 0; }
+    {
+        for (rayIndex = 19; rayIndex >= 0; rayIndex--) {
             char *hit;
             float spread = func_002A7878(0.01f,0.3272492588f);
             func_002AB668(rotation,(int)up,spread);
             func_002ACDE8(ray,forward,rotation);
             func_002ACDE8(rotatedBias,bias,rotation);
-            angle = func_00283B98(func_002A7878(1.0471977f * 0.5f,1.0471977f * 1.5f),angle);
+            angle = func_00283B98(func_002A7878(step * 0.5f,step * 1.5f),angle);
             func_002AB668(rotation,(int)forward,angle);
             func_002ACDE8(ray,ray,rotation);
             func_002ACDE8(rotatedBias,rotatedBias,rotation);
@@ -244,14 +282,18 @@ void func_L00_003A53E8(char *moby)
             func_00282CC0(end,start,ray);
             hit = func_L00_003A5DC0(moby,start,end,damage);
             if (hit) {
-                masks[count] = *(int *)(hit + 0x98);
-                hits[count++] = hit;
+                masks[rayCount] = *(int *)(hit + 0x98);
+                hits[rayCount++] = hit;
                 *(int *)(hit + 0x98) = 0;
             }
         }
     }
-    for (i = 0; i < count; i++)
-        *(int *)(hits[i] + 0x98) = masks[i];
-    *(float *)state = 1.0f / D_L00_00262570[D_00139568[0x1A]].rate;
+    for (restoreIndex = 0; restoreIndex < rayCount; restoreIndex++)
+        *(int *)(hits[restoreIndex] + 0x98) = masks[restoreIndex];
+    }
+    {
+        WeaponEntry *weapon = D_L00_00262570 + D_00139568[0x1A];
+        *(float *)state = 1.0f / weapon->rate;
+    }
 }
 

@@ -1,38 +1,23 @@
-/* func_L00_003BBF48 (312 bytes, 27 places) - best attempt, NOT MATCHED.
- *
- * Measured: 300 bytes against 312. The body is the retail's: the table at 0x23DDA0
- * (the record pointer at +0x30), the owner word at +0x5C, the "still free" word at
- * +0x64, the two sprites drawn with the colours 0x103080 and 0xFFFFFFFF and the
- * seven-argument helper. The loop's shape is the retail's too: the record pointer
- * walks the table in the three steps the retail walks it (one step after the owner
- * word matches, one more before the sprites, one more at the end of the body) and
- * the table pointer steps once per round.
- *
- * Two measured differences remain, and both are about the loop's shape:
- *   (a) this cc1 rotates the loop: it moves the round counter's decrement to the top
- *       of the body, where retail has it at the end, and with it the exit test's
- *       branch form changes;
- *   (b) retail uses the "likely" branches (bnel/bnel) whose delay slot is nullified
- *       when the branch is taken, so the two record steps in the delay slots only
- *       happen on the path that continues the body; this cc1 emits the ordinary
- *       bne/bnez, whose delay slot always runs.
- *
- * The register allocation follows from (a) and (b): retail keeps the two colour
- * constants in $s3 and $s4 and the table pointer in $s6, this cc1 keeps one colour
- * constant in $s3 and materialises the other inside the loop.
- *
- * To retake: a form whose loop this cc1 does not rotate (a do-while with the counter
- * decrement at the end of the body, or a form whose entry test it cannot fold), and
- * whose exit branches come out as the "likely" ones.
+/* GPT-6.1 Sol high v0557, 2026-10-28: USA v1.01, not linked.
+ * -O2 -G0 -ffunction-sections -fno-sched-interblock: 312/312 bytes,
+ * 0/27 places; four instructions differ. Disabling interblock scheduling
+ * restores likely skip branches. Updating p before the counter and q restores
+ * their retail slots. Explicit RGB initializers restore the whole prologue.
+ * The two alpha shifts still write v0 instead of s0, so their following ORs
+ * read v0 instead of s0. Signed color/return, unsigned color, and -fno-regmove
+ * tie here; commuting OR operands reverses them without fixing allocation.
+ * A long color adds conversions and grows to 336 bytes. The random helper's
+ * signed int return agrees with its C definition in src/game/002A7750.c.
+ * Next useful experiment needs evidence for the alpha/color pseudo lifetime.
+ * All required declarations are below; this profile needs a separate unit.
  */
-
-#include "include_asm.h"
+#include "common.h"
 
 extern char D_L00_23DDA0[];
 
 extern void func_L00_003BC228(char *a0, char *a1);
 
-extern unsigned int func_002A7820(int a, int b);
+extern int func_002A7820(int a, int b);
 
 extern float func_002A7940(void);
 
@@ -43,33 +28,28 @@ extern void func_00281EB8(char *a, int b, unsigned int c, int d, float e, float 
    after it says whether it is free. */
 void func_L00_003BBF48(char *a0)
 {
+    unsigned int firstRGB = 0x103080;
+    unsigned int secondRGB = 0xFFFFFF;
     char *base = D_L00_23DDA0;
     char *p = base + 0x30;
     char *q = base;
     int i;
-    int c;
-    unsigned int color;
+    int color;
     float f;
 
-    i = 29;
-    do {
+    for (i = 29; i >= 0; p += 0xA0, i--, q += 0xA0) {
         if (*(int *)(p + 0x5C) == (int)a0) {
-            p += 0xA0;
             func_L00_003BC228(a0, q);
             if (*(int *)(p + 0x64) == 0) {
-                p += 0xA0;
-                c = (int)func_002A7820(0x50, 0x60);
+                color = func_002A7820(0x50, 0x60);
+                color = (int)(color << 24) | firstRGB;
                 f = func_002A7940();
-                color = ((unsigned int)c << 24) | 0x103080;
                 func_00281EB8(p, 0x31, color, 1, 0.5f, 0.15f, f);
-                c = (int)func_002A7820(0x50, 0x60);
+                color = func_002A7820(0x50, 0x60);
+                color = (int)(color << 24) | secondRGB;
                 f = func_002A7940();
-                color = ((unsigned int)c << 24) | 0xFFFFFFFF;
-                func_00281EB8(p, 0x31, color, 1, 0.3f, 0.16f, f);
-                p += 0xA0;
+                func_00281EB8(p, 0x31, color, 1, 0.3f, 0.151f, f);
             }
         }
-        i--;
-        q += 0xA0;
-    } while (i >= 0);
+    }
 }

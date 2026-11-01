@@ -143,7 +143,7 @@ void func_L30_00382F10(void) {
 
 /* func_L30_00383398 is in L30_00383398-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L30_00383928);
+/* func_L30_00383928 is in L30_00383928-g8.c. */
 
 /* func_L30_003840E0 uses small data in L30_0032AAF0-g8.c. */
 
@@ -448,7 +448,7 @@ void func_L30_003B3E60(float *a0, float *a1, float *a2, float *a3) {
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L30_003B3F70);
+/* func_L30_003B3F70 uses small data in L30_003B3F70-g8.c. */
 
 /* func_L30_003BE478 uses small data in L30_0032AAF0-g8.c. */
 
@@ -525,4 +525,4 @@ INCLUDE_ASM("asm/levels", func_L30_0040B6B0);
 
 INCLUDE_ASM("asm/levels", func_L30_0040B9D8);
 
-INCLUDE_ASM("asm/levels", func_L30_0040C270);
+/* func_L30_0040C270 is defined in L30_0040C270-g8.c. */

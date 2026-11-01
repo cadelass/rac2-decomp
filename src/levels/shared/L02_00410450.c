@@ -4,6 +4,13 @@ typedef unsigned char u8;
 
 extern void func_0032B890(int, int, int);
 
+typedef struct { u8 *child; float speed,turn,height; } CaptureState;
+extern int func_00312B58(void *);
+extern int func_002B3868(void *);
+extern void func_002A7470(void *, int, int, int);
+extern void func_002A7750(void *, int, int);
+extern float func_00283B98(float,float);
+
 extern void func_0031E6A0(void *, int, int);
 extern int func_0031E770(int);
 extern void func_0031E3C0(void *, int, int, int);
@@ -40,7 +47,70 @@ void func_L02_00414D48(u8 *a0) {
     *(u8 *)(v1 + 0x25) = *(u8 *)(v1 + 0x40);
 }
 
-INCLUDE_ASM("asm/levels", func_L02_004164A8);
+/* Advance the captured child's rising and settling states. */
+void func_L02_004164A8(u8 *object)
+{
+    CaptureState *state=*(CaptureState **)(object+0x68);
+    if (state->child && func_00312B58(state->child)) {
+        state->child=0;
+        state->speed=0;
+    }
+    switch (object[0x20]) {
+    case 0:
+        state->child=0;
+        state->speed=0;
+        func_002A7750(object,1,-1);
+        if(object[0x43]) func_002A7470(object,0,0,7);
+        return;
+    case 2:
+        if (func_002B3868(object)) {
+            if(object[0x43]!=1) func_002A7470(object,1,0,7);
+            *(float *)(object+0x48)=1;
+        }
+        if (!state->child) {
+            func_002A7750(object,4,-1);
+            return;
+        }
+        *(float *)(state->child+0x18)+=state->speed;
+        *(float *)(state->child+0xF8)=func_00283B98(*(float *)(state->child+0xF8),state->turn);
+        if (!(object[0x60]&2)) return;
+        func_002A7750(object,3,-1);
+        return;
+    case 3:
+        if (func_002B3868(object)) *(float *)(object+0x48)=0;
+        if (!state->child) {
+            func_002A7750(object,4,-1);
+            return;
+        }
+        {
+            u8 *data=*(u8 **)(state->child+0x68);
+            *(float *)(state->child+0x18)+=state->speed;
+            *(float *)(state->child+0xF8)=func_00283B98(*(float *)(state->child+0xF8),state->turn);
+            *(int *)(data+0xAC)=2;
+            if (!(*(float *)(state->child+0x18)>*(float *)(object+0x18)+0.2f)) return;
+            *(int *)(data+0xAC)=8;
+        }
+        func_002A7750(object,4,-1);
+        return;
+    case 4:
+        if (func_002B3868(object)) {
+            if(object[0x43]!=2) func_002A7470(object,2,0,7);
+            *(float *)(object+0x48)=1;
+        }
+        if (!(object[0x60]&2)) return;
+        if (state->child) state->height=*(float *)(state->child+0x18);
+        func_002A7750(object,1,-1);
+        if(object[0x43]) func_002A7470(object,0,0,7);
+        return;
+    case 1:
+        if (!state->child) return;
+        if (*(float *)(state->child+0x18)==state->height)
+            *(int *)(*(u8 **)(state->child+0x68)+0xAC)=2;
+        else
+            state->height=*(float *)(state->child+0x18);
+        return;
+    }
+}
 
 /* func_L02_00416720 is defined in L02_00410450-qcopy.c. */
 
@@ -61,7 +131,7 @@ int func_L02_00416800(void *arg0) {
 
 INCLUDE_ASM("asm/levels", func_L02_00421DA0);
 
-INCLUDE_ASM("asm/levels", func_L02_00422270);
+/* func_L02_00422270 is defined in L02_00422270-g8.c. */
 
 /* Rebuilds the sub-object's frame from the record's own transform. */
 void func_L02_004224C8(u8 *a0) {

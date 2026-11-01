@@ -526,11 +526,11 @@ void *func_L02_003449D8(void *a0, void *a1, void *a2, void *a3, int a4) {
 
 /* func_L02_00348420 is defined in L02_00348420-helpers.c. */
 
-INCLUDE_ASM("asm/levels", func_L02_00349BD8);
+/* func_L02_00349BD8 is matched in its own unit, L02_00349BD8.c. */
 
 INCLUDE_ASM("asm/levels", func_L02_00389F70);
 
-INCLUDE_ASM("asm/levels", func_L02_0038A008);
+/* func_L02_0038A008 is matched in its own unit, L02_0038A008.c. */
 
 /* Two fields of the resident record at 0x189E20; retail shares its base between them. */
 typedef struct {
@@ -623,7 +623,7 @@ void func_L02_0038BA28(unsigned char *arg0) {
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L02_0038BD00);
+/* func_L02_0038BD00 is defined in L02_0038BD00-g8.c. */
 
 /* func_L02_0038C998 is defined in L02_002B5F50-g8.c (it reads $gp data). */
 

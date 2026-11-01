@@ -1,18 +1,22 @@
-/* Bounded manual reconstruction, 2026-10-25; not linked.
+/* GPT-6.1 Sol (high effort), bounded retry, 29 October 2026; not linked.
  * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * 1588/1592 bytes; us: 0/27 placements; us2: 0/27 placements; pal: absent from catalogue.
- * The resident owner pointer is explicitly outside small-data addressing; the light pool extent
- * remains unknown. The observed owner argument to 0032A978 is retained despite the current C callee
- * taking no arguments. Its original formal ABI remains unqualified. Address sharing, owner
- * lifetimes and loop scheduling still differ.
- * Reopen after the original 0032A978 caller/callee contract and owner/live-range evidence are
- * qualified; do not omit an observed argument to obtain matching bytes.
- * Prior complete variants and diagnostic dumps are preserved privately.
- * No candidate or linked-build credit is claimed.
- * 26 October 2026 (M14): hero fields through the Hero union view (retail reads the owner
- * pointer at H+0x2290, and as +0x21B0 from the H+0xE0 vector) take it to 1588/1592 with only the
- * hit loop off: retail copies the count (one more move), hoists the mask, 0xCE7, 0xBB8 and the
- * active 1 but keeps 3, 5 and the 5627.9248 constant in the loop.
+ * USA v1.01 and USA v2.00: 1592/1592 bytes, 0/27 placements each.
+ * In level 00, 69 non-relocated words differ; relocations are not included in
+ * that diagnostic count. Equal size is not a match and no link credit is claimed.
+ * The earlier 1588-byte draft reproduced. Writing active before the remaining
+ * request fields hoists its 1 as retail does. A TI impulse assignment and
+ * explicit interpolation steps reach retail size, but also hoist enabled=5
+ * instead of the mask. Count copy, loop constant selection/registers, request
+ * copy scheduling and FP allocation remain different. The initial state switch
+ * and angle-table loop have scheduling differences as well.
+ * Indexed/guarded/separate countdown variants did not resolve the loop. A
+ * separate tail phase variable ties; -fno-rerun-loop-opt regresses to 1556;
+ * -fno-strength-reduce leaves the earlier variant at 1588. Stop without new
+ * owner/live-range evidence or a qualified caller/callee contract.
+ * The resident owner is outside small data and the light pool extent is unknown.
+ * Preserve the observed owner argument to 0032A978 despite its current no-argument
+ * C definition. Retail also normalizes the request impulse before its first fill;
+ * no native-safety claim is made. All required declarations follow.
  */
 #include "common.h"
 
@@ -127,7 +131,8 @@ void func_L00_003F0CC8(char *object)
             *(unsigned char *)(object + 0x20) = 3;
             count = func_00277F48((Vector *)&H->b[0xE0], 0, object, 0, 15.0f);
             hit = D_L00_001C3280;
-            while (count > 0) {
+            if (count > 0) {
+            do {
                 if ((*(unsigned long long *)(*hit + 0x30) & 0x500000000000ULL) != 0 &&
                     *hit != H->ptr[0x2290 / 4] && *(short *)(*hit + 0xaa) != 0xce7 &&
                     *(short *)(*hit + 0xaa) != 0xbb8) {
@@ -136,16 +141,16 @@ void func_L00_003F0CC8(char *object)
                     /* The incoming request impulse is not initialized in retail. */
                     func_00282F20(&request.impulse, &request.impulse, 1.0f);
                     func_002A8C00((char *)&request, (int)object, 0x830000, 30.0f, (Quad16 *)&point);
-                    qcopy(&request.impulse, &point);
+                    request.impulse.word = point.word;
+                    request.active = 1;
                     request.impulse.v[3] = 5627.9248f;
                     request.enabled = 5;
                     request.kind = 3;
                     request.object_class = *(unsigned short *)(*hit + 0xaa);
-                    request.active = 1;
                     func_002A8E20(*hit, &request);
                 }
-                --count;
                 ++hit;
+            } while (--count != 0);
             }
             func_0032A978(object);
         }
@@ -169,7 +174,11 @@ void func_L00_003F0CC8(char *object)
     }
     progress = func_00283CE0(state->timer);
     progress /= func_00283CE0(120);
-    progress = (func_00283180((1.0f - progress) * 6.2831855f - 3.1415927f) + 1.0f) * 0.5f;
+    progress = 1.0f - progress;
+    progress *= 6.2831855f;
+    progress -= 3.1415927f;
+    progress = func_00283180(progress);
+    progress = (progress + 1.0f) * 0.5f;
     if (state->first != 0) {
         **(int **)(state->first + 0x68) = func_00283CF0(progress * 32.0f);
         *(float *)(state->first + 0xf8) = func_00283B98(*(float *)(state->first + 0xf8), 0.052359887f);

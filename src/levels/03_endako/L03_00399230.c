@@ -69,7 +69,7 @@ typedef struct {
 INCLUDE_ASM("asm/levels", func_L03_00399230);
 
 
-INCLUDE_ASM("asm/levels", func_L03_003C6208);
+/* func_L03_003C6208 is defined in L03_003C6208-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L03_003C6A28);
 
@@ -102,7 +102,7 @@ void func_L03_003C7A88(char *a0)
 
 INCLUDE_ASM("asm/levels", func_L03_003C7AC0);
 
-INCLUDE_ASM("asm/levels", func_L03_003C7E20);
+/* func_L03_003C7E20 is matched in its own unit, src/levels/03_endako/L03_003C7E20-g8.c (-G8). */
 
 /* Builds the object's mode record: the private block gets the mode at +0xA0,
    the mode record is made from the caller's +0x10 and the object is released.
@@ -128,7 +128,7 @@ void func_L03_003C85F8(char *a0, s32 a1)
 
 /* func_L03_003CAD78 is defined in L03_003CAD78-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L03_003CB398);
+/* func_L03_003CB398 is defined in L03_003CB398-g8.c. */
 
 /* func_L03_003CBC40 is defined in L03_003CBC40-g8.c. */
 
@@ -221,7 +221,7 @@ void func_L03_003D1100(char *a0)
 
 /* func_L03_003D1548 is in L03_003D1548-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L03_003D19C8);
+/* func_L03_003D19C8 is in L03_003D19C8-g8.c. */
 
 
 void func_L03_003D1FB0(char *a0)

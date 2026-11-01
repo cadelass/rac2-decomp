@@ -285,7 +285,7 @@ s32 func_L00_003417B8(const s32 *count, s32 index, s32 delta, s32 wrap) {
     return index;
 }
 
-INCLUDE_ASM("asm/levels", func_L00_00341820);
+/* func_L00_00341820 is defined in L00_0033F678-spline.c. */
 
 /* copies two 16-byte records into locals; when the float threshold is positive it passes the difference of their third components through a float leaf returning the absolute value and, if that is below the threshold, calls one leaf with both records, otherwise the shared alternative leaf */
 float func_L00_00341A88(void *a0, void *a1, float scale)

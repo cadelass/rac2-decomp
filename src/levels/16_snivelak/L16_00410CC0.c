@@ -63,3 +63,47 @@ void func_L16_00410CC0(u8 *arg0, u8 *arg1)
     }
     qcopy(dest, &state);
 }
+
+void func_L16_00410FA8(u8 *arg0)
+{
+    s32 *p;
+    s32 mask;
+    s32 acc;
+    s32 i;
+    s32 j;
+    s32 v;
+
+    p = *(s32 **)(arg0 + 0x68);
+    if (p[0x7D] == p[0x88] || p[0x7D] == p[0x89]) {
+        p[0x8A] = p[0x7D];
+        p[0x8B] = p[0x7E];
+        return;
+    }
+    if (p[0x7E] == p[0x88] || p[0x7E] == p[0x89]) {
+        p[0x8A] = p[0x7E];
+        p[0x8B] = p[0x7D];
+        return;
+    }
+    mask = (1 << p[0x7D]) | (1 << p[0x7E]);
+    acc = 0;
+    for (;;) {
+        for (i = 0; i < 8; i++) {
+            if ((mask >> i) & 1) {
+                for (j = 0; j < 4 && (v = D_L16_001B1710.row[i][j]) != -1; j++) {
+                    acc |= 1 << v;
+                    if (v == p[0x88]) {
+                        p[0x8A] = v;
+                        p[0x8B] = i;
+                        return;
+                    }
+                    if (v == p[0x89]) {
+                        p[0x8A] = v;
+                        p[0x8B] = i;
+                        return;
+                    }
+                }
+            }
+        }
+        mask |= acc;
+    }
+}

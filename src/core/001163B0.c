@@ -35,11 +35,11 @@ INCLUDE_ASM("asm/core", func_001185E8);
 
 /* func_00118BC0 is in 00118BC0.c with quadword saves. */
 
-INCLUDE_ASM("asm/core", func_00118D98);
+/* func_00118D98 is in 00118D98.c with quadword saves. */
 
 /* func_00119AC0 is in 00119AC0.c with quadword saves. */
 
-INCLUDE_ASM("asm/core", func_00119BF8);
+/* func_00119BF8 is in 00119BF8.c with quadword saves. */
 
 /* func_00118CC8 is defined in 00118CC8.c with quadword saves. */
 

@@ -85,7 +85,53 @@ extern int func_L02_0032E998(char *, int, float *, char *, int, char *, char *, 
                              float);
 
 
-INCLUDE_ASM("asm/levels", func_L06_0041FAF8);
+void func_L06_0041FAF8(char *a0)
+{
+    char *o = *(char **)(a0 + 0x68);
+
+    if (*(int *)(o + 0x5A0) == 1) {
+        if (*(int *)(o + 0x23C) == -1) {
+            if (func_32D238(o + 0x25C)) {
+                func_35A550(a0, 7, 2);
+                if (*(unsigned char *)(a0 + 0x43) != 0x13) {
+                    func_35A270(a0, 0x13, 0, 20);
+                }
+                o[0x48] = func_32E728(20.0f);
+                o[0x4A] = func_32E728(24.0f);
+            }
+        } else {
+            func_35A550(a0, 8, 2);
+            if (*(unsigned char *)(a0 + 0x43) != 0x12) {
+                func_35A270(a0, 0x12, 0, 20);
+            }
+            o[0x48] = func_32E728(20.0f);
+            o[0x4A] = func_32E728(24.0f);
+        }
+    } else if (*(short *)(o + 0x492) != 0 && func_32D238(o + 0x25C)) {
+        *(short *)(o + 0x492) = 0;
+        func_35A550(a0, 7, 2);
+        if (!func_35A620(2)) {
+            if (*(unsigned char *)(a0 + 0x43) != 0x11) {
+                func_35A270(a0, 0x11, 0, 20);
+            }
+            o[0x48] = func_32E728(20.0f);
+            o[0x4A] = func_32E728(24.0f);
+        } else {
+            if (*(unsigned char *)(a0 + 0x43) != 0x13) {
+                func_35A270(a0, 0x13, 0, 20);
+            }
+            o[0x48] = func_32E728(20.0f);
+            o[0x4A] = func_32E728(24.0f);
+        }
+    } else if (*(short *)(o + 0x492) == 0 && func_32D238(o + 0x25C)) {
+        func_35A550(a0, 9, 2);
+        if (*(unsigned char *)(a0 + 0x43) != 0x12) {
+            func_35A270(a0, 0x12, 0, 20);
+        }
+        o[0x48] = func_32E728(20.0f);
+        o[0x4A] = func_32E728(24.0f);
+    }
+}
 
 void func_L06_004579C8(char *a0)
 {
@@ -361,13 +407,12 @@ void func_L06_0041FD90(unsigned char *obj)
 
 /* func_L06_00420080 is defined in L06_00420080.c. */
 
-INCLUDE_ASM("asm/levels", func_L06_00420230);
 
 /* func_L06_00420548 is defined in L06_00420548-g.c. */
 
 /* func_L06_00420740 is defined in L06_00420740.c. */
 
-INCLUDE_ASM("asm/levels", func_L06_00420AE8);
+/* func_L06_00420AE8 is defined in L06_00420AE8-g8.c. */
 
 /* The object runs through five states. The dispatch reads the level's own jump table (five
    words in the level's data at 0x2E1F00); `cases` only keeps the labels alive. */
@@ -427,9 +472,8 @@ done:
     return;
 }
 
-INCLUDE_ASM("asm/levels", func_L06_00430318);
+/* func_L06_00430318 is defined in L06_00430318-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L06_00430C60);
 
 /* func_L06_00443280 is defined in L06_00443280-g8.c. */
 
@@ -538,7 +582,6 @@ INCLUDE_ASM("asm/levels", func_L06_00455BC0);
 
 /* func_L06_00456278 is in L06_00456278.c. */
 
-INCLUDE_ASM("asm/levels", func_L06_00456BB0);
 
 void func_L06_00456EE0(void)
 {

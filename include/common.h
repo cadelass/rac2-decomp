@@ -50,6 +50,12 @@ static __inline__ void qzero_nc(void *dst) {
     __asm__ __volatile__("sq $0,0x0(%0)" : : "r"(dst));
 }
 
+/*
+ * The EE `sync` instruction, which no C construct emits. From RAC1's include/common.h, where
+ * libgraph units call it.
+ */
+static __inline__ void CpuSync(void) { __asm__ __volatile__("sync"); }
+
 /* RAC1's non-clobbering variant: callers must establish that surrounding C
  * accesses do not depend on the copied memory. Keep qcopy as the default.
  */

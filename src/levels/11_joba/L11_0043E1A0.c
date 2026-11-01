@@ -143,7 +143,59 @@ s16 func_L11_00440C80(u8 *obj) {
     return *(s16 *)(*(u8 **)(obj + 0x68) + 0x200);
 }
 
-INCLUDE_ASM("asm/levels", func_L11_00440C90);
+extern s32 func_L02_003D77B8(u8 *);
+extern s32 func_L02_003D77F8(u8 *);
+extern void func_L02_003D7868(u8 *, u8 *);
+
+/* The weight word (+0x20) of OTHER's state. */
+#define WEIGHT (*(f32 *)(*(u8 **)(other + 0x68) + 0x20))
+
+/* Adds OTHER to the group in the state's current slot (+0x120, indexed by +0x18C) when that
+   group exists and accepts it: the class of OTHER is counted (0xD98 +0x100, 0xDCF +0x104,
+   0xDF4 +0x108, 0xDF7 +0x10C, 0xDF9 +0x110 unless the group refuses it, 0xD37 +0x114) and
+   its state's weight set to 1.0. Returns 1 when added, else 0. */
+s32 func_L11_00440C90(u8 *obj, u8 *other)
+{
+    u8 *state = *(u8 **)(obj + 0x68);
+    u8 *slots = state + 0x120;
+
+    if (*(u8 **)(slots + (*(s32 *)(state + 0x18C) << 2)) != 0 &&
+        func_L02_003D77B8(*(u8 **)(slots + *(s32 *)(state + 0x18C) * 4)) != 0) {
+        switch (*(s16 *)(other + 0xAA)) {
+        case 0xD98:
+            *(s32 *)(state + 0x100) += 1;
+            WEIGHT = 1.0f;
+            break;
+        case 0xDCF:
+            *(s32 *)(state + 0x104) += 1;
+            WEIGHT = 1.0f;
+            break;
+        case 0xDF4:
+            *(s32 *)(state + 0x108) += 1;
+            WEIGHT = 1.0f;
+            break;
+        case 0xDF7:
+            *(s32 *)(state + 0x10C) += 1;
+            WEIGHT = 1.0f;
+            break;
+        case 0xDF9:
+            if (func_L02_003D77F8(*(u8 **)(slots + (*(s32 *)(state + 0x18C) << 2))) != 0)
+                return 0;
+            *(s32 *)(state + 0x110) += 1;
+            WEIGHT = 1.0f;
+            break;
+        case 0xD37:
+            *(s32 *)(state + 0x114) += 1;
+            WEIGHT = 1.0f;
+            break;
+        }
+        func_L02_003D7868(*(u8 **)(state + (*(s32 *)(state + 0x18C) << 2) + 0x120), other);
+        return 1;
+    }
+    return 0;
+}
+
+#undef WEIGHT
 
 /* func_L11_00440E18 lives in the sibling small-data unit (L11_0043E1A0-g8.c). */
 
@@ -651,7 +703,7 @@ void func_L11_00442170(u8 *object) {
         func_L00_002B30E8();
 }
 
-INCLUDE_ASM("asm/levels", func_L11_004423F8);
+/* func_L11_004423F8 lives in the sibling small-data unit (L11_0043E1A0-g8.c). */
 
 /* func_L11_004425C8 is defined in its dedicated source unit. */
 

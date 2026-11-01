@@ -116,7 +116,7 @@ void func_002B4090(char *self, PoseVector128 *point, float x, float y, float z)
 }
 
 
-INCLUDE_ASM("asm/game", func_002B41A8);
+/* func_002B41A8 is matched in 002B41A8.c. */
 
 INCLUDE_ASM("asm/game", func_002B44C0);
 
@@ -174,7 +174,7 @@ int func_002B4FF0(char *self, float *target, float amount)
 }
 
 
-INCLUDE_ASM("asm/game", func_002B50E0);
+/* func_002B50E0 is matched in 002B50E0.c. */
 
 extern int func_002B50E0(void *, void *, float);
 

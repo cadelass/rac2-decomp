@@ -1,18 +1,9 @@
-/* Near miss: 364 bytes, expected 372, 0 of 28 places (USA v1.01 boot).
- *
- * Profile: default (-O2 -G0 -ffunction-sections); the body has no $gp access.
- * Last verdict: `python scratch/wslcmp.py src/game/002D5E98.c func_002DAD18`
- *   func_002DAD18: 0 of 28 places match   [boot: 364 bytes, expected 372]
- *
- * Remaining difference (eight bytes, both cases): the frame counter modulo is
- * expanded as `lbu a0,D_001A7BB4` / `addiu v0,zero,5` / `divu $zero,$a0,$v0`,
- * and the bank address is `addu v0,v1,a1` with a `daddu v1,v0,zero` copy for
- * the second `lw 0xDD4($v1)`.  This unit's cc1 puts the divisor in $v1, the
- * base in $a1 and reuses one address register for both loads, so the shared
- * `lw` of the bank pair loses the copy.  Tried: named divisor local, unsigned
- * local, `% 5`, direct global expression, locals for the pair; all give the
- * same 364-byte shape.  The switch, the calls and every other instruction are
- * identical.
+/* GPT-6.1 Sol low, task v0487, 2026-10-28.
+ * 372/372 bytes, 0/28 places; USA v1.01, default -O2 -G0 -ffunction-sections.
+ * Typed bank-pair arrays recover the missing address copy and full size.
+ * Remaining: modulo/base register allocation and pair-load scheduling.
+ * Offset-before-modulo and operand-order variants tie; repeated inline modulo grows to 380.
+ * Next: recover original bank/index expression lifetimes. Declarations are below.
  */
 typedef struct {
     char pad[0x44];
@@ -25,7 +16,9 @@ extern short D_001A63AC;
 
 extern unsigned char D_001A7BB4;
 
-extern char D_0014B540[];
+typedef struct { int first, second; } BankPairAD;
+typedef struct { char pad[0x36C]; int offset; char pad370[0xDD0-0x370]; BankPairAD first[5]; BankPairAD second[5]; } BankAD;
+extern BankAD D_0014B540;
 
 extern int func_002B7B18(int, int, int);
 
@@ -37,13 +30,14 @@ int func_002DAD18(State2DAD18 *o)
             if (D_001A63AC != 0)
                 break;
             {
-                char *base = D_0014B540;
+                BankAD *base = &D_0014B540;
+                int offset = base->offset;
                 unsigned int frame = D_001A7BB4;
                 int slot = frame % 5;
 
                 if (func_002B7B18(o->first,
-                                  *(int *)(base + 0x36C) + *(int *)(base + 0xDD0 + slot * 8),
-                                  *(int *)(base + 0xDD4 + slot * 8)) != 0)
+                                  base->first[slot].first + offset,
+                                  base->first[slot].second) != 0)
                     o->state++;
                 else
                     o->state = -1;
@@ -60,13 +54,14 @@ int func_002DAD18(State2DAD18 *o)
             if (D_001A63AC != 0)
                 break;
             {
-                char *base = D_0014B540;
+                BankAD *base = &D_0014B540;
+                int offset = base->offset;
                 unsigned int frame = D_001A7BB4;
                 int slot = frame % 5;
 
                 if (func_002B7B18(o->second,
-                                  *(int *)(base + 0x36C) + *(int *)(base + 0xDF8 + slot * 8),
-                                  *(int *)(base + 0xDFC + slot * 8)) != 0)
+                                  base->second[slot].first + offset,
+                                  base->second[slot].second) != 0)
                     o->state++;
                 else
                     o->state = -1;

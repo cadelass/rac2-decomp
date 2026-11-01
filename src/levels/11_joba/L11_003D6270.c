@@ -117,7 +117,7 @@ void func_L11_003F1D18(u8 *arg0) {
 
 /* func_L11_003F1DB0 is defined in L11_003D6270-g8.c (this unit has no $gp access for it). */
 
-INCLUDE_ASM("asm/levels", func_L11_003F1F48);
+/* func_L11_003F1F48 is defined in L11_003D6270-state-g8.c. */
 
 /* Defined in L11_003F2A30-g8.c. */
 
@@ -215,7 +215,7 @@ void func_L11_003F31C0(u8 *arg0) {
 
 /* func_L11_003F3258 is defined in L11_003F3258-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L11_003F33E0);
+/* func_L11_003F33E0 is defined in L11_003F33E0-g8.c. */
 
 /* func_L11_003F3CB8 is in L11_003F3CB8-g8.c. */
 
@@ -235,12 +235,7 @@ INCLUDE_ASM("asm/levels", func_L11_003F4A58);
 
 /* Defined in L11_003F8510-g8.c. */
 
-
-INCLUDE_ASM("asm/levels", func_L11_00411D40);
-
-INCLUDE_ASM("asm/levels", func_L11_00412B20);
-
-INCLUDE_ASM("asm/levels", func_L11_00415E70);
+/* Defined in L11_00411D40-g8.c. */
 
 /* Defined in L11_00412B20-g8.c. */
 

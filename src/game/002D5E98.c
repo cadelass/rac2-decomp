@@ -584,7 +584,7 @@ int func_002D9798(int *arg0)
     return 2;
 }
 
-INCLUDE_ASM("asm/game", func_002D99E8);
+/* func_002D99E8 is built from 002D99E8-g8.c for small-data access. */
 
 
 
@@ -1040,7 +1040,7 @@ INCLUDE_ASM("asm/game", func_002DC3C8);
 
 /* func_002DC720 is matched in its own unit, src/game/002DC720.c (its jump table). */
 
-INCLUDE_ASM("asm/game", func_002DC900);
+/* func_002DC900 is built from 002DC900-g8.c for small-data access. */
 
 /* func_002DCAB8 is built from 002D5E98-g8.c for small-data access. */
 

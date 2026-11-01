@@ -23,6 +23,16 @@ extern int func_34C4C8(void);
 extern void *func_33E6B0(void *a0, s32 a1, s32 a2);
 extern void func_40A090(int a0, u8 *a1, u8 *a2, u8 *a3, u8 *a4, u8 *a5);
 
+/* func_L04_00456628: the sda incomplete arrays keep retail's absolute macro loads
+   (lui into the destination register); D_001A7B00 is the inventory have-flag table. */
+extern u8 D_001A7B00[] __attribute__((sda));
+extern u8 D_001395B8[];
+extern s32 D_L04_001B2008[] __attribute__((sda));
+extern u8 *D_L04_001B25CC[] __attribute__((sda));
+extern u8 D_00189EA0[];
+extern void func_2DFC18(void *a0, void *a1, s32 a2, s32 a3);
+extern s32 func_342228(void *a0, void *a1);
+
 extern void func_0029F338(void *a0);
 extern int func_002B38B8(u8 *a0);
 extern void func_002A0430(u32 a0);
@@ -145,7 +155,6 @@ void func_L04_0042BF58(u8 *a0) {
         }
     }
 }
-INCLUDE_ASM("asm/levels", func_L04_00434BB0);
 struct BarlowEntry { u8 bytes[256]; };
 extern u8 D_00189EA0[];
 extern u16 *D_L04_001FB1E0[];
@@ -261,7 +270,6 @@ void func_L04_0043ABE0(void) {
 }
 
 
-INCLUDE_ASM("asm/levels", func_L04_0043AD48);
 
 void func_L04_00441178(u8 *a0) {
     if (a0[0x20] != 0)
@@ -276,9 +284,9 @@ void func_L04_00441178(u8 *a0) {
 /* func_L04_0044BC90 is defined in L04_0044BC90-g8.c. */
 
 /* Defined in L04_0044BC90-g8.c. */
-INCLUDE_ASM("asm/levels", func_L04_0044C598);
-INCLUDE_ASM("asm/levels", func_L04_0044D0C0);
-INCLUDE_ASM("asm/levels", func_L04_0044D428);
+/* func_L04_0044C598 is in L04_0044C598-g8.c. */
+/* func_L04_0044D0C0 is in L04_0044D0C0-g8.c. */
+/* func_L04_0044D428 is in L04_0044D428-g8.c. */
 extern void func_30E9D8(void *a0);
 extern f32 func_30F468(f32 a, f32 b);
 extern f32 func_30FE88(f32 a, f32 b);
@@ -448,4 +456,33 @@ void func_L04_00455520(u8 *a0) {
         }
     }
 }
-INCLUDE_ASM("asm/levels", func_L04_00456628);
+/* On the first update: with inventory item 0x1F owned, the byte at D_001395B8+0x12
+   clear and the level counter D_L04_001B2008 below 5, passes the +0x30/+0x70 vectors
+   of the level record the object names to func_2DFC18 (RAC1's Hero_ResetToPosition
+   call shape); with the item owned and that byte set, hands the object to
+   func_3317E8. Later, once func_342228 accepts the hero position (D_00189EA0) for
+   the object's volume and the item is still owned, sets the byte and does the same. */
+void func_L04_00456628(u8 *a0) {
+    u8 *s2 = *(u8 **)(a0 + 0x68);
+    u8 *p;
+    if (a0[0x20] == 0) {
+        if (D_001A7B00[0x1F] != 0 && D_001395B8[0x12] == 0 && D_L04_001B2008[0] < 5) {
+            p = D_L04_001B25CC[0] + (*(s32 *)(s2 + 4) << 7);
+            func_2DFC18(p + 0x30, p + 0x70, 0, 1);
+        } else if (D_001A7B00[0x1F] != 0 && D_001395B8[0x12] != 0) {
+            func_3317E8(a0);
+            return;
+        } else {
+            a0[0x20] = 1;
+        }
+        a0[0x30] = 0xFF;
+    }
+    if (a0[0x20] == 1) {
+        if (func_342228(D_00189EA0, *(void **)s2) != 0) {
+            if (D_001A7B00[0x1F] != 0) {
+                D_001395B8[0x12] = 1;
+                func_3317E8(a0);
+            }
+        }
+    }
+}

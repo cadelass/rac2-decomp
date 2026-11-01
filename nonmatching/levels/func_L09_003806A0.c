@@ -1,8 +1,19 @@
-/* Nonmatching: 1228/1296 bytes.
- * Profile: -O2 -G8 -ffunction-sections.
- * Placement checks: US: 0/2; US2: 0/2; PAL: 0/2.
- * 1228/1296 bytes, frame0x80. The two UV layers now use a truthful pair view with an8-byte stride and incomplete outer extent. The complete scans, ordered FP reductions, vector history transfers and typed callback registrations remain. Loop/base materialization, global addressing and register allocation still differ.
- * Reopen with independently qualified UV/history ownership and measured loop/base lifetimes across both placements. The direct helper substitution had previously tied; this follow-up qualifies the interleaved pair view without inventing global extents.
+/* GPT-6.1 Sol high, task v1055, pinned upstream compiler, USA v1.01.
+ * Best: 1280/1296 bytes, 0/2 places (levels 09 and 20), frame 0x80.
+ * Profile: -O2 -G8 -ffunction-sections -g. All declarations follow.
+ * Reloading the second scan entry after IsPointInCuboid recovers its early
+ * success block and avoids keeping an index alive across that call.
+ * The incomplete non-SDA mode-word array recovers the retail prologue;
+ * explicit SDATA history/scale views and MACRO_ADDR height scalars recover
+ * their measured address forms. A separate numerator/denominator/division
+ * statement with -g recovers the two pre-div.s nops and operand registers.
+ * Remaining: scan/base lifetimes, UV member bases and reloads, scheduling,
+ * and allocation; the body is still four words short, not a local match.
+ * Independent raw-byte/member-array views and explicit induction pointers
+ * did not fix those differences; -fno-strict-aliasing was object-neutral.
+ * A diagnostic fully volatile UV declaration was worse and is not retained.
+ * Next useful evidence: UV storage/alias model and scan pointer lifetimes.
+ * No linked build claimed. Earlier 1256-byte draft is superseded.
  */
 #include "common.h"
 
@@ -14,15 +25,16 @@ typedef struct { float u, v; } ScrollLayer;
 
 extern u8 D_00189E20[], D_00189EA0[];
 extern float D_001A7928;
-extern int D_L09_001C9F80;
-extern Quad D_L09_001B3100 __attribute__((sda));
+extern int D_L09_001C9F80[];
+extern Quad D_L09_001B3100 SDATA(D_L09_001B3100);
 extern u8 D_L09_001B9A00[];
 extern u8 *D_L09_001B294C;
 extern ScrollLayer D_L09_001B3110[];
-extern float D_L09_001AEC38[] __attribute__((sda));
-extern float D_L09_001AEC48[] __attribute__((sda));
+extern float D_L09_001AEC38[] SDATA(D_L09_001AEC38);
+extern float D_L09_001AEC48[] SDATA(D_L09_001AEC48);
 extern float D_L09_001AEC4C[];
-extern float D_L09_001B3120, D_L09_001B3124 __attribute__((sda));
+extern float D_L09_001B3120 MACRO_ADDR;
+extern float D_L09_001B3124 MACRO_ADDR;
 extern int D_L09_001B2388;
 
 extern int func_002ACBC8(void *, int);
@@ -40,39 +52,43 @@ void func_L09_003806A0(u8 *object)
     float delta[4] __attribute__((aligned(16)));
     float scaled[4] __attribute__((aligned(16)));
     int i, index;
+    int found;
 
-    if (D_L09_001C9F80 != I32(state, 0x30))
+    if (D_L09_001C9F80[0] != I32(state, 0x30))
         return;
     if (object[0x20] == 0) {
-        object[0x30] = 255;
         object[0x20] = 1;
+        object[0x30] = 255;
         {
-            ScrollLayer *layer = D_L09_001B3110;
-            for (i = 1; i >= 0; i--, layer++) {
-                layer->u = 0.0f;
-                layer->v = 0.0f;
+            float *u = &D_L09_001B3110[0].u;
+            float *v = &D_L09_001B3110[0].v;
+            for (i = 1; i >= 0; i--, u += 2, v += 2) {
+                *u = 0.0f;
+                *v = 0.0f;
             }
         }
         qcopy(&D_L09_001B3100, D_L09_001B9A00);
         D_L09_001B3124 = F32(state, 0x14);
         return;
     }
+    found = 0;
     for (i = 0; i < 4; i++) {
-        index = I32(state, 0x40 + i * 4);
-        if (index == -1)
+        if (I32(state, 0x40 + i * 4) == -1)
             continue;
-        if (func_002ACBC8(D_00189EA0, index)) {
+        if (func_002ACBC8(D_00189EA0, I32(state, 0x40 + i * 4))) {
             S16(D_00189E20, 0x1FE) = 0;
-            return;
+            found = 1;
+            break;
         }
     }
+    if (found)
+        return;
     D_L09_001B3124 = F32(state, 0x14);
     for (i = 0; i < 4; i++) {
-        index = I32(state, 0x50 + i * 4);
-        if (index == -1)
+        if (I32(state, 0x50 + i * 4) == -1)
             continue;
-        if (func_002ACBC8(D_00189EA0, index)) {
-            D_L09_001B3124 = F32(D_L09_001B294C + index * 128, 0x38) + 0.15f;
+        if (func_002ACBC8(D_00189EA0, I32(state, 0x50 + i * 4))) {
+            D_L09_001B3124 = F32(D_L09_001B294C + I32(state, 0x50 + i * 4) * 128, 0x38) + 0.15f;
             break;
         }
     }
@@ -83,9 +99,10 @@ void func_L09_003806A0(u8 *object)
         return;
 
     for (i = 0; i < 2; i++) {
-        func_00282D30(scaled, delta,
-                     (D_L09_001AEC38[i] + D_L09_001AEC38[i]) /
-                     (F32(state, 0x18) * 5.0f));
+        float numerator = D_L09_001AEC38[i] + D_L09_001AEC38[i];
+        float denominator = F32(state, 0x18) * 5.0f;
+        float scale = numerator / denominator;
+        func_00282D30(scaled, delta, scale);
         /* Preserve the ordered comparisons, including the exact-1 and NaN paths. */
         if (1.0f < scaled[0] || scaled[0] < 1.0f)
             scaled[0] -= func_00283CE0(func_00283CF0(scaled[0]));

@@ -369,8 +369,6 @@ void func_L00_00387AC8(Owner_F9e2cd219 *self)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L00_00387CA8);
-
 /* Clear the selected word in 100 records, reset 136 state words, and set the three trailing state words. */
 void func_L00_00387EF0(void)
 {
@@ -499,8 +497,6 @@ void func_L00_0038A568(Owner_F9e2cd219 *self)
         child->field4C = 1;
     }
 }
-
-INCLUDE_ASM("asm/levels", func_L00_0038A748);
 
 /* Reset two 64-word banks, eight trailing words, and three state words. The original game role is unknown. */
 void func_L00_0038A968(void)

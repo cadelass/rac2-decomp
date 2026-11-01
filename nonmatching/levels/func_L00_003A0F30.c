@@ -1,48 +1,45 @@
-/* Nonmatching reconstruction checked 23 October 2026.
- * Profile: -O2 -G8 -ffunction-sections.
- * Final check.py coverage: us 0/27, us2 0/27; no candidate.
- * Four bounded source/profile variants: direct globals 1584/1616; resident-state prefix/separate clears 1556; two-state switch 1552; -fno-gcse 1556, discarded.
- * Remaining: Retained 1552/1616. Entry addressing improved, but dispatch/charge branches, oscillator-loop registers and global lifetimes differ.
- * Reopen with a measured charge-state CFG and resident/input aggregate-lifetime witness.
- * Historical screening below is preserved, not treated as acceptance evidence.
+/* GPT-6.1 Sol (high), task v1189, 29 October 2026.
+ * USA v1.01, game -O2 -G8 -ffunction-sections.
+ * Best retained check.py: 1604/1616 bytes, 0 of 27 places match.
+ * Required declarations are below. Eighteen check.py trials (one syntax failure)
+ * and one allocation diagnostic; stopped after the final source/profile tie.
+ *
+ * Improvement over v0639 (1608 bytes, also 0/27): the typed 0x80-byte oscillator
+ * record, declared inside the indexed loop, recovers the complete initialization
+ * loop, including s4 base, s1 field cursor, s0 indexed offset, s2 second-output
+ * cursor, s3 ascending count, call slots and loop branch. Its initialization
+ * path through retail +0x268 agrees apart from relocations and its exit target.
+ * Plain scalar declarations for the two absolute globals preserve retail's
+ * initial dispatch registers and absolute initialization store. NOT_SDA/nosda
+ * instead introduce a shared split high address and change dispatch registers.
+ *
+ * A start/restart switch with a captured minimum and branch-local table/index
+ * temporaries recovers the shared address/load/division tail. Separate old/next
+ * charge values recover the idle path's f2/f1/f0 assignment. A speed variable
+ * defined after the origin call, then negated in its branch, recovers the signed
+ * velocity constant and removes duplicate materialization.
+ *
+ * Remaining: the case-1 -1.0 store moves into a branch slot and becomes GP-relative
+ * instead of retail's absolute store; that also removes the subsequent likely-
+ * branch mode preload. First start's byte-address/stride registers and scheduling
+ * differ, and the common division lacks retail's nop. All later operations agree
+ * structurally but have shifted addresses. No linked build was run for this miss.
+ * -g ties both before and after the table/index rewrite. Replacing record-pointer
+ * arithmetic by explicit byte offsets also ties, as does scalar NOT_SDA versus
+ * incomplete-array spelling for the weapon index. Incomplete sda/MACRO_ADDR views
+ * of the absolute globals tie each other and do not fix the case-1 store slot.
+ * A shared pointer after the start/restart switch worsens the division registers.
+ * Reopen with evidence for the absolute store's scheduling or the first start's
+ * table/stride expression, not another cosmetic oscillator permutation.
+ * Historical best before this task: v0639 1608/1616, 0/27; older 1552/1616, 0/27.
  */
-
-/* func_L00_003A0F30 - 1616 bytes, 27 place(s), level 00_aranos_tutorial,
-   retail at 0x003a0f30. Screened with tools/w10_screen.py: 36 call(s)
-   [func_00282948@003A0F80, func_002A7470@003A1018, func_0029F978@003A103C,
-   func_L00_00329E90@003A1060, func_L00_0032A088@003A107C,
-   func_002A78D8@003A10AC, func_002A78D8@003A10C0, func_002A78D8@003A10D0,
-   func_002A7878@003A10E0, func_002A7878@003A10F0, func_002A7878@003A1100,
-   func_002A78D8@003A111C, func_002A78D8@003A112C, func_002A78D8@003A113C,
-   func_002A7878@003A114C, func_002A7878@003A115C, func_002A7878@003A116C,
-   func_00282C88@003A1180, func_00282C88@003A1188,
-   func_L00_002C42E0@003A11D4, func_L00_002D4040@003A1208,
-   func_00273318@003A1248, func_002829D8@003A1250,
-   func_L00_003BB5F0@003A1290, func_L00_002D3F30@003A12B4,
-   func_002E5CF8@003A12D4, func_002E5CF8@003A1390, func_0029FCC0@003A1434,
-   func_00282F20@003A1460, func_00282F20@003A1470,
-   func_L00_0032A1A8@003A1494, func_L00_003BB080@003A14A8,
-   func_L00_002E6EF8@003A1504, func_00283B98@003A1528,
-   func_00283198@003A1534, func_00283180@003A1544]; data addresses
-   materialised [0x190000, 0x3ebb0000, 0x1b0000, 0x3d4c0000, 0x3e990000,
-   0x240000, 0x1b0000, 0x600f0000, 0x60000000, 0x600f0000, 0x140000,
-   0x1b0000, 0x140000, 0x140000, 0x260000, 0x260000, 0x1b0000, 0x1b0000,
-   0x3eaa0000, 0x3eaa0000, 0x3a0000, 0x3ea00000]; float constants
-   [0xbf800000, 0x3e800000, 0x3f400000, 0xbf800000, 0x3f800000, 0x42b40000,
-   0x3f800000, 0x3f800000, 0x3f000000]; $gp-relative small data: yes
-   saves: -; callee-saved registers saved [-]; words plain C cannot emit
-   [-]. Head: addiu $sp, $sp, -0x80 ; lui $v0, 0x19 ; sd $s2, 0x40($sp) ; sd
-   $s3, 0x48($sp) ; daddu $s2, $a0, $zero ; sd $s4, 0x50($sp). Not matched
-   in this wave: the body is straight-line code whose register allocation
-   and the materialisation of its constant addresses have to be reproduced
-   word for word. What would unblock it: the exact source expression tree,
-   so this cc1 picks the same registers in the same order. */
 
 #include "common.h"
 typedef int VectorBits __attribute__((mode(TI)));
 /* Measured resident player-state prefix; fields beyond this prefix are unknown. */
 typedef struct {
-    char p0[0xBF8]; char *aimTarget;
+    char p0[0x760]; float facing[4];
+    char p00[0x488]; char *aimTarget;
     char p1[0x634]; unsigned int buttons;
     char p2[0xC]; int inputTicks;
     char p3[0x20C]; char *overrideTarget;
@@ -52,11 +49,10 @@ typedef struct {
     char p7[0x46]; int inputTimer;
 } PlayerStatePrefix;
 extern PlayerStatePrefix D_00189E20;
-extern u8 D_00139584 NOT_SDA;
-extern unsigned int D_00138320 NOT_SDA,D_00138324 NOT_SDA;
-extern float D_0018A580[4];
-extern float D_L00_001B285C NOT_SDA;
-extern int D_L00_001B2840 NOT_SDA;
+extern u8 D_00139584[];
+extern unsigned int D_00138180[];
+extern float D_L00_001B285C;
+extern int D_L00_001B2840;
 extern int D_L00_001AF5CC __attribute__((sda));
 extern float D_L00_001AF5D0 __attribute__((sda));
 extern float D_L00_001AF5D4 __attribute__((sda));
@@ -66,7 +62,14 @@ extern float D_L00_001AF5E0 __attribute__((sda));
 extern int D_L00_001AF5E4 __attribute__((sda));
 extern char *D_L00_001AF5E8 __attribute__((sda));
 extern int D_L00_001AF5EC __attribute__((sda));
-extern float D_L00_0023B510[4][32];
+typedef struct {
+    float angle0[3], speed0[3], scale0[3];
+    float angle1[3], speed1[3], scale1[3];
+    float padding[2];
+    VectorBits output0, output1;
+    char tail[16];
+} BeamOscillator;
+extern BeamOscillator D_L00_0023B510[4];
 typedef struct { char prefix[0x54]; float rate; char tail[0x88]; } WeaponEntry;
 extern WeaponEntry D_L00_00262570[];
 extern int func_00282948(void *);
@@ -122,31 +125,27 @@ void func_L00_003A0F30(char *moby)
         *(int *)(state + 4) = handle;
         *(char **)(state + 8) = func_L00_0032A088(*(short *)(moby + 0xAA), handle);
         for (i = 0; i < 4; i++) {
-            float *entry = D_L00_0023B510[i];
-            entry[0] = 0.0f; entry[1] = 0.0f; entry[2] = 0.0f;
-            entry[3] = func_002A78D8(0.05f, 0.3f);
-            entry[4] = func_002A78D8(0.05f, 0.3f);
-            entry[5] = func_002A78D8(0.05f, 0.3f);
-            entry[6] = func_002A7878(0.25f, 0.75f);
-            entry[7] = func_002A7878(0.25f, 0.75f);
-            entry[8] = func_002A7878(0.25f, 0.75f);
-            entry[9] = 0.0f; entry[10] = 0.0f; entry[11] = 0.0f;
-            entry[12] = func_002A78D8(0.05f, 0.3f);
-            entry[13] = func_002A78D8(0.05f, 0.3f);
-            entry[14] = func_002A78D8(0.05f, 0.3f);
-            entry[15] = func_002A7878(0.25f, 0.75f);
-            entry[16] = func_002A7878(0.25f, 0.75f);
-            entry[17] = func_002A7878(0.25f, 0.75f);
-            func_00282C88((VectorBits *)(entry + 20));
-            func_00282C88((VectorBits *)(entry + 24));
+            BeamOscillator *entry = &D_L00_0023B510[i];
+            entry->angle0[0] = 0.0f; entry->angle0[1] = 0.0f; entry->angle0[2] = 0.0f;
+            entry->speed0[0] = func_002A78D8(0.05f, 0.3f);
+            entry->speed0[1] = func_002A78D8(0.05f, 0.3f);
+            entry->speed0[2] = func_002A78D8(0.05f, 0.3f);
+            entry->scale0[0] = func_002A7878(0.25f, 0.75f);
+            entry->scale0[1] = func_002A7878(0.25f, 0.75f);
+            entry->scale0[2] = func_002A7878(0.25f, 0.75f);
+            entry->angle1[0] = 0.0f; entry->angle1[1] = 0.0f; entry->angle1[2] = 0.0f;
+            entry->speed1[0] = func_002A78D8(0.05f, 0.3f);
+            entry->speed1[1] = func_002A78D8(0.05f, 0.3f);
+            entry->speed1[2] = func_002A78D8(0.05f, 0.3f);
+            entry->scale1[0] = func_002A7878(0.25f, 0.75f);
+            entry->scale1[1] = func_002A7878(0.25f, 0.75f);
+            entry->scale1[2] = func_002A7878(0.25f, 0.75f);
+            func_00282C88(&D_L00_0023B510[i].output0);
+            func_00282C88(&D_L00_0023B510[i].output1);
         }
         return;
     }
-    case 1:
-        break;
-    default:
-        return;
-    }
+    case 1: {
     D_L00_001B285C = -1.0f;
     if (D_L00_001AF5CC == 0) {
         *(int *)(state + 0xC) = 0;
@@ -155,36 +154,77 @@ void func_L00_003A0F30(char *moby)
     if (D_00189E20.mode == 1)
         func_L00_002C42E0(29, 1);
     if (D_00189E20.mode == 29) {
-        unsigned int color = 0x600FFF0F;
+        unsigned int color;
         if (*(float *)state != 0.0f && func_L00_002D4040(-1))
             color = 0x600000FF;
+        else
+            color = 0x600FFF0F;
         func_00273318(moby, color, 0, 0x26, -1, 4, 1.0f, 0.0f, 90.0f);
     }
-    if (func_002829D8(state) && ready && !D_00189E20.blocked && (D_00138320 & D_00189E20.buttons) &&
+    if (func_002829D8(state) && ready && !D_00189E20.blocked && (D_00138180[0x68] & D_00189E20.buttons) &&
         !func_L00_003BB5F0() && D_00189E20.inputTicks > 22) {
         if (func_L00_002D3F30(-1, 1)) {
             D_L00_001B2840 = 1;
             func_002E5CF8(2, 0, moby);
-            if (D_L00_001AF5E4 == 0)
-                *(float *)(state + 0xC) = D_L00_001AF5D8;
-            else if (D_L00_001AF5E4 != 2)
-                goto charge;
-            D_L00_001AF5E4 = 1;
-            *(float *)state = 1.0f / D_L00_00262570[D_00139584].rate;
-        } else if ((D_00138324 & D_00189E20.buttons) || D_L00_001B2840 == 1) {
+            {
+                float minimum = D_L00_001AF5D8;
+                float cooldown;
+                switch (D_L00_001AF5E4) {
+                case 0: {
+                    WeaponEntry *weapon;
+                    int index;
+                    D_L00_001AF5E4 = 1;
+                    *(float *)(state + 0xC) = minimum;
+                    weapon = D_L00_00262570;
+                    index = D_00139584[0];
+                    cooldown = 1.0f / (weapon + index)->rate;
+                    break;
+                }
+                case 2: {
+                    WeaponEntry *weapon;
+                    int index;
+                    D_L00_001AF5E4 = 1;
+                    weapon = D_L00_00262570;
+                    index = D_00139584[0];
+                    cooldown = 1.0f / (weapon + index)->rate;
+                    break;
+                }
+                default:
+                    goto updateCharge;
+                }
+                *(float *)state = cooldown;
+            }
+        } else if ((D_00138180[0x69] & D_00189E20.buttons) || D_L00_001B2840 == 1) {
             func_002E5CF8(6, 0, moby);
             D_L00_001B2840 = 0;
         }
     }
-charge:
-    if (D_L00_001AF5E4 == 1) {
-        *(float *)(state + 0xC) += D_L00_001AF5D0;
-        if (*(float *)(state + 0xC) > D_L00_001AF5E0) {
+updateCharge:
+    switch (D_L00_001AF5E4) {
+    case 0: {
+        float charge = *(float *)(state + 0xC);
+        float minimum = D_L00_001AF5D8;
+        if (charge < minimum) {
+            float next = charge + D_L00_001AF5DC;
+            *(float *)(state + 0xC) = next;
+            if (next > minimum)
+                *(float *)(state + 0xC) = minimum;
+        }
+        break;
+    }
+    case 1: {
+        float charge = *(float *)(state + 0xC) + D_L00_001AF5D0;
+        float limit = D_L00_001AF5E0;
+        *(float *)(state + 0xC) = charge;
+        if (charge > limit) {
+            float speed;
             func_0029FCC0(moby, 0, (char *)origin);
-            if (D_00189E20.viewMode == 1)
-                func_00282F20(velocity, moby + 0xD0, -0.3333333433f);
-            else
-                func_00282F20(velocity, D_0018A580, 0.3333333433f);
+            speed = 0.3333333433f;
+            if (D_00189E20.viewMode == 1) {
+                speed = -speed;
+                func_00282F20(velocity, moby + 0xD0, speed);
+            } else
+                func_00282F20(velocity, D_00189E20.facing, speed);
             if (D_00189E20.aimTarget)
                 func_L00_0032A1A8(D_00189E20.aimTarget, (char *)origin, (char *)velocity, 0.3333333433f);
             D_L00_001AF5E8 = func_L00_003BB080(moby, (char *)*(int *)(state + 4), (char *)origin, (char *)velocity);
@@ -193,22 +233,23 @@ charge:
             D_L00_001AF5EC = 50;
             D_L00_001AF5E4 = 2;
         }
-    } else if (D_L00_001AF5E4 == 0) {
-        if (*(float *)(state + 0xC) < D_L00_001AF5D8) {
-            *(float *)(state + 0xC) += D_L00_001AF5DC;
-            if (*(float *)(state + 0xC) > D_L00_001AF5D8)
-                *(float *)(state + 0xC) = D_L00_001AF5D8;
-        }
-    } else if (D_L00_001AF5E4 == 2) {
-        *(float *)(state + 0xC) -= D_L00_001AF5D4;
-        if (*(float *)(state + 0xC) <= D_L00_001AF5D8) {
-            *(float *)(state + 0xC) = D_L00_001AF5D8;
+        break;
+    }
+    case 2: {
+        float charge = *(float *)(state + 0xC) - D_L00_001AF5D4;
+        float minimum = D_L00_001AF5D8;
+        *(float *)(state + 0xC) = charge;
+        if (charge <= minimum) {
+            *(float *)(state + 0xC) = minimum;
             D_L00_001AF5E4 = 0;
         }
+    }
     }
     if (*(unsigned char *)(moby + 0x31))
         func_L00_002E6EF8(func_L00_003A1580, moby);
     *(float *)(state + 0x10) = func_00283B98(*(float *)(state + 0x10), *(float *)(state + 0xC) * 0.3141593039f);
     *(float *)(state + 0x30) = func_00283198(*(float *)(state + 0x10) * 0.5f);
     *(float *)(state + 0x3C) = func_00283180(*(float *)(state + 0x10) * 0.5f);
+    }
+    }
 }

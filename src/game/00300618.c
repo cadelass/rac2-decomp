@@ -316,7 +316,7 @@ void func_00300A00(char *object, int flags, float a, float b, float c, float d, 
 
 INCLUDE_ASM("asm/game", func_00300AA8);
 
-INCLUDE_ASM("asm/game", func_00300F58);
+/* func_00300F58 is defined in 00300F58-g8.c. */
 
 
 INCLUDE_ASM("asm/game", func_00301F18);
@@ -501,7 +501,7 @@ INCLUDE_ASM("asm/game", func_00303210);
 
 /* func_00304128 is defined in 00304128.c. */
 
-INCLUDE_ASM("asm/game", func_00304210);
+/* func_00304210 is defined in 00304210-g8.c. */
 
 /* func_00304AD0 uses the profile in 00304AD0-g8-qcopy.c. */
 
@@ -582,8 +582,6 @@ void func_00305228(Owner_F9e2cd219 *self)
 void func_00305418(void) {
     func_00300330(D_00227DA0);
 }
-
-INCLUDE_ASM("asm/game", func_00305438);
 
 INCLUDE_ASM("asm/game", func_003054E8);
 
@@ -776,8 +774,6 @@ void func_00306040(void *owner, float *position)
 
 
 INCLUDE_ASM("asm/game", func_00306680);
-
-INCLUDE_ASM("asm/game", func_00306A40);
 
 /* func_00307298 uses the profile in 00307298-g8-qcopy.c. */
 

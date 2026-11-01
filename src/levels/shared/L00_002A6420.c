@@ -239,7 +239,7 @@ void func_L00_002A70F0(void)
 {
 }
 
-INCLUDE_ASM("asm/levels", func_L00_002A70F8);
+/* func_L00_002A70F8 is defined in L00_002A70F8-glow.c. */
 
 /* func_L00_002A74A8 is defined in L00_002A74A8-tint.c. */
 
@@ -568,7 +568,7 @@ void func_L00_002AB3E0(void)
 
 INCLUDE_ASM("asm/levels", func_L00_002ACF88);
 
-INCLUDE_ASM("asm/levels", func_L00_002AD868);
+/* func_L00_002AD868 is defined in L00_002AD868-rail.c. */
 
 /* func_L00_002ADB40 is defined in L00_002ADB40.c. */
 

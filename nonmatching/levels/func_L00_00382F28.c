@@ -1,117 +1,99 @@
 /*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * Reported final C / retail: 980 / 984 bytes; size equality is not a match.
- * us: 0/3 placements; 980/984 bytes.
- * us2: 0/3 placements; 980/984 bytes.
- * pal: 0/3 placements; 980/984 bytes.
- * Residual: 00_aranos_tutorial: 980 bytes, expected 984
- * Reopening condition: A faithful field/lifetime model explaining remaining stack, register or scheduling differences; no arbitrary padding/barriers.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
- */
-
-/* Historical manual summary: The earlier automatic screen is superseded by the current manual reconstruction. Allocation and address formation remain experimental; extracted screen tables stay private. The original map is retained privately; no extracted instruction, opcode, address or generated table is reproduced here. */
-
-/*
- * Nonmatching manual reconstruction; retail size 984 bytes.
- * Final US check: 00_aranos_tutorial: 980 bytes, expected 984.
- * Reproduce at src/levels/shared/L00_00382F28.c with:
- * -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
- * Full body retained after bounded source/API/layout trials; no matching bytes
- * are claimed. Reopen when a truthful field or lifetime model explains the
- * remaining stack, register and scheduling differences.
- * US/US2/PAL coverage and catalogue absence are recorded in the private result.
+ * Tier: Claude Opus 5.5 (xhigh), task v1674, 30 October 2026.
+ * Current US check.py: 984/984 bytes, 0/3 placements, 3 instructions differ; no linked match.
+ * Profile: -O2 -G8 -ffunction-sections (the qcopy switches change nothing here; -g ties;
+ * -fno-rerun-cse-after-loop and -fno-expensive-optimizations are much worse).
+ * Corresponds to RAC1's src/game/effects.c draw_lens_flare (GPL-3.0); retail has 14 elements.
+ *
+ * Remaining, at +0x170..+0x178: retail `lui $v1; lw $v1,0x273C($v1); daddu $s0,$v0,$zero',
+ * here `lui $a0; daddu $s0,$v0,$zero; lw $v1,0($a0)'. Declaring D_L00_001B273C as a plain array
+ * makes gcse's PRE hoist its %hi, which is spilled and rebuilt by reload in a scratch register.
+ * It cannot be $v1: reload may not use the load's own output. Declared as its sibling declares
+ * it (`[] __attribute__((sda))') or as a scalar, the load is retail's single `lw' macro and every
+ * instruction matches, but $s3/$s4/$s5 are permuted (12 lines); see the allocator notes below.
+ *
+ * Solved here: the 980-byte form folded the scale load into `lwc1 %lo'. Retail's
+ * `lui; addiu; lwc1 0($v1)' is a pointer set before the loop and in no block with its use, so
+ * cse and combine cannot fold it; it gets no register (all nine saved GPRs are taken) and reload
+ * rebuilds it from its REG_EQUIV inside the loop. Volatile, const, and pointers set in the loop do
+ * not give this shape (a pointer set in the loop is folded or hoisted past the last call).
+ *
+ * Allocator: retail's order is scale pointer ($s3), base copy ($s4), alpha pointer ($s5), i ($s6).
+ * Priority is floor_log2(refs)*refs/live; refs are 9, 10, 5, 9. With live counted at 2 per insn
+ * after sched1, this needs live(scale) <= 260, live(base) <= 293, live(i) >= 266, live(alpha) 98.
+ * The pointer's position before center[0] gives 262/290/266; one more instruction in sched1's
+ * free slot next to the second func_00283CE0 call gives retail's order: both a kept 5.0f local
+ * (but it costs a save of $f27) and the hoisted %hi above do it. Between center[0] and center[1] gives 254/290/258, so `i' outranks the
+ * base. What would unblock it: a source of that one instruction that leaves no code in the loop.
+ * D_L00_001AED00 is 64 in the `lit' section; D_L00_001B273C is .bss, written by func_L00_00382AE8.
  */
 #include "common.h"
+
 typedef int Quadword __attribute__((mode(TI)));
 typedef union { Quadword bits; float f[4]; } Vector4;
-#define FIELD(type,p,off) (*(type *)((char *)(p)+(off)))
-extern void func_00282CF0(void *,void *,void *);
-extern void func_00282CC0(void *,void *,void *);
-extern void func_00282D30(void *,void *,float);
-extern float func_00282DB0(void *,void *);
-extern float func_00282DF0(void *);
-extern float func_00282C48(float);
-extern float func_00283C80(float,float);
-extern float func_00283C28(float);
-extern float func_00283180(float);
-extern float func_002A7878(float,float);
-extern float func_002A78D8(float,float);
-extern float func_002A7940(void);
-extern int func_002A77E0(int);
-extern void func_002AF000(float *,float,float,float);
-extern char *func_002C2210(void *,int,unsigned int,int,int,void *,int,float,float,float);
-extern char *func_0029EFD0(int);
-extern void func_002B37E8(void *,void *);
-extern void func_002A7398(signed char *,int,int);
-extern void func_002AEC18(void *,int);
-extern void func_002833F0(void *,void *);
-extern void func_002FE8D8(void *,void *);
-extern void func_00282F20(void *,void *,float);
-extern void func_00282DD8(void *,void *,void *);
-extern float func_00283198(float);
-extern void func_00283958(void *,void *);
-extern void func_00283738(void *,void *,void *);
-extern void func_00282C88(void *);
-extern int func_002FEC78(unsigned char *,unsigned int);
-extern int func_002FED90(void *,void *,float,float,float);
-extern void func_0029F338(void *);
-extern void func_002A0F48(void *);
-extern void func_00283098(void *,void *,void *);
-extern void func_002830C0(void *,void *,void *);
-extern int func_002A7820(int,int);
-extern unsigned long func_0027C878(int);
-extern void func_00280B90(void *,void *,int);
-extern void func_L00_003883B8(char *);
-extern void func_L00_0038AA40(char *);
-extern void func_L00_00388490(void *,Vector4 *);
-extern void func_L00_0038AAD0(void *,Vector4 *);
-extern void func_0029FCC0(char *,int,char *);
-extern int func_001163B0(void);
-extern int func_00282948(int *);
+#define FIELD(type, p, off) (*(type *)((char *)(p) + (off)))
+
+extern float func_00282E48(void *, void *);
 extern float func_00283CE0(int);
+extern void func_00279BD8(void *, void *);
+extern unsigned long func_0027C878(int);
+extern float func_00282C48(float);
 extern int func_00283CF0(float);
-extern float func_00282E48(void *,void *);
-extern unsigned char D_001B90C0[];
-extern Vector4 D_001B8DC0;
-extern int D_001A7348,D_001A734C,D_001A7350,D_001A7354;
-extern int D_001B273C;
-extern int D_L00_001AECF0;
-extern void func_00279BD8(void *,void *);
-extern void func_002FC560(unsigned int,unsigned long long);
-extern void func_0027E018(int,int,int,int,int,int,int,int,unsigned long,unsigned long);
+extern void func_002FC560(unsigned int, unsigned long long);
+extern void func_0027E018(int, int, int, int, int, int, int, int,
+                         unsigned long, unsigned long);
+
+typedef struct {
+    char *target;
+    int active;
+    float intensity;
+    int pad;
+    short alpha[16];
+    short texture[16];
+    unsigned int color[16];
+    float offset[16];
+    float scale[16];
+} FlareState;
+extern FlareState D_L00_001B90C0;
+extern Vector4 D_L00_001B8DC0;
+extern int D_001A7348[] __attribute__((sda));
+extern int D_L00_001B273C[];
+extern int D_L00_001AED00[];
+
 void func_L00_00382F28(char *object)
 {
     char *work=FIELD(char *,object,0x68);
     Vector4 screen;
-    float width,height,dx,dy,x,y,distance,fade,horizontal,vertical,alpha;
+    float center[4],delta[4],offset[4],location[4];
+    float distance,fade,horizontal,vertical;
     unsigned long texture;
     int color;
     int i,size,left,top;
-    if(FIELD(int,D_001B90C0,4)!=1 || !(FIELD(unsigned char,FIELD(char *,D_001B90C0,0),0x20)&0x80)) {FIELD(int,D_001B90C0,4)=0;return;}
-    if(FIELD(float,D_001B90C0,8)<=0)return;
-    distance=func_00282E48(&D_001B8DC0,work);
-    width=func_00283CE0(D_001A7348);height=func_00283CE0(D_001A734C);
+    int *baseSize;
+    if(D_L00_001B90C0.active!=1 || (FIELD(unsigned char,D_L00_001B90C0.target,0x20)&0x80)) {D_L00_001B90C0.active=0;return;}
+    if(D_L00_001B90C0.intensity<=0)return;
+    distance=func_00282E48(&D_L00_001B8DC0,work);
+    baseSize=D_L00_001AED00;
+    center[0]=func_00283CE0(D_001A7348[0]);center[1]=func_00283CE0(D_001A7348[1]);
     func_00279BD8(&screen,work);
-    screen.f[0]=(screen.f[0]-func_00283CE0(D_001A7350))*0.0625f;
-    screen.f[1]=(screen.f[1]-func_00283CE0(D_001A7354))*0.0625f;
-    dx=width-screen.f[0];dy=height-screen.f[1];
+    screen.f[0]=(screen.f[0]-func_00283CE0(D_001A7348[2]))*0.0625f;
+    screen.f[1]=(screen.f[1]-func_00283CE0(D_001A7348[3]))*0.0625f;
+    delta[0]=center[0]-screen.f[0];delta[1]=center[1]-screen.f[1];
     for(i=0;i<14;++i) {
-        texture=func_0027C878(D_001B273C+FIELD(short,D_001B90C0,0x30+i*2));
-        x=width+dx*FIELD(float,D_001B90C0,0x90+i*4);y=height+dy*FIELD(float,D_001B90C0,0x90+i*4);
+        texture=func_0027C878(D_L00_001B273C[0]+D_L00_001B90C0.texture[i]);
+        offset[0]=delta[0]*D_L00_001B90C0.offset[i];offset[1]=delta[1]*D_L00_001B90C0.offset[i];
+        location[0]=center[0]+offset[0];location[1]=center[1]+offset[1];
         fade=distance-5;if(fade>1)fade=1;else if(fade<0)fade=0;
-        horizontal=(func_00282C48(dx)/width)*-5+5.5f;
+        horizontal=(func_00282C48(delta[0])/center[0])*-5+5.5f;
         if(horizontal>1)horizontal=1;else if(horizontal<0)horizontal=0;
-        vertical=(func_00282C48(dy)/height)*-5+5.5f;
+        vertical=(func_00282C48(delta[1])/center[1])*-5+5.5f;
         if(vertical>1)vertical=1;else if(vertical<0)vertical=0;
-        alpha=fade*((horizontal*vertical)*FIELD(float,D_001B90C0,8));
-        color=(int)(((unsigned int)func_00283CF0(alpha*(float)FIELD(short,D_001B90C0,0x10+i*2))<<24)|(FIELD(unsigned int,D_001B90C0,0x50+i*4)&0xFFFFFF));
-        size=func_00283CF0((float)D_L00_001AECF0*FIELD(float,D_001B90C0,0xD0+i*4));
+        fade*=((horizontal*vertical)*D_L00_001B90C0.intensity);
+        color=(int)(((unsigned int)func_00283CF0(fade*(float)D_L00_001B90C0.alpha[i])<<24)|(D_L00_001B90C0.color[i]&0xFFFFFF));
+        size=func_00283CF0((float)*baseSize*D_L00_001B90C0.scale[i]);
         func_002FC560(66,0x8000000048ULL);
-        left=func_00283CF0(x-(float)(size>>1));top=func_00283CF0(y-(float)(size>>1));
+        left=func_00283CF0(location[0]-(float)(size>>1));top=func_00283CF0(location[1]-(float)(size>>1));
         func_0027E018(left,top,size,size,0,0,64,64,color,texture);
     }
-    FIELD(int,D_001B90C0,8)=0;
+    D_L00_001B90C0.intensity=0;
 }

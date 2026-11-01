@@ -266,7 +266,114 @@ void func_L00_003EAEF8(char *object) {
         D_L00_001C5540[*(unsigned char *)(object + 0xB0)][*(unsigned char *)(object + 0xB1)]);
 }
 
-INCLUDE_ASM("asm/levels", func_L00_003EB0C0);
+extern int D_L00_001C9340;
+
+extern void func_L00_00323448(char *, void *, int, int, int, int, int, int);
+
+extern void func_0029F338(char *);
+
+extern void func_002833F0(void *, void *);
+
+extern float func_00283198(float);
+
+extern void func_002AEE70(char *, void *, void *, float, float, float);
+
+extern void func_002AEF28(char *, float, void *, float, void *, float);
+
+extern void func_00283738(void *, void *, void *);
+
+extern void func_002AB6D8(void *, void *);
+
+extern void func_L00_00323958(char *, void *);
+
+typedef struct {
+    long long id;
+    int flags;
+    int level;
+    float angles[3];
+    int mode;
+    float firstAngle;
+    float firstVelocity;
+    float secondAngle;
+    float secondVelocity;
+    float firstSpeed;
+    float firstStep;
+    float secondSpeed;
+    float secondStep;
+    char entries[0x4A];
+    unsigned char present;
+    char pad_8B[2];
+    unsigned char update;
+} L00_003EB0C0_State;
+
+void func_L00_003EB0C0(char *self)
+{
+    float angles[4];
+    char mat[48];
+    L00_003EB0C0_State *st = *(L00_003EB0C0_State **)(self + 0x68);
+    int i;
+    int last;
+
+    switch (*(unsigned char *)(self + 0x20)) {
+    case 0:
+        if (st->id == -1)
+            break;
+        {
+            /* An int, not a byte constant: reload would otherwise reuse the -1 still in $v0. */
+            int alpha = 255;
+            *(unsigned char *)(self + 0x30) = alpha;
+        }
+        func_L00_00323448(self, st->entries, 0x50, *((int *)&st->id + 1), *(int *)&st->id, st->flags, 7, 0);
+        if (!st->present) {
+            func_0029F338(self);
+            break;
+        }
+        if (!st->mode) {
+            st->update = 1;
+            *(unsigned short *)(self + 0x34) |= 0x104;
+            func_002833F0(self + 0xC0, self + 0xF0);
+        }
+        if (st->firstAngle != 0.0f)
+            st->firstAngle *= 0.01745329424738884f;
+        st->firstVelocity = func_00283198(st->firstAngle) * st->firstSpeed;
+        self[0x20] = 1;
+        break;
+    case 1:
+        if (D_L00_001C9340 != st->level)
+            break;
+        if (st->firstStep > 0.0f)
+            func_002AEE70(self, &st->firstAngle, &st->firstVelocity, st->firstSpeed,
+                          st->firstStep * 0.0002908882452175021f, -1.0f);
+        if (st->secondStep > 0.0f) {
+            func_002AEF28(self, st->secondSpeed * 0.01745329424738884f, &st->secondAngle,
+                          st->secondStep * 0.0002908882452175021f, &st->secondVelocity, 0.00581776537001133f);
+            if (st->update)
+                func_002833F0(self + 0xC0, self + 0xF0);
+        }
+        if (!st->mode) {
+            angles[0] = st->angles[0] * 0.0002908882452175021f;
+            angles[1] = st->angles[1] * 0.0002908882452175021f;
+            angles[2] = st->angles[2] * 0.0002908882452175021f;
+            func_002833F0(mat, angles);
+            func_00283738(self + 0xC0, self + 0xC0, mat);
+            if (st->secondStep > 0.0f)
+                func_002AB6D8(self + 0xC0, self + 0xF0);
+        } else {
+            i = 0;
+            do {
+                angles[0] = st->angles[0] * 0.0002908882452175021f;
+                angles[1] = st->angles[1] * 0.0002908882452175021f;
+                angles[2] = st->angles[2] * 0.0002908882452175021f;
+                func_002833F0(mat, angles);
+                func_00283738(st->entries + i * 0x50, st->entries + i * 0x50, mat);
+                last = *(unsigned char *)(st->entries + i * 0x50 + 0x4A);
+                i++;
+            } while (last != 1);
+        }
+        func_L00_00323958(self, st->entries);
+        break;
+    }
+}
 
 extern int func_002A8508(int, int);
 
@@ -346,10 +453,10 @@ void func_L00_003EB400(char *self)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L00_003EB610);
+/* func_L00_003EB610 is defined in L00_003EB610-g16.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L00_003EB8E8);
+/* func_L00_003EB8E8 is defined in L00_003EB8E8-g8.c. */
 
 
 /* func_L00_003EC078 is defined in L00_003EC078-zero-ti-por-g8.c. */

@@ -1,15 +1,18 @@
-/* Bounded manual reconstruction, 2026-10-25; not linked.
- * Profile: -O2 -G16 -Wa,-G16 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -frac2-zero-ti-
- * barrier.
- * 1640/1604 bytes; us: 0/5 placements; us2: absent from catalogue; pal: absent from catalogue.
- * The complete two-state controller retains all constructor stack-tail inputs, pointer returns,
- * full 16-byte color constants and the corrected G16 addressing profile. New helper copies and
- * clears preserve real memory effects, but color-branch sharing and clear-loop reload/alias
- * lowering differ.
- * Reopen with independent object/alias and color-branch lifetime evidence; do not shrink constants,
- * simplify sentinel reads or invent barriers.
- * Original complete variants and allocator diagnostics are preserved privately.
- * No candidate or linked-build credit is claimed.
+/* GPT-6.1 Sol worker v0638, 2026-10-28; retained near miss, not linked.
+ * Current upstream toolchain: -O2 -G16 -Wa,-G16 -ffunction-sections
+ * -frac2-qcopy -frac2-qcopy-barrier -frac2-zero-ti-barrier.
+ * Best check.py: 1612/1604 bytes, 0 of 5 USA v1.01 places match.
+ * Recompiled the previous draft: still 1640 bytes on this toolchain.
+ * qzero_nc removes clear-loop alias reloads (1628 bytes with all nc helpers).
+ * Typed local position copy removes two instructions (1620 bytes).
+ * Selecting the second color source before its shared copy reaches 1612 bytes.
+ * Struct versus TI color assignments tie at 1620; explicit shared second-source
+ * copy with typed assignment versus qcopy_nc ties at 1612.
+ * Remaining: color source/destination register allocation and scheduling,
+ * initial call setup/global compare ordering, and clear-loop padding differ.
+ * Next useful experiment needs independently supported object layouts/lifetimes.
+ * Full constructor arguments, sentinel reads and 16-byte colors are preserved.
+ * All declarations needed to compile independently follow; no build credit.
  */
 #include "common.h"
 
@@ -54,8 +57,8 @@ extern u8 *D_L00_001B1E9C;
 extern u8 *D_L00_001B251C;
 extern u8 *D_L00_001B2514;
 extern s16 D_L00_00226900[];
-extern Rac2TI128 D_L00_001AFEB0 __attribute__((nosda));
-extern Rac2TI128 D_L00_001AFEA0 __attribute__((sda));
+extern Vec_L00_003C27A0 D_L00_001AFEB0 __attribute__((nosda));
+extern Vec_L00_003C27A0 D_L00_001AFEA0 __attribute__((sda));
 extern s32 D_L00_001AFE98[2] __attribute__((sda));
 extern s32 D_L00_001AFE90[2] __attribute__((sda));
 
@@ -86,8 +89,9 @@ extern void func_L00_00323958(void *, void *);
 void func_L00_003C27A0(u8 *self)
 {
     State_L00_003C27A0 *st = *(State_L00_003C27A0 **)(self + 0x68);
-    Rac2TI128 cols[2];
+    Vec_L00_003C27A0 cols[2];
     Vec_L00_003C27A0 here;
+    const Vec_L00_003C27A0 *second;
     u16 *p;
     u16 *q;
     u16 *r;
@@ -142,28 +146,29 @@ void func_L00_003C27A0(u8 *self)
                 }
             }
         }
-        qcopy(st->home, self + 0x10);
+        qcopy_nc(st->home, self + 0x10);
         st->home[3] = st->x44;
         self[0x20] = 1;
         break;
     case 1:
         if (st->moby != 0 && (e = st->target) != 0) {
-            qcopy(st->moby + 0x10, e + 0x30);
+            qcopy_nc(st->moby + 0x10, e + 0x30);
             *(f32 *)(st->moby + 0xF8) = func_00283248(*(f32 *)e, *(f32 *)(e + 4));
             if (func_002A9640(st->moby, 0x10000, 0) != 0) {
                 *(f32 *)(st->moby + 0x2C) = *(f32 *)(*(u8 **)(st->moby + 0x24) + 0x24) * 1.35f;
                 func_002833F0(st->moby + 0xC0, st->moby + 0xF0);
                 if (func_00282C48(*(f32 *)(st->moby + 0xF8)) > 1.6f) {
-                    qcopy(&cols[0], &D_L00_001AFEB0);
-                    qcopy(&cols[1], &D_L00_001AFEA0);
+                    qcopy_nc(&cols[0], &D_L00_001AFEB0);
+                    second = &D_L00_001AFEA0;
                 } else {
-                    qcopy(&cols[0], &D_L00_001AFEA0);
-                    qcopy(&cols[1], &D_L00_001AFEB0);
+                    qcopy_nc(&cols[0], &D_L00_001AFEA0);
+                    second = &D_L00_001AFEB0;
                 }
+                qcopy_nc(&cols[1], second);
                 func_L00_0032A530(st->moby, cols, D_L00_001AFE98, D_L00_001AFE90, 0, 0, -1, 1, 0xFFFE, 0xFF, 0);
                 func_L00_00321878(st->moby, 30, 50, 2, -1, func_002A7820(3, 5), 0.0f);
                 func_002E5DA0(0, 0, st->moby, 0xE9B);
-                qcopy(&here, self + 0x10);
+                here = *(Vec_L00_003C27A0 *)(self + 0x10);
                 func_L00_003C2DE8((char *)st->moby, (char *)&here, 1.5f, 0.116666675f);
                 func_0032C700(st->moby + 0x10, 0, 25, 20, 20, 20, 45, 0, 0.85f, 20.0f, 1, 0, 0, 0);
                 for (r = D_L00_001A9014[st->group];
@@ -179,7 +184,7 @@ void func_L00_003C27A0(u8 *self)
                     if (f == 0)
                         break;
                     for (i = 0; i < 3; i++) {
-                        qzero(f);
+                        qzero_nc(f);
                         f += 16;
                     }
                 }

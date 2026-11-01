@@ -1,3 +1,50 @@
+/* GPT-6.1 Sol high worker v1629, 2026-10-29: retained improvement, unlinked.
+ * Current pinned profile: -O2 -G16 -ffunction-sections -Wa,-G16.
+ * Final check.py: 6516/6516 bytes, 0/8 USA v1.01 placements; first mismatch
+ * +0x234 at every place. Opcode alignment is 1628/1629 (difflib, autojunk=False).
+ * Eleven instructions differ after excluding relocation immediates:
+ *  - L02 003C2924/2928: actor argument move and color's lui are interchanged.
+ *  - 003C3194/3198/31A4/31AC: case 9 record base/sum use a1 instead of v0/v1.
+ *  - 003C3F50/3F5C/3F60/3F64/3F88: case 10 final reset loop swaps v0/v1.
+ * Improvements over v1620:
+ *  - Case 1 snapshots mode after the proximity call, before its result is tested,
+ *    and refreshes it after the guarded calls. This reproduces retail's gp load
+ *    in the first beqz slot and its following absolute flag load, without nosda.
+ *  - Case 0's two loops are ascending indexed loops. Loop reversal and strength
+ *    reduction generate retail's pointer/countdown registers and initialization
+ *    order, including all address setups before the random-angle loop.
+ *  - A struct view with completion bytes at +0x464 reproduces the flag-index
+ *    operand order and register choice. No level addresses are hard-coded.
+ * Bounded negative trials: record pointer local, typed record indexing, and
+ * pointer-sized integer arithmetic all leave case 9 unchanged. An actor local,
+ * typed rotator fields, a saved-angle local and a vars-pointer local leave the
+ * final reset loop unchanged. A color local before the guard leaves its setup
+ * unchanged. Explicit vector pointers before the first loop move setup earlier
+ * but change registers/accesses; ascending indexing is the measured remedy.
+ * Reopen with new source-lifetime/allocation evidence for the three blocks above.
+ * PAL and US2 checks report the name in neither catalogue. No linked check was
+ * run because this body does not match. Required declarations follow below.
+ * The earlier notes below are historical and their residual lists are superseded.
+ */
+/* GPT-6.1 Sol low worker v1620, 2026-10-29: retained improvement, still unlinked.
+ * Current pinned compiler, -O2 -G16 -ffunction-sections -Wa,-G16:
+ * 6508/6516 bytes, 0/8 USA v1.01 placements; 1625/1629 opcode alignment
+ * (difflib, autojunk=False), up from the retained draft's 1624/1629.
+ * Case 4 now uses a widened unsigned timer and explicit previous = timer++;
+ * storing timer before testing previous emits retail's lhu/daddu/addiu/sltiu/
+ * bnez/sh sequence, replacing the old redundant andi with the required copy.
+ * Direct previous+1 shortened that sequence; splitting stores across the branch
+ * added an extra branch/store. Duplicating case 1's failure arm compiled unchanged.
+ * A nosda declaration for D_001A7B1E reached 6516 bytes and 1626 opcode alignment,
+ * but still filled the first delay slot with its lui rather than the target's
+ * gp load and changed the flag-test register; equal size was not a match.
+ * Retained here is the smaller, minimal counter improvement. Case 0's setup order,
+ * case 1's delay-slot fill and scattered allocation differences remain; reopen
+ * with independent evidence for their source lifetimes/control-flow shape.
+ * Declarations are self-contained below. PAL and us2 check.py both report this
+ * name is in neither catalogue; no linked build was run for this unmatched body.
+ * Older measurements below describe historical drafts, not this pinned result.
+ */
 /* Nonmatching (Opus big7 handoff, 2026-10-26): 6508/6516 bytes; opcodes 1621/1629 and
  * full instructions 1588/1629 aligned (difflib vs L02 retail; identical at L03 and L17).
  * Profile: -O2 -G16 -ffunction-sections -Wa,-G16 (unit L02_003C26F0-g16.c).
@@ -103,7 +150,8 @@ extern s16 D_001A63A8[];
 extern u8 D_00139568[];
 typedef struct { u8 unknown00[0x14]; int sound; u8 unknown18[0xE0 - 0x18]; } SlotInfo;
 extern SlotInfo D_L02_00264A70[];
-extern u8 D_L02_0021F4F0[];
+typedef struct { u8 unknown[0x464]; u8 completed[0]; } ChallengeProgress;
+extern ChallengeProgress D_L02_0021F4F0;
 extern int D_L02_002004A4 __attribute__((nosda));
 extern int D_L02_001A8F00;
 extern char *D_L02_001B359C;
@@ -204,9 +252,8 @@ void func_L02_003C26F0(u8 *object)
             *(int *)(object + 0x98) = 0;
             *(u16 *)(object + 0x34) = (*(u16 *)(object + 0x34) | 0x41) & 0xEFFF;
         } else {
-            randomAngle = state->angles;
-            for (i = 1; i >= 0; i--)
-                *randomAngle++ = func_002A7940();
+            for (i = 0; i < 2; i++)
+                state->angles[i] = func_002A7940();
             func_0029FCC0(object, 1, (char *)&position);
             qcopy(&target, &position);
             target.f[2] += 1.0f;
@@ -265,15 +312,13 @@ void func_L02_003C26F0(u8 *object)
         if (state->platformCount == 0)
             func_0026FEB8(D_L02_001AFDB8, *(short *)(object + 0xB2));
         id = *(u16 *)(object + 0xB2);
-        if (D_L02_0021F4F0[0x464 + (short)id] != 0
+        if (D_L02_0021F4F0.completed[(short)id] != 0
             || (status = D_0019B4A8[((short)id >> 1) + D_001A79F0 * 0x400],
                 (id & 1) ? ((status >> 4) & 7) != 0 : (status & 7) != 0)) {
                 func_L00_003294F0((u8 *)object, 1);
-            linked = state->linked;
-            for (i = 1; i >= 0; i--) {
-                if (*linked != -1)
-                    func_L00_003294F0((u8 *)(D_L02_001B359C + *linked * 0x100), 1);
-                linked++;
+            for (i = 0; i < 2; i++) {
+                if (state->linked[i] != -1)
+                    func_L00_003294F0((u8 *)(D_L02_001B359C + state->linked[i] * 0x100), 1);
             }
             func_002A7750((u8 *)object, 5, -1);
         } else {
@@ -286,8 +331,10 @@ void func_L02_003C26F0(u8 *object)
     case 1: {
         u8 *ids;
         SlotInfo *slots;
+        int nearby = func_L02_003C5098(object);
+        int mode = D_L02_001A8F00;
 
-        if (func_L02_003C5098(object) && D_001A7B1E) {
+        if (nearby && D_001A7B1E) {
             func_002B0CE0(12, 0x27BD, 1);
             ids = D_00139568;
             slots = D_L02_00264A70;
@@ -299,8 +346,9 @@ void func_L02_003C26F0(u8 *object)
                 func_L02_003C4E18(object);
                 func_002A7750((u8 *)object, 4, -1);
             }
+            mode = D_L02_001A8F00;
         }
-        if (D_L02_001A8F00 != 2)
+        if (mode != 2)
             func_L02_003C4ED8(object);
         break;
 
@@ -327,8 +375,13 @@ void func_L02_003C26F0(u8 *object)
             object[0x30] = 0xFF;
             func_002A7750((u8 *)object, 2, -1);
         } else {
-            if (status != 0 && (*(u16 *)(object + 0x96))++ < 241)
-                break;
+            if (status != 0) {
+                unsigned int timer = *(u16 *)(object + 0x96);
+                unsigned int previous = timer++;
+                *(u16 *)(object + 0x96) = timer;
+                if (previous < 241)
+                    break;
+            }
             func_L01_002C98B8();
             func_002A7750((u8 *)object, 1, -1);
         }

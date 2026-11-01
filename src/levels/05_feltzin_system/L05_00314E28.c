@@ -145,6 +145,10 @@ typedef struct {
 } Target05;
 
 extern void func_L05_0041CE00(char *object);
+extern float func_3067D8(char *a, char *b);
+extern void func_L05_004157B0(char *obj);
+extern void func_L05_004158B0(char *object);
+extern void func_L05_00415958(char *obj);
 
 extern void func_L05_0041CA70(char *obj);
 
@@ -440,7 +444,61 @@ INCLUDE_ASM("asm/levels", func_L05_003A96D8);
 
 INCLUDE_ASM("asm/levels", func_L05_00414F90);
 
-INCLUDE_ASM("asm/levels", func_L05_004155A0);
+/* Per-frame update. On the first frame it initializes the object; afterwards it points the record
+   at moby state+0x260, renews the D_00188660 slot in state+0x270 near that target at random and the
+   one in state+0x26C when the object no longer owns it. */
+void func_L05_004155A0(char *object)
+{
+    char *state = *(char **)(object + 0x68);
+    Target05 *r;
+    char *rec, *rec2;
+    char buf[0x10];
+
+    if (*(unsigned char *)(object + 0x20) == 0) {
+        *(unsigned char *)(object + 0x30) = 0xFF;
+        if (func_379860(object) == 0)
+            return;
+        func_L05_004157B0(object);
+        func_3065F8(buf);
+        if (*(int *)(state + 0x264) != 0)
+            func_379E60(object, 0, 0, 0);
+        return;
+    }
+    r = (Target05 *)func_379CA0(object);
+    if (r->mode == 0)
+        return;
+    {
+        int one = 1;
+
+        func_37C160(object);
+        func_37B538(object, 0, 0, 0);
+        func_37B948(object, one, 32.0f);
+        if (r->mode == one) {
+            if (*(int *)(state + 0x260) != -1) {
+                r->has_target = 1;
+                r->target = D_L05_001B251C + *(int *)(state + 0x260) * 256;
+                if (func_3067D8(r->target + 0x10, object + 0x10) < 10.0f) {
+                    rec2 = D_00188660 + *(int *)(state + 0x270) * 0x70;
+                    if (*(char **)(rec2 + 0x88) != object ||
+                        *(unsigned char *)(rec2 + 0x74) == 0) {
+                        if (func_332AB8(0x190) == 0)
+                            *(int *)(state + 0x270) =
+                                func_002E5DA0(0xE, 0, object, 0xFBF);
+                    }
+                }
+            }
+            if (r->x104 != 0)
+                func_L05_004158B0(object);
+            if (func_37B888(object) != 0)
+                func_37B6D0(object);
+            func_3062A0(state + 0x268);
+            func_L05_00415958(object);
+        }
+    }
+    rec = D_00188660 + *(int *)(state + 0x26C) * 0x70;
+    if (*(char **)(rec + 0x88) != object || *(unsigned char *)(rec + 0x74) == 0)
+        *(int *)(state + 0x26C) = func_002E5DA0(0, 6, object, 0xF73);
+}
 
 void func_L05_004157B0(char *obj)
 {
@@ -706,7 +764,67 @@ int func_L05_00417088(char *object)
         *(unsigned char *)(object + 0x20) = 4;
 }
 
-INCLUDE_ASM("asm/levels", func_L05_0041C860);
+/* Per-frame update. On the first frame it initializes the object and, if state+0x264 is set, clears
+   the owners of the 128 interpolation records; afterwards it points the record at moby state+0x260
+   and runs func_L05_0041CE00 unless func_307840 returns -1 for the object's position. */
+void func_L05_0041C860(char *object)
+{
+    char *state = *(char **)(object + 0x68);
+    Target05 *r;
+    Vec buf;
+
+    if (*(unsigned char *)(object + 0x20) == 0) {
+        *(unsigned char *)(object + 0x30) = 0xFF;
+        if (func_379860(object) == 0)
+            return;
+        func_L05_0041CA70(object);
+        func_332708(object, 1, 0, 0);
+        func_3065F8((char *)&buf);
+        *(float *)(object + 0x48) = func_332B50(0.9f, 1.1f);
+        if (*(int *)(state + 0x264) != 0) {
+            char *base;
+            int *p;
+            int i;
+
+            func_379E60(object, 0, 0, 0);
+            base = D_L05_002681E0;
+            p = (int *)(base + 0x27F0);
+            i = 0x7F;
+            do {
+                *p = 0;
+                p -= 0x14;
+                i--;
+            } while (i >= 0);
+        }
+        return;
+    }
+    r = (Target05 *)func_379CA0(object);
+    if (r->mode == 0)
+        return;
+    {
+        int one = 1;
+
+        func_37C160(object);
+        func_37B538(object, 0, 0, 0);
+        func_37B948(object, one, 64.0f);
+        if (r->mode == one) {
+            if (*(int *)(state + 0x260) != -1) {
+                r->has_target = 1;
+                r->target = D_L05_001B251C + *(int *)(state + 0x260) * 256;
+            }
+            if (r->x108 != 0 && r->x104 != 0)
+                func_L05_0041CB68(object);
+            if (func_37B888(object) != 0)
+                func_37B6D0(object);
+            func_3062A0(state + 0x268);
+            qcopy(&buf, object + 0x10);
+            buf.f[3] = *(float *)(object + 0xC) * 0.00097656f;
+            if (func_307840((char *)&buf, 100.0f) != -1)
+                func_L05_0041CE00(object);
+        }
+    }
+    func_2FF698(func_L00_003E4948, object);
+}
 
 void func_L05_0041CA70(char *obj)
 {
@@ -757,7 +875,6 @@ void func_L05_0041D1B0(char *p)
 }
 
 
-INCLUDE_ASM("asm/levels", func_L05_0041DA20);
 
 INCLUDE_ASM("asm/levels", func_L05_0041DF58);
 

@@ -36,7 +36,7 @@ INCLUDE_ASM("asm/game", func_0031F6E8);
 
 /* func_0031FC28 is in 0031F210-pickup-g8.c. */
 
-INCLUDE_ASM("asm/game", func_003202E8);
+/* func_003202E8 is in 0031F210-g8.c. */
 
 INCLUDE_ASM("asm/game", func_003216E8);
 
@@ -167,7 +167,83 @@ void func_00322340(int unused, char *pos, int color, int first, int second, floa
 
 
 
-INCLUDE_ASM("asm/game", func_00322690);
+typedef unsigned int JointEffectQuad __attribute__((mode(TI)));
+extern void func_0029FC20(char *, int, float *);
+extern void func_00282CC0(float *, float *, float *);
+extern float func_002A7878(float, float);
+extern float func_002A78D8(float, float);
+extern int func_002A7820(int, int);
+extern void func_002ACB48(float *, float);
+/* Integer and FP arguments keep their order in the separate EE banks. */
+extern int func_002A8C28(char *, float *, float, int, float, float, int, int, int);
+extern void *func_002C65A0(float *, float *, float, float, float, int, int, int, int, int, int);
+extern unsigned char *func_002C16C0(float *, float *, int, int, int, int,
+                                    float, float, float, float, float);
+extern unsigned char *D_001F2540[];
+
+/* Effect at an object's joint: func_002A8C28 at the joint and at two points along its axis,
+   three grey func_002C65A0 particles at the joint and one func_002C16C0 particle at the near
+   point, which at random takes flags 0x48 and the 0x707070 tint. */
+void func_00322690(char *object, float *position, int joint, float intensity)
+{
+    float matrix[16] __attribute__((aligned(16)));
+    float axis[4] __attribute__((aligned(16)));
+    float base[4] __attribute__((aligned(16)));
+    float near[4] __attribute__((aligned(16)));
+    float far[4] __attribute__((aligned(16)));
+    float velocity[4] __attribute__((aligned(16)));
+    float drift[4] __attribute__((aligned(16)));
+    int i, j;
+    float start, end, gravity;
+    unsigned char *particle;
+
+    func_0029FC20(object, joint, matrix);
+    qcopy(axis, matrix + 4);
+    func_00282CF0(base, matrix + 12, (char *)position);
+    func_00282F20(near, axis, 0.85f);
+    func_00282F20(far, axis, 1.6f);
+    func_00282CC0(near, near, base);
+    func_00282CC0(far, far, base);
+    near[2] -= 0.1f;
+    far[2] -= 0.1f;
+    func_00282F20(velocity, matrix + 4, 0.25f);
+    func_00282CC0(velocity, velocity, position);
+    func_002A8C28(object, base, 0.3f, 1, intensity, 1.0f, 0, 1, 0);
+    func_002A8C28(object, near, 0.3f, 1, intensity, 1.0f, 0, 1, 0);
+    func_002A8C28(object, far, 0.3f, 1, intensity, 1.0f, 0, 1, 0);
+    for (i = 0; i < 3; i++) {
+        func_002ACB48(base, 0.1f);
+        start = func_002A7878(0.2f, 0.4f) * 210000.0f;
+        end = func_002A7878(1.0f, 1.5f) * 210000.0f;
+        gravity = func_002A78D8(0.0f, 0.01f);
+        func_002C65A0(base, velocity, start, end, gravity, 7, 0x808080, 30, 127, 32, 0);
+    }
+    *(JointEffectQuad *)drift = 0;
+    drift[2] = 0.1f;
+    drift[3] = 1.0f;
+    func_00282CC0(drift, drift, position);
+    for (j = 0; j < 1; j++) {
+        particle = func_002C16C0(near, drift, 15, 60, 0x606060, 3,
+                                 105000.0f, 21000.0f, 1.0f, -0.0002f, 0.0f);
+        if (particle) {
+            particle[2] = *D_001F2540[23];
+            particle[3] = 0x44;
+            if (func_002A7820(0, 1)) {
+                unsigned char *payload;
+                unsigned short alpha;
+                particle[3] = 0x48;
+                alpha = 127;
+                *(unsigned int *)(particle + 4) = 0x70707F;
+                payload = particle + 0x20;
+                payload[0x11] = 0x70;
+                payload[0x12] = 0x70;
+                payload[0x13] = 0x70;
+                *(unsigned short *)(payload + 0x1E) = alpha;
+            }
+        }
+    }
+}
+
 
 
 extern int func_00273B70(char *);
@@ -354,7 +430,7 @@ void func_00325B70(char *self, char **children, int first, int second)
 
 /* func_00325EC0 is in 0031F210-effects-g8.c. */
 
-INCLUDE_ASM("asm/game", func_00326198);
+/* func_00326198 is in 0031F210-state-g8.c. */
 
 INCLUDE_ASM("asm/game", func_00326A10);
 

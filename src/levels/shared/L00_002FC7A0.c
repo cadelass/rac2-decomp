@@ -87,6 +87,9 @@ extern s32 D_001A72F4 __attribute__((sda));
 extern u64 D_L00_001C91C0[0x30];
 extern s32 func_00283CF0(f32);
 extern s32 func_00282A18(s32);
+extern char D_L00_001A95A0[];
+extern double func_001234F0(float);
+extern void func_0026FEB8(const char *, ...);
 
 #define MACRO_ADDR __attribute__((section(".sdata")))
 
@@ -534,11 +537,54 @@ void func_L00_002FFAB8(ShrubRenderClass_04340 *render_class, ResidentRenderTextu
 }
 
 
-INCLUDE_ASM("asm/levels", func_L00_00300090);
+/* func_L00_00300090 is defined in L00_002FC7A0-00300090-g8.c (-G8 small data). */
 
 INCLUDE_ASM("asm/levels", func_L00_00300378);
 
-INCLUDE_ASM("asm/levels", func_L00_00300438);
+/* Debug listing of moby class sizes: takes the 32-byte class records with a nonzero
+   data offset as (class id, offset) pairs, turns each offset into the kilobytes up to
+   the next one (the last up to end), sorts them largest first and prints each with
+   "moby %d:      %.1fK\n". */
+void func_L00_00300438(int *records, int count, int end)
+{
+    struct { float id, weight; } values[512];
+    int n = 0;
+    int sorted;
+    int i;
+
+    for (i = 0; i < count; i++) {
+        if (records[i * 8] != 0) {
+            values[n].id = records[i * 8 + 1];
+            values[n].weight = records[i * 8];
+            n++;
+        }
+    }
+    {
+        int k;
+        for (k = 0; k < n - 1; k++)
+            values[k].weight = (values[k + 1].weight - values[k].weight) / 1024.0f;
+    }
+    values[n - 1].weight = ((float)end - values[n - 1].weight) / 1024.0f;
+    do {
+        int k;
+        sorted = 1;
+        for (k = 0; k < n - 1; k++) {
+            if (values[k].weight < values[k + 1].weight) {
+                float id = values[k].id, weight = values[k].weight;
+                values[k].id = values[k + 1].id;
+                values[k].weight = values[k + 1].weight;
+                values[k + 1].id = id;
+                values[k + 1].weight = weight;
+                sorted = 0;
+            }
+        }
+    } while (!sorted);
+    {
+        int j;
+        for (j = 0; j < n; j++)
+            func_0026FEB8(D_L00_001A95A0, func_00283CF0(values[j].id), func_001234F0(values[j].weight));
+    }
+}
 
 void func_L00_00300610(void)
 {

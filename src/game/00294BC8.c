@@ -194,8 +194,6 @@ int func_00295828(int id) {
     return -1;
 }
 
-INCLUDE_ASM("asm/game", func_00295870);
-
 /* looks the level up in the map's table and then walks the levels next to it */
 int func_002958B8(void)
 {
@@ -364,7 +362,7 @@ int func_00295C70(void)
 
 /* func_00295D00 is defined in 00295D00-g8.c (-G8 -g). */
 
-INCLUDE_ASM("asm/game", func_00295F60);
+/* func_00295F60 is defined in 00295F60-map-g8.c (-G8 -Wa,-G64 -ffast-math -g). */
 
 /* func_00297218 is defined in its sibling unit. */
 
@@ -440,7 +438,38 @@ void func_00297550(u8 *out,s32 index,u8 *base,short *offsets) {
 }
 
 
-INCLUDE_ASM("asm/game", func_00297670);
+extern int D_001A79F0_4[] __attribute__((sda));
+
+extern int D_001399B8[];
+
+extern void func_00282A60(void *, int, int);
+
+extern int func_00283EF0(void *, int, int, int);
+
+extern void func_00297BB0(void *);
+
+/* Passes the 0x800-byte buffer to func_00282A60 when the table's field at +0x28 is
+   clear or its field at +0x238 is negative.  Otherwise goes through func_00283EF0
+   and keeps the largest count per flag value.  The flag has no size here, so it is
+   a macro load: $gp in a delay slot, absolute elsewhere. */
+void func_00297670(void *buffer)
+{
+    int *table = D_001C4FA0;
+    int count;
+
+    if (table[0x10 / 4] == 0)
+        return;
+    if (table[0x28 / 4] == 0 || table[0x238 / 4] < 0) {
+        func_00282A60(buffer, 0, 0x800);
+        return;
+    }
+    func_00294E48(D_001A79F0_4[0]);
+    count = func_00283EF0(buffer, 0x800, table[0x14 / 4], table[0xC / 4]);
+    if (count == -1)
+        func_00297BB0(buffer);
+    if (D_001399B8[D_001A79F0_4[0]] < count)
+        D_001399B8[D_001A79F0_4[0]] = count;
+}
 
 
 

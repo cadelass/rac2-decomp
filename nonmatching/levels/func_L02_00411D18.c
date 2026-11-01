@@ -1,26 +1,38 @@
-/*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
+/* Claude Opus 5.5 (xhigh), 31 October 2026: recompiled this C unchanged in a
+ * dedicated -O2 -G0 -ffunction-sections -g -fno-gcse unit; still 1880/1928 bytes,
+ * 0/1 places in USA v1.01. Compiler blocker in the prologue: retail saves the
+ * quadword-held $s2 (it carries right.vertex[3] to sq 0x110) in a 16-byte slot
+ * at the bottom of the GPR area, sq $s2,0x620 then sd $s0,0x630, $s1,0x638,
+ * $s3..$ra 0x640..0x670, and only $f20/$f21 (0x680/0x688). This compiler gives
+ * every GPR an 8-byte slot in ascending order, and a quadword-held one gets
+ * sq into its 8-byte slot (overlapping the next): a two-line test gives
+ * sq $16,0($sp); sd $17,8($sp), and this draft gives sq $s7,0x658 with
+ * sd $fp,0x660. No C can then place s2 at 0x620 and s0 at 0x630. The 0x690 frame
+ * here agrees only because this draft saves a third FPR ($f22); with retail's two
+ * this compiler would give 0x680. Retail's only other game prologues mixing sq and
+ * sd saves are func_L01_00324550 and func_L08_00389B68 (varargs, unmatched).
+ * Reopen only with a compiler that sizes quadword-saved GPR slots as retail does.
+ *
+ * GPT-6.1 Sol (high), 29 October 2026: 1880/1928 bytes, 0/1 places
+ * in USA v1.01, USA v2.00 and PAL. No linked build was run.
  * Profile: -O2 -G0 -ffunction-sections -g -fno-gcse.
- * Reported final C / retail: 1864 / 1928 bytes; size equality is not a match.
- * us: 0/1 placements; 1864/1928 bytes.
- * us2: 0/1 placements; 1864/1928 bytes.
- * pal: 0/1 placements; 1864/1928 bytes.
- * Residual: Exact frame 0x690. Initial twelve TI loads need ordinary lowering; later copy address formation/save ordering/spills remain.
- * Reopening condition: New concrete supported compiler/API/identity hypothesis only; see retained source comment. No repeated flag or permutation sweep.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
+ * SDA declarations for the two 32-bit texture globals recover retail's repeated
+ * absolute lui/lw pairs instead of hoisting their addresses across calls.
+ * The 0x690 frame agrees. Initial twelve TI loads/save order, context copy
+ * addressing, FP constant lifetimes and later cursor spills still differ.
+ * This supersedes the 1864-byte draft only for the measured global-load fix.
+ * Keeping quad source pointers from builder calls through the second loop
+ * gave 1896 bytes when initialized at entry, 1872 when initialized at first
+ * use. Explicit transform/expansion pointers before the UV loop gave 1908
+ * bytes but changed retail's direct stack stores into indirect stores; size
+ * alone is no improvement. Keeping those stores direct gave 1884 bytes.
+ * These lifetime trials remain 0/1 and are not retained over the simpler fix.
+ * Earlier aggregate/all-helper and flag sweeps remain exhausted: preserve
+ * ordinary lowering for the initial twelve loads; no repeated flag sweep.
+ * Reopen with independent cursor/constant lifetime or copy-API evidence.
+ * Complete rendering-path semantics have not been independently verified.
+ * Required declarations follow below.
  */
-
-/* Complete retained rendering path. -O2 -G0 -ffunction-sections -g -fno-gcse
-   gives 1864/1928 bytes and the exact 0x690-byte frame. Five meaningful trials:
-   aggregate matrices/qcopy 2044, explicit quad copies 1932, packet cursor/no-GCSE
-   1864, default GCSE 1908, debug/no-GCSE 1864 tie. US/US2/PAL 0/1.
-   Matrix-load/store grouping, save placement, pointer spills and folded TI
-   address forms remain. Ordinary lowering is needed for the twelve initial
-   quad loads; applying grouped qcopy globally destroys that simultaneous-load
-   pattern. Reopen with a supported distinction for later copy scheduling.
-   Packet extent0x90, UV extent32 and helper inputs independently retail-reviewed. */
 #include "common.h"
 
 typedef int TI128 __attribute__((mode(TI)));
@@ -41,8 +53,8 @@ extern EffectPalette D_L02_001B1B20;
 extern EffectQuad D_L02_001B1B40;
 extern EffectQuad D_L02_001B1B80;
 extern EffectQuad D_L02_001B1BC0;
-extern u32 D_L02_001B1C00;
-extern u32 D_L02_001B1C04;
+extern u32 D_L02_001B1C00 __attribute__((sda));
+extern u32 D_L02_001B1C04 __attribute__((sda));
 extern EffectVector D_L02_001BA500;
 extern void func_00283658(void *, void *);
 extern void func_00282F20(void *, void *, float);

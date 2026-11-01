@@ -33,3 +33,141 @@ void func_L00_003E8150(void)
     func_00282A88(D_L00_0024EFC0, 0x800);
     D_L00_001B2B60 = 0;
 }
+
+typedef float QuadVector[4] __attribute__((aligned(16)));
+
+extern int D_L00_001B05E0 __attribute__((sda));
+extern int D_L00_001B05E4 __attribute__((sda));
+extern int D_L00_001B05E8 __attribute__((sda));
+extern int D_L00_001B05EC __attribute__((sda));
+extern int D_L00_001B05F0 __attribute__((sda));
+extern int D_L00_001B05F4 __attribute__((sda));
+extern int D_L00_001B05F8 __attribute__((sda));
+extern float D_L00_001B05FC __attribute__((sda));
+/* 64 quads of a shared mesh: per corner, a vertex index and a texture-coordinate index. */
+extern short D_L00_00297020[][4][2];
+extern QuadVector D_L00_00296B20[];
+extern float D_L00_00297420[][2];
+extern unsigned long long func_0027C878(int);
+extern void func_00282C88(void *);
+extern void func_00282CC0(void *, void *, void *);
+extern void func_00282D30(void *, void *, float);
+extern void func_00282F20(void *, void *, float);
+extern void func_00283098(void *, void *, void *);
+extern void func_00280B90(void *, int, int);
+extern void ref_L00_003E5710_00(void *, void *, int);
+extern void ref_L00_003E5978_00(void *, void *, int);
+
+/* Draws the 64-quad mesh at OBJECT: every corner of the shared vertex table is scaled by the
+   state's size (doubled on the first two axes, a quarter on the third), turned by the object's
+   matrix, moved to its position and offset by the vector the helper leaves in matrix[3], which
+   is halved at every corner. */
+void func_L00_003E5710(char *object)
+{
+    QuadVector vertices[4];
+    int colors[4];
+    float uv[4][2];
+    unsigned long long registers[4];
+    QuadVector matrix[4];
+    char *state = *(char **)(object + 0x68);
+    int quad, corner;
+    float *first_u, *first_v;
+
+    registers[1] = func_0027C878(D_L00_001B05F4);
+    registers[2] = 0xFF9000000260ULL;
+    registers[3] = D_L00_001B05E0 | (unsigned long long)D_L00_001B05E4 << 2;
+    registers[3] |= (unsigned long long)D_L00_001B05E8 << 4;
+    registers[3] |= (unsigned long long)D_L00_001B05EC << 6;
+    registers[3] |= (unsigned long long)D_L00_001B05F0 << 32;
+    registers[0] = 0;
+    func_00282C88(matrix[0]);
+    func_00282C88(matrix[1]);
+    func_00282C88(matrix[2]);
+    matrix[0][0] = *(float *)(state + 0x10) * 2.0f;
+    matrix[1][1] = *(float *)(state + 0x10) * 2.0f;
+    matrix[2][2] = *(float *)(state + 0x10) * 0.25f;
+    colors[0] = colors[1] = colors[2] = colors[3] = D_L00_001B05F8 + (*(int *)(state + 0x24) << 24);
+    ref_L00_003E5710_00(object + 0x10, matrix[3], 1);
+    first_u = &uv[0][0];
+    first_v = &uv[0][1];
+    quad = 0;
+    do {
+        float *u, *v;
+
+        v = first_v;
+        u = first_u;
+        for (corner = 0; corner < 4; corner++) {
+            int vertex = D_L00_00297020[quad][corner][0];
+            int texel = D_L00_00297020[quad][corner][1];
+
+            func_00282D30(vertices[corner], D_L00_00296B20[vertex], D_L00_001B05FC);
+            *u = D_L00_00297420[texel][0];
+            *v = D_L00_00297420[texel][1];
+            func_00283098(vertices[corner], vertices[corner], matrix);
+            func_00283098(vertices[corner], vertices[corner], object + 0xC0);
+            func_00282CC0(vertices[corner], vertices[corner], object + 0x10);
+            func_00282F20(matrix[3], matrix[3], 0.5f);
+            func_00282CC0(vertices[corner], vertices[corner], matrix[3]);
+            u += 2;
+            v += 2;
+        }
+        func_00280B90(vertices, 0, 0);
+    } while (++quad < 64);
+}
+
+/* The same mesh at the state's size (an eighth on the third axis); the position pointer is
+   taken again for every quad. */
+void func_L00_003E5978(char *object)
+{
+    QuadVector vertices[4];
+    int colors[4];
+    float uv[4][2];
+    unsigned long long registers[4];
+    QuadVector matrix[4];
+    char *state = *(char **)(object + 0x68);
+    int quad, corner;
+    char *position;
+    float *first_u, *first_v;
+
+    registers[1] = func_0027C878(D_L00_001B05F4);
+    registers[2] = 0xFF9000000260ULL;
+    registers[3] = D_L00_001B05E0 | (unsigned long long)D_L00_001B05E4 << 2;
+    registers[3] |= (unsigned long long)D_L00_001B05E8 << 4;
+    registers[3] |= (unsigned long long)D_L00_001B05EC << 6;
+    registers[3] |= (unsigned long long)D_L00_001B05F0 << 32;
+    registers[0] = 0;
+    func_00282C88(matrix[0]);
+    func_00282C88(matrix[1]);
+    func_00282C88(matrix[2]);
+    matrix[0][0] = *(float *)(state + 0x10) * 1.0f;
+    matrix[1][1] = *(float *)(state + 0x10) * 1.0f;
+    matrix[2][2] = *(float *)(state + 0x10) * 0.125f;
+    colors[0] = colors[1] = colors[2] = colors[3] = D_L00_001B05F8 + (*(int *)(state + 0x24) << 24);
+    ref_L00_003E5978_00(object + 0x10, matrix[3], 1);
+    first_u = &uv[0][0];
+    first_v = &uv[0][1];
+    quad = 0;
+    do {
+        float *u, *v;
+
+        position = object + 0x10;
+        v = first_v;
+        u = first_u;
+        for (corner = 0; corner < 4; corner++) {
+            int vertex = D_L00_00297020[quad][corner][0];
+            int texel = D_L00_00297020[quad][corner][1];
+
+            func_00282D30(vertices[corner], D_L00_00296B20[vertex], D_L00_001B05FC);
+            *u = D_L00_00297420[texel][0];
+            *v = D_L00_00297420[texel][1];
+            func_00283098(vertices[corner], vertices[corner], matrix);
+            func_00283098(vertices[corner], vertices[corner], object + 0xC0);
+            func_00282CC0(vertices[corner], vertices[corner], position);
+            func_00282F20(matrix[3], matrix[3], 0.5f);
+            func_00282CC0(vertices[corner], vertices[corner], matrix[3]);
+            u += 2;
+            v += 2;
+        }
+        func_00280B90(vertices, 0, 0);
+    } while (++quad < 64);
+}

@@ -98,9 +98,16 @@ void func_L11_0030F060(void) {
 
 
 extern void func_00282CF0(void *, void *, void *);
-extern void func_L02_00333480(char *, char *, void *);
+extern int func_L02_00333480(char *, char *, void *);
 
-INCLUDE_ASM("asm/levels", func_L11_00340500);
+int func_L11_00340500(char *object, void *point)
+{
+    char *target = object + 0x10;
+    float diff[4];
+
+    func_00282CF0(diff, point, target);
+    return func_L02_00333480(object, target, diff);
+}
 
 INCLUDE_ASM("asm/levels", func_L11_00369700);
 

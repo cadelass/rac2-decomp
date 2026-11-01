@@ -1,11 +1,19 @@
-/* Complete manual reconstruction; NOT MATCHING and never linked.
-   Tested profile: -O2 -G16 -Wa,-G16 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
-   Actual final-source coverage: us: 0/6 placements, 1468 compiled bytes; us2: 0/6 placements, 1468 compiled bytes; pal: 0/6 placements, 1468 compiled bytes.
-   1468/1504 bytes, correct 0x90 frame. Complete area guards, all three containment calls, 3-vector initialization, 16-byte previous position, ordered float tests, UV wrapping, sinusoidal height and genuine callback registration are retained. Unknown speed-table extents remain incomplete; GP formation, repeated-baseline stores, allocation and branch scheduling differ.
-   Reopen only with: Establish complete speed-table extents and original aggregate/alias model; a G16 profile is valid only for the measured full 16-byte position, never a shortened matrix/table.
-*/
-
-#include "include_asm.h"
+/* GPT-6.1 Sol (high), task v1094. Near miss under the current default
+ * -O2 -G0 -ffunction-sections: 1488/1504 bytes, 0/6 USA v1.01 places.
+ * The entry guards and three vector copies now reproduce retail apart from
+ * relocations, initialization scheduling and the owner-state branch slot.
+ * SDATA views preserve unknown speed-table extents and the full previous-position
+ * vector. The measured hero field layout avoids cumulative byte-offset reuse;
+ * scalar sda declarations give the macro address model without retaining bases.
+ * Remaining differences: UV stream allocation, missing reload after paired UV
+ * stores, first scale-call latency padding, initialization and drift scheduling.
+ * Explicit independent pointers/snapshots produce the displacement reloads but
+ * retain UV bases across loops and alter loop control (1496-1512 bytes).
+ * Declared volatile UV storage with snapshots still changes store/branch slots;
+ * that trial is not retained. Next: recover the original UV aggregate/alias model.
+ * Required declarations are included below. This file is never linked.
+ */
+#include "common.h"
 typedef int AreaQuadword __attribute__((mode(TI)));
 typedef union { AreaQuadword bits; float f[4]; } AreaVector;
 typedef void (*DrawCallback_r002E6CF0)(void *);
@@ -20,74 +28,95 @@ extern int func_00283CF0(float);
 extern float func_00283CE0(int);
 extern float func_00283198(float);
 extern int D_L06_001C9DC0;
-extern int D_001A79F0;
-extern char D_00189E20[];
-extern int D_L06_001A9010;
-extern int D_L06_001A8A48;
-extern float D_L06_001B3284, D_L06_001B3280;
-extern AreaVector D_L06_001B9A70[];
-extern AreaVector D_L06_001B3290[];
-extern float D_L06_001B3270[][2];
-extern AreaVector D_L06_001B3260 __attribute__((sda));
-extern char D_L06_001B9840[];
-extern float D_L06_001B0060[];
-extern float D_L06_001B0070[][2];
-extern float D_001A7928;
-extern int D_L06_001B2348;
+extern int D_001A79F0 __attribute__((sda));
+typedef struct {
+    char pad0[0x80];
+    float position[4];
+    char pad90[0x16e];
+    short waterState;
+    char pad200[0x2094];
+    int action;
+    int pad2298;
+    int animation;
+} WaterHero;
+extern WaterHero D_00189E20;
 
-void func_L06_00403130(char *owner)
+extern int D_L06_001A9010 __attribute__((sda));
+extern int D_L06_001A8A48 __attribute__((sda));
+extern float D_L06_001B3284 __attribute__((sda));
+extern float D_L06_001B3280 __attribute__((sda));
+extern AreaVector D_L06_001B9A70[];
+extern AreaVector D_L06_001B3290 __attribute__((sda));
+extern AreaVector D_L06_001B32A0 __attribute__((sda));
+extern AreaVector D_L06_001B32B0 __attribute__((sda));
+extern float D_L06_001B3270[][2] __attribute__((sda));
+extern float D_L06_001B3274[][2] __attribute__((sda));
+extern AreaVector D_L06_001B3260 SDATA(D_L06_001B3260);
+extern char D_L06_001B9840[];
+extern float D_L06_001B0060[] SDATA(D_L06_001B0060);
+extern float D_L06_001B0070[][2] SDATA(D_L06_001B0070);
+extern float D_L06_001B0074[][2] __attribute__((sda));
+extern int levelIndexGP SDATA(D_001A79F0);
+extern float baselineGP SDATA(D_L06_001B3284);
+extern float D_001A7928 __attribute__((sda));
+extern int D_L06_001B2348 __attribute__((sda));
+
+void func_L06_00403130(unsigned char *owner)
 {
     AreaVector movement, scaled;
     char *state = *(char **)(owner + 0x68);
     float range, fraction;
     int i;
+    int level;
+
     if (D_L06_001C9DC0 != *(int *)(state + 0x38))
         return;
-    if (D_001A79F0 == 13 && *(float *)(D_00189E20 + 0x88) < 88.0f &&
-        *(int *)(D_00189E20 + 0x2294) != 116)
+    level = D_001A79F0;
+    if (level == 13 && D_00189E20.position[2] < 88.0f &&
+        D_00189E20.action != 116)
         return;
-    if (D_001A79F0 == 11 && D_L06_001A9010 != 0)
+    if (level == 11 && D_L06_001A9010 != 0)
         return;
     D_L06_001B3284 = *(float *)(state + 0x14);
     if (owner[0x20] == 0) {
         owner[0x20] = 1;
         owner[0x30] = 0xFF;
-        D_L06_001B3290[0].bits = D_L06_001B9A70[0].bits;
-        D_L06_001B3290[1].bits = D_L06_001B9A70[1].bits;
-        D_L06_001B3290[2].bits = D_L06_001B9A70[2].bits;
+        qcopy(&D_L06_001B3290, &D_L06_001B9A70[0]);
+        qcopy(&D_L06_001B32A0, &D_L06_001B9A70[1]);
+        qcopy(&D_L06_001B32B0, &D_L06_001B9A70[2]);
         for (i = 1; i >= 0; i--) {
             D_L06_001B3270[1 - i][0] = 0.0f;
-            D_L06_001B3270[1 - i][1] = 0.0f;
+            D_L06_001B3274[1 - i][0] = 0.0f;
         }
-        D_L06_001B3260.bits = *(AreaQuadword *)D_L06_001B9840;
-        D_L06_001B3284 = *(float *)(state + 0x14);
+        qcopy(&D_L06_001B3260, D_L06_001B9840);
+        baselineGP = *(float *)(state + 0x14);
         return;
     }
-    if (func_002ACBC8(D_00189E20 + 0x80, *(int *)(state + 0x30))) {
-        *(short *)(D_00189E20 + 0x1FE) = 0;
+    if (func_002ACBC8(&D_00189E20.position, *(int *)(state + 0x30))) {
+        D_00189E20.waterState = 0;
         return;
     }
-    if (func_002ACBC8(D_00189E20 + 0x80, *(int *)(state + 0x34)) &&
-        D_001A79F0 != 13 && *(int *)(state + 0x38) == 0) {
+    if (func_002ACBC8(&D_00189E20.position, *(int *)(state + 0x34)) &&
+        levelIndexGP != 13 && *(int *)(state + 0x38) == 0) {
         float angle = *(float *)(D_L06_001B9840 + 0x18);
         if (angle > 0.031f || angle < -1.62f ||
-            (unsigned int)(*(int *)(D_00189E20 + 0x229C) - 17) < 2) {
-            *(short *)(D_00189E20 + 0x1FE) = 0;
+            (unsigned int)(D_00189E20.animation - 17) < 2) {
+            D_00189E20.waterState = 0;
             return;
         }
     }
-    if (func_002ACBC8(D_00189E20 + 0x80, *(int *)(state + 0x34))) {
-        *(short *)(D_00189E20 + 0x1FE) = 0;
+    if (func_002ACBC8(&D_00189E20.position, *(int *)(state + 0x34))) {
+        D_00189E20.waterState = 0;
         return;
     }
     range = *(float *)(state + 0x18);
-    if (*(int *)(D_00189E20 + 0x2294) == 28 || D_L06_001A8A48 != 0) {
+    if (D_00189E20.action == 28 || D_L06_001A8A48 != 0) {
         if (range > 32.0f)
             range = 32.0f;
     }
-    *(short *)(D_00189E20 + 0x1FE) = 2;
+    D_00189E20.waterState = 2;
     func_00282CF0(&movement, D_L06_001B9840, &D_L06_001B3260);
-    D_L06_001B3260.bits = *(AreaQuadword *)D_L06_001B9840;
+    qcopy(&D_L06_001B3260, D_L06_001B9840);
     if (!(*(float *)(D_L06_001B9840 + 8) > *(float *)(state + 0x20)))
         return;
     for (i = 0; i < 2; i++) {
@@ -97,15 +126,15 @@ void func_L06_00403130(char *owner)
         if (scaled.f[1] > 1.0f || scaled.f[1] < 1.0f)
             scaled.f[1] -= func_00283CE0(func_00283CF0(scaled.f[1]));
         D_L06_001B3270[i][0] += scaled.f[0];
-        D_L06_001B3270[i][1] += scaled.f[1];
+        D_L06_001B3274[i][0] += scaled.f[1];
         if (D_L06_001B3270[i][0] > 1.0f)
             D_L06_001B3270[i][0] -= 1.0f;
         if (D_L06_001B3270[i][0] < -1.0f)
             D_L06_001B3270[i][0] += 1.0f;
-        if (D_L06_001B3270[i][1] > 1.0f)
-            D_L06_001B3270[i][1] -= 1.0f;
-        if (D_L06_001B3270[i][1] < -1.0f)
-            D_L06_001B3270[i][1] += 1.0f;
+        if (D_L06_001B3274[i][0] > 1.0f)
+            D_L06_001B3274[i][0] -= 1.0f;
+        if (D_L06_001B3274[i][0] < -1.0f)
+            D_L06_001B3274[i][0] += 1.0f;
     }
     fraction = func_00283CE0(D_L06_001B2348 % 360) * 0.017444444820284843f - 3.14f;
     D_L06_001B3280 = D_L06_001B3284 + func_00283198(fraction) * *(float *)(state + 0x3C);
@@ -115,11 +144,11 @@ void func_L06_00403130(char *owner)
             D_L06_001B3270[i][0] -= 1.0f;
         if (D_L06_001B3270[i][0] < -1.0f)
             D_L06_001B3270[i][0] += 1.0f;
-        D_L06_001B3270[i][1] += D_L06_001B0070[i][1] * D_001A7928;
-        if (D_L06_001B3270[i][1] > 1.0f)
-            D_L06_001B3270[i][1] -= 1.0f;
-        if (D_L06_001B3270[i][1] < -1.0f)
-            D_L06_001B3270[i][1] += 1.0f;
+        D_L06_001B3274[i][0] += D_L06_001B0074[i][0] * D_001A7928;
+        if (D_L06_001B3274[i][0] > 1.0f)
+            D_L06_001B3274[i][0] -= 1.0f;
+        if (D_L06_001B3274[i][0] < -1.0f)
+            D_L06_001B3274[i][0] += 1.0f;
     }
     if (*(int *)state < 0)
         func_L00_002E6DB8(func_L06_00402570, owner);

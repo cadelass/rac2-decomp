@@ -185,7 +185,7 @@ void func_L08_004258D0(char *a0) {
     *(f32 *)(s4 + 0x188) = *(f32 *)(s4 + 0x1C8);
 }
 
-INCLUDE_ASM("asm/levels", func_L08_00425AA8);
+/* func_L08_00425AA8 is isolated in L08_00425AA8.c. */
 
 void func_L08_00425EB0(char *a0) {
     char *p;
@@ -243,7 +243,7 @@ void func_L08_00425F28(char *a0) {
 
 /* Collision sweep and movement update are in L08_00423970-motion.c. */
 
-INCLUDE_ASM("asm/levels", func_L08_00426730);
+/* func_L08_00426730 is isolated in L08_00423970-state.c. */
 
 /* func_L08_00429238 is isolated in L08_00429238.c. */
 
@@ -260,7 +260,7 @@ extern void func_00291450(s32 a0);
 
 INCLUDE_ASM("asm/levels", func_L08_00429560);
 
-INCLUDE_ASM("asm/levels", func_L08_00429EE8);
+/* func_L08_00429EE8 is isolated in L08_00429EE8.c. */
 
 INCLUDE_ASM("asm/levels", func_L08_0042A0B0);
 

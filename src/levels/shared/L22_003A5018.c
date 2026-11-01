@@ -3,6 +3,40 @@
 typedef unsigned char u8;
 typedef float f32;
 
+/* func_L22_003C9880: the level's pulse settings, read as {low, high} pairs.  A pair's
+ * first word is a plain small-data symbol (one instruction, so it can take a call's
+ * delay slot, where the assembler gives it the $gp form), its second word
+ * `[1]` an offset address, which stays the absolute macro load.  The colour pair
+ * at 0x001AFF18 also reads its first word through $gp outside a delay slot:
+ * common.h's SDATA view, spelled out (this unit does not include common.h). */
+extern float D_L22_001AFF08[] __attribute__((sda));
+extern float D_L22_001AFF10[] __attribute__((sda));
+extern int D_L22_001AFF18[] __attribute__((sda));
+extern int D_L22_001AFF18_gp[] __asm__("D_L22_001AFF18__gp") __attribute__((section(".sdata")));
+extern float D_L22_001AFF20[] __attribute__((sda));
+extern float D_L22_001A7CD8[] __attribute__((sda));
+extern unsigned int D_001A7390[] __attribute__((sda));
+extern int D_001A79F0[] __attribute__((sda));
+
+/* The per-subtitle history src/game/00289178.c updates (12-byte rows). */
+typedef struct {
+    unsigned short count, pad;
+    unsigned int time, levels;
+} SubtitleHistory;
+extern SubtitleHistory D_0018C958[];
+
+extern void func_002A7750(void *, int, int);
+extern f32 func_002A7878(f32 low, f32 high);
+extern int func_002E5CF8(int index, int a1, char *a2);
+extern void func_00288E18(int, int);
+extern f32 func_00282DB0(void *, void *);
+extern void func_L22_003C9B60(char *);
+extern void func_L22_003C9D48(u8 *);
+extern void func_L00_002E6CF0(void (*)(u8 *), void *);
+extern f32 func_00283B98(f32, f32);
+extern f32 func_00283198(f32);
+extern int func_00283D38(int, int, f32);
+
 /* Family cbc1388ebe801e68 (116 B, 2 placements): arm one animation slot on a
  * resident object.  Two global guards, a "current slot" guard, then five
  * resident stores in the retail order.
@@ -160,7 +194,89 @@ void func_L22_003AD090(u8 *a0) {
         func_0029F338(obj);
 }
 
-INCLUDE_ASM("asm/levels", func_L22_003C9880);
+/* State 0 seeds four lanes (phase offsets, random rates and values); state 1
+ * reacts to the player (distance, sound, subtitle 31's history, a facing test that
+ * runs func_L22_003C9B60 and registers func_L22_003C9D48); while visible the
+ * phase advances and drives the packed colour at +0x78.  Reading the player through pointer locals
+ * lets cse derive the first one from the position address the distance call
+ * took (`addiu $a0,$s1,-0x80`) and rebuild the second, as retail does. */
+void func_L22_003C9880(u8 *obj)
+{
+    u8 *ctl = *(u8 **)(obj + 0x68);
+    int state = obj[0x20];
+    int i;
+
+    switch (state) {
+    case 0:
+        func_002A7750(obj, 1, -1);
+        *(short *)(obj + 0x32) = 255;
+        {
+            float *offset, *rate, *radius;
+            i = 0;
+            radius = (float *)(ctl + 0x10);
+            rate = (float *)(ctl + 0x30);
+            offset = (float *)(ctl + 0x20);
+            for (; i < 4; i++) {
+                *offset++ = (float)i * 0.25f;
+                *rate++ = func_002A7878(D_L22_001AFF08[0], D_L22_001AFF08[1]) * (1.0f / 60.0f);
+                *radius++ = func_002A7878(D_L22_001AFF10[0], D_L22_001AFF10[1]);
+            }
+        }
+        break;
+    case 1: {
+        u8 *player;
+        SubtitleHistory *history;
+
+        if (func_00282E48(D_00189E20 + 0x80, obj + 0x10) < 3.0f)
+            D_L22_001A7CD8[0] = *(float *)ctl;
+        player = D_00189E20;
+        if (*(int *)(player + 0x2294) == 0x81 && *(int *)(player + 0x1B8) == state)
+            func_002E5CF8(0, 0, (char *)obj);
+        history = D_0018C958;
+        {
+            /* unsigned int snapshot: retail tests the u16 with an andi and
+             * increments the unmasked value */
+            unsigned int count = history[31].count;
+            if ((unsigned short)count <= 65534) {
+                u8 *player2 = D_00189E20;
+                if (*(int *)(player2 + 0x2294) == 0x81)
+                    history[31].count = 65535;
+                else if (*(u8 **)(player2 + 0x33C) == obj) {
+                    /* each arm reads the clock itself: reorg merges the two
+                     * reads into the branch's delay slot */
+                    if ((unsigned short)count != 0) {
+                        unsigned int last = history[31].time;
+                        if (D_001A7390[0] - last > 1080 || last == 0)
+                            func_00288E18(2504, 31);
+                        else if (last < D_001A7390[0])
+                            history[31].time = D_001A7390[0];
+                    } else {
+                        history[31].count = count + 1;
+                        if (history[31].time < D_001A7390[0])
+                            history[31].time = D_001A7390[0];
+                        history[31].levels =
+                            (history[31].levels | (1 << D_001A79F0[0])) | 0x80000000;
+                    }
+                }
+            }
+        }
+        if (func_00282DB0(obj + 0xE0, D_00189E20 + 0x2C0) < -0.6f) {
+            func_L22_003C9B60((char *)obj);
+            func_L00_002E6CF0(func_L22_003C9D48, obj);
+        }
+        break;
+    }
+    }
+    if (obj[0x31]) {
+        float f;
+        *(float *)(ctl + 4) = func_00283B98(*(float *)(ctl + 4),
+                                            D_L22_001AFF20[0] * 0.0002908882452175021f);
+        f = func_00283198(*(float *)(ctl + 4));
+        f = f * f;
+        f = f * f;
+        *(int *)(obj + 0x78) = func_00283D38(D_L22_001AFF18_gp[0], D_L22_001AFF18[1], f * f);
+    }
+}
 
 /* func_L22_003C9B60 is defined in L22_003C9B60-g8.c. */
 
@@ -216,7 +332,7 @@ void func_L22_003D4428(u8 *a0) {
     *(u8 *)(a0 + 0x30) = 0xFF;
 }
 
-INCLUDE_ASM("asm/levels", func_L22_003F45D8);
+/* func_L22_003F45D8 is in L22_003F45D8-g8.c. */
 
 /* func_L22_003F52D8 is in L22_003F52D8-g8.c. */
 
@@ -225,7 +341,7 @@ INCLUDE_ASM("asm/levels", func_L22_003F54B8);
 /* func_L22_003F5580 is in L22_003A5018-g8.c: it reaches the level's scale factor
  * through $gp, which this -G0 unit cannot produce. */
 
-INCLUDE_ASM("asm/levels", func_L22_003F5688);
+/* func_L22_003F5688 is defined in L22_003F5688.c. */
 
 /* func_L22_003F58F8 is defined in L22_003A5018-g8.c (it reads $gp data outside a delay slot). */
 
@@ -249,11 +365,9 @@ INCLUDE_ASM("asm/levels", func_L22_003FC338);
 
 INCLUDE_ASM("asm/levels", func_L22_003FC870);
 
-INCLUDE_ASM("asm/levels", func_L22_003FCF08);
+/* func_L22_003FCF08 is defined in L22_003FCF08-g8.c. */
 
 /* func_L22_003FD1E8 is defined in L22_003FD1E8-helper-g8.c. */
-
-INCLUDE_ASM("asm/levels", func_L22_003FD2D8);
 
 /* func_L22_003FD2D8: see L22_003FD2D8-g8.c. */
 

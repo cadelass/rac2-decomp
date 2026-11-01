@@ -1,9 +1,18 @@
-/* Nonmatching C: Generate and draw a thirteen-point animated polyline, then optionally emit a particle.
- * Tested profile: -O2 -G0 -ffunction-sections.
- * Measured US size: 888 bytes; retail: 892 bytes.
- * Placement checks: US and US2: 0/1 each; PAL: absent from the catalogue.
- * Remaining: The first loop uses different saved registers; the final scratch-vector address is retained across calls where retail rematerializes it.
- * Reopen with evidence for the independent lifetimes of the walking pointer, loop counter and final vector address; keep all thirteen complete points and four scratch vectors.
+/* GPT-6.1 Sol (high), 29 October 2026: 892/892 bytes, 0/1 places
+ * in USA v1.01 and USA v2.00. PAL has no catalogue row.
+ * Profile: -O2 -G0 -ffunction-sections, current worker toolchain.
+ * Indexed first-loop input with a walking output pointer recovers the complete
+ * retail saved-register allocation. Separate loop indices are required.
+ * Remaining: +0x184/+0x188 exchange addiu s1,sp,0x80 and daddu s0,s5,zero.
+ * All other non-relocation instructions agree; relocation binding and linked
+ * image equality remain unverified because check.py stops at that exchange.
+ * Explicit indexed-input local and -g tie. Indexing both pointers adds a
+ * separate W-store induction pointer (912 bytes); indexing only the output
+ * restores the old register mismatch. Explicit persistent base is worse.
+ * Reusing the loop index helps the older pointer-only draft, but is worse in
+ * this indexed-input draft. Pointer-reset and countdown trials also worsen it.
+ * Reopen with a supported source lifetime/scheduler explanation for that pair.
+ * Declarations and approved helpers needed by this draft follow below.
  */
 #include "common.h"
 
@@ -35,8 +44,8 @@ extern const struct B4 D_L02_001B1C30;
 extern const struct F2 D_L02_001B1C38;
 extern const struct B2 D_L02_001B1C40;
 extern const struct W2 D_L02_001B1C48;
-extern u8 *D_L02_001B368C;
-extern s32 D_L02_001A8F00;
+extern u8 *D_L02_001B368C __attribute__((sda));
+extern s32 D_L02_001A8F00 __attribute__((sda));
 
 extern void func_00283098(void *, void *, void *);
 extern void func_00282CC0(void *, void *, void *);
@@ -89,12 +98,10 @@ void func_L02_004129D0(u8 *a0) {
     func_00282CF0(&w, D_L02_001B368C + (*(s32 *)state << 7) + 0x30, &v);
     func_00282D30(&w, &w, amp / func_00283CE0(12));
     qcopy(&buf[0], &v);
-    in = buf;
     out = buf + 1;
     for (i = 0; i < 12; i++) {
-        func_00282CC0(out, in, &w);
+        func_00282CC0(out, &buf[i], &w);
         out->w = e.f[0];
-        in++;
         out++;
     }
     ph = *(float *)(state + 0x14);
@@ -111,7 +118,7 @@ void func_L02_004129D0(u8 *a0) {
     func_L00_002EBE88(buf, f.b[0], f.b[1], 13, col0, col1, e.f[0], e.f[1],
                       *(float *)(state + 0x10));
     if (D_L02_001A8F00 == 0) {
-        qzero(&x);
+        qzero_nc(&x);
         k = func_002A77E0(12);
         t = func_002A7878(0.0f, 1.0f);
         func_00282D08(&y, &buf[k], &buf[k + 1], t);

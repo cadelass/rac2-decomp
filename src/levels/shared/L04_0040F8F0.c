@@ -44,8 +44,6 @@ extern float func_L04_0040F8F0(void *, void *, int, int, int, int);
 
 extern u8 D_L04_00254E10[];
 
-INCLUDE_ASM("asm/levels", func_L04_0040F8F0);
-
 /* Finds the nearest point on the current route or one of its four links. */
 void func_L04_00410518(L04_RouteObject *object, L04_RouteState *state, int *link, int *point,
                        float *result, int mode)
@@ -114,7 +112,76 @@ void func_L04_00410F10(u8 *arg0) {
 
 INCLUDE_ASM("asm/levels", func_L04_00411298);
 
-INCLUDE_ASM("asm/levels", func_L04_00412130);
+typedef struct RankState {
+    u8 pad0[0xA2];
+    u8 rank;
+    u8 count;
+    u8 padA4[0x11C - 0xA4];
+    f32 progress;
+    s32 f120;
+    s32 f124;
+    u8 pad128[0x160 - 0x128];
+    s32 lap;
+    u8 pad164[0x1E4 - 0x164];
+    s32 slots[21];
+    u8 pad238[0x244 - 0x238];
+    s32 f244;
+} RankState;
+typedef struct RankObject {
+    u8 pad0[0x20];
+    u8 active;
+    u8 pad21[0x68 - 0x21];
+    RankState *state;
+    u8 pad6c[0x100 - 0x6c];
+} RankObject;
+extern RankObject *D_L04_001B24DC __attribute__((sda));
+extern f32 func_L04_00410788(RankObject *, RankState *, s32 *, s32 *, s32, s32);
+
+/* Restarts EE timer 0 (T0_MODE = 0x81, T0_COUNT = 0), recomputes the route progress of every
+   racer listed in the 21 slots at +0x1E4 of the object's state, bubble-sorts the active ones
+   (byte +0x20 == 2) by progress unless that would put a racer ahead of one on a later lap, and
+   stores each racer's 1-based rank and the racer count. The table base is reread after the call
+   ($gp form in the branch delay slot, absolute in ordinary flow), and the progress store is a
+   struct field, which lets the scheduler issue that reload ahead of the slot reload. */
+void func_L04_00412130(RankObject *object) {
+    RankObject *list[21], **out = list;
+    RankState *state, *p;
+    RankObject *obj;
+    s32 *slot;
+    s32 count = 0;
+    s32 i, j, k, l;
+
+    *(volatile s32 *)0x10000010 = 0x81;
+    *(volatile s32 *)0x10000000 = 0;
+    state = object->state;
+    slot = state->slots;
+    for (k = 0; k < 21; k++, slot++) {
+        if (*slot != -1) {
+            obj = &D_L04_001B24DC[*slot];
+            p = obj->state;
+            p->progress = func_L04_00410788(obj, state, &p->f120, &p->f124, p->lap, p->f244);
+            if (D_L04_001B24DC[*slot].active == 2) {
+                *out++ = obj;
+                count++;
+            }
+        }
+    }
+    for (i = 0; i < count - 1; i++) {
+        for (j = 0; j < count - i - 1; j++) {
+            if (list[j]->state->progress < list[j + 1]->state->progress
+                && list[j]->state->lap <= list[j + 1]->state->lap) {
+                RankObject *temp = list[j];
+                list[j] = list[j + 1];
+                list[j + 1] = temp;
+            }
+        }
+    }
+    for (l = 0; l < count; l++) {
+        RankState *data = list[l]->state;
+        data->rank = l + 1;
+        data->count = count;
+    }
+}
 
 INCLUDE_ASM("asm/levels", func_L04_00412308);
 
@@ -139,7 +206,6 @@ void func_L04_00412E38(void *arg0, void *arg1, float fparg0, float fparg1) {
 
 INCLUDE_ASM("asm/levels", func_L04_004135B8);
 
-INCLUDE_ASM("asm/levels", func_L04_00413A38);
 
 INCLUDE_ASM("asm/levels", func_L04_00414698);
 

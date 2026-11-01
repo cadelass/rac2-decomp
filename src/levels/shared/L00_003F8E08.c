@@ -18,10 +18,6 @@ extern void func_002FDBD8_6(float scale, Rac2Native_9cdc323a4d0c2fbd_AnalysisCon
 
 extern int func_002A77E0_3(int x);
 
-INCLUDE_ASM("asm/levels", func_L00_003F8E08);
-
-INCLUDE_ASM("asm/levels", func_L00_003F9040);
-
 
 extern void func_31D8A0(void *, float, float);
 extern void func_2E6CF0(void *, void *);
@@ -107,8 +103,6 @@ void func_L00_003FC820(float *pos)
 
 
 
-
-INCLUDE_ASM("asm/levels", func_L00_003FD178);
 
 extern int func_2EDD48(void *);
 extern void func_310440(void *);

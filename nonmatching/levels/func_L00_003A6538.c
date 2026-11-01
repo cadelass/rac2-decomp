@@ -1,9 +1,24 @@
-/* M13, 26 October 2026: 1784/1784 B under -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * 33 words off: the spill slots of the six hoisted addresses (quad.vertex[1..3] and three
- * work vectors) come out rotated, plus the state+0x28 store is not sunk past the 0x2C
- * argument loads. UVs as separate constant stores (sw $0 for 0.0f) and the screen table
- * as D_001A6480[0xA9]/[0xA8] fix the rest. Queued for the permuter.
- * Reopen: evidence for the pseudo order of the hoisted vertex addresses.
+/* GPT-6.1 Sol, high effort, 29 October 2026.
+ * USA v1.01, all 27 placements: 1784/1784 bytes, 0/27 match;
+ * first bound difference +0x94. Dedicated unit: -O2 -G8 -ffunction-sections.
+ * The approved qcopy helper needs no extra compiler options on this toolchain.
+ * Preparing both second-spin inputs before committing the first-spin result
+ * reproduces the three previously differing instructions around state +0x28.
+ * 30 nonrelocated words remain different: 28 accesses to six address-spill
+ * slots, plus the flash color[0] store / view-address setup swap at +0x590.
+ * Spill mapping (ours -> retail): vertex[1] 170->160, spoke 174->164,
+ * vertex[2] 160->168, side 164->16C, vertex[3] 168->170, up 16C->174.
+ * Offsets in this comment are hexadecimal. All declarations are included below.
+ *
+ * New measured constraints: grouping the adjacent settings with SDATA retains
+ * the spill mismatch; explicit vertex pointers produce 1792 bytes, or 1784
+ * with earlier setup differences when vertex[0] is left as the packet base.
+ * Explicit views of all six spill candidates and an inline corner builder each
+ * produce 1776 bytes with changed allocation. Separate color stores change the
+ * packet store order. The correct pointer-valued axis argument and qcopy_nc
+ * each tie the improved qcopy draft. No register pins or volatile accesses used.
+ * Reopen with evidence for PRE expression ordering and real address lifetimes,
+ * rather than repeating these tied forms. No linked build was run for this miss.
  */
 #include "common.h"
 typedef int VectorBits __attribute__((mode(TI)));
@@ -28,7 +43,7 @@ extern void func_00281DE8(QuadPacket *, int, int, int);
 extern int func_00283CF0(float);
 extern void func_00282D30(void *, void *, float);
 extern void func_00282CC0(void *, void *, void *);
-extern void func_002AB668(void *, int, float);
+extern void func_002AB668(void *, void *, float);
 extern void func_002ACDE8(void *, void *, void *);
 extern void func_00282DD8(void *, void *, void *);
 extern void func_00280B90(void *, int, int);
@@ -62,7 +77,7 @@ void func_L00_003A6538(void *object)
         quad.uv[3][0] = 1.0f; quad.uv[3][1] = 1.0f;
         func_00282D30(radius, normal, D_L00_001AF694);
         func_00282CC0(center, position, radius);
-        func_002AB668(rotation, (int)view, *(float *)(state + 0xC));
+        func_002AB668(rotation, view, *(float *)(state + 0xC));
         func_002ACDE8(radius, radius, rotation);
         for (i = 0; i < 8; i++) {
             func_00282DD8(spoke, view, radius);
@@ -75,14 +90,19 @@ void func_L00_003A6538(void *object)
             func_00282CF0(quad.vertex[3], side, spoke);
             func_00280B90(&quad, 0, 0);
             if (i < 7) {
-                func_002AB668(rotation, (int)view, 0.7853981853f);
+                func_002AB668(rotation, view, 0.7853981853f);
                 func_002ACDE8(radius, radius, rotation);
             }
         }
     }
     alpha = func_00283CE0(*(short *)(state + 10)) * *(float *)(state + 0x24);
-    *(float *)(state + 0x28) = func_00283B98(*(float *)(state + 0x28), D_L00_001AF6A8 * 0.017453294f);
-    *(float *)(state + 0x2C) = func_00283B98(*(float *)(state + 0x2C), D_L00_001AF6AC * 0.017453294f);
+    {
+        float first = func_00283B98(*(float *)(state + 0x28), D_L00_001AF6A8 * 0.017453294f);
+        float secondStep = D_L00_001AF6AC * 0.017453294f;
+        float second = *(float *)(state + 0x2C);
+        *(float *)(state + 0x28) = first;
+        *(float *)(state + 0x2C) = func_00283B98(second, secondStep);
+    }
     func_00281DE8((QuadPacket *)&quad, 0x38, 1, 0x80);
     color = (func_00283CF0(alpha * 20.0f) << 24) | 0x8080FF;
     quad.color[0] = quad.color[1] = quad.color[2] = quad.color[3] = color;
@@ -94,7 +114,7 @@ void func_L00_003A6538(void *object)
     func_00282CC0(center, position, radius);
     func_00282CF0(rotation, D_L00_001B8DC0, center);
     func_00282F20(rotation, rotation, 1.0f);
-    func_002AB668(spoke, (int)rotation, *(float *)(state + 0x28));
+    func_002AB668(spoke, rotation, *(float *)(state + 0x28));
     func_00282DD8(side, rotation, normal);
     func_00282DD8(up, side, rotation);
     func_002ACDE8(horizontal, up, spoke);
@@ -109,7 +129,7 @@ void func_L00_003A6538(void *object)
     func_00282CC0(quad.vertex[2], corner, vertical);
     func_00282CF0(quad.vertex[3], corner, vertical);
     func_00280B90(&quad, 0, 0);
-    func_002AB668(spoke, (int)rotation, *(float *)(state + 0x2C));
+    func_002AB668(spoke, rotation, *(float *)(state + 0x2C));
     func_002ACDE8(horizontal, up, spoke);
     func_00282D30(horizontal, horizontal, scale);
     func_00282DD8(vertical, rotation, horizontal);
@@ -132,13 +152,13 @@ void func_L00_003A6538(void *object)
         func_00282F20(vertical, vertical, D_L00_001AF6B0);
         func_00282DD8(horizontal, vertical, view);
         func_00282F20(horizontal, horizontal, D_L00_001AF6B0);
-    func_00282CC0(corner, center, horizontal);
-    func_00282CC0(quad.vertex[0], corner, vertical);
-    func_00282CF0(quad.vertex[1], corner, vertical);
-    func_00282CF0(corner, center, horizontal);
-    func_00282CC0(quad.vertex[2], corner, vertical);
-    func_00282CF0(quad.vertex[3], corner, vertical);
-    func_00280B90(&quad, 0, 0);
+        func_00282CC0(corner, center, horizontal);
+        func_00282CC0(quad.vertex[0], corner, vertical);
+        func_00282CF0(quad.vertex[1], corner, vertical);
+        func_00282CF0(corner, center, horizontal);
+        func_00282CC0(quad.vertex[2], corner, vertical);
+        func_00282CF0(quad.vertex[3], corner, vertical);
+        func_00280B90(&quad, 0, 0);
         color = (func_00283CF0(D_L00_001AF6B8 * alpha) << 24) | 0x808080;
         quad.color[0] = quad.color[1] = quad.color[2] = quad.color[3] = color;
         func_002FC560(0x42, 0x48ULL);

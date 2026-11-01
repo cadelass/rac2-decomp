@@ -1,8 +1,11 @@
 #include "include_asm.h"
 
+extern unsigned int D_001A7AF0 __attribute__((sda));
+extern int D_L05_002A1800[];
+
 /* func_L05_003008C0 is defined in L05_003008C0-quad.c. */
 
-INCLUDE_ASM("asm/levels", func_L05_00302CE8);
+/* func_L05_00302CE8 is defined in L05_00302CE8-g8.c. */
 
 extern int func_002FEF40(int);
 
@@ -49,7 +52,120 @@ INCLUDE_ASM("asm/levels", func_L05_0033F4A8);
 /* func_L05_00352B28 lives in L05_00352B28.c:
    its grouped vector copy and debug division labels need a per-file profile. */
 
-INCLUDE_ASM("asm/levels", func_L05_00379968);
+/* Fills the slot table from the hero's equipment bits (the word func_002E6178 reads).
+ * The table holds 15 entries of 0x28 bytes; each bit group sets the +0x00 and +0x18
+ * words of a few entries; bits 7-8, 10-11 and 14-15 are read as two-bit fields. */
+void func_L05_00379968(void)
+{
+    if (D_001A7AF0 & 0x40) {
+        D_L05_002A1800[0x158/4] = 1;
+        D_L05_002A1800[0x140/4] = 1;
+        D_L05_002A1800[0] = 0;
+    } else {
+        D_L05_002A1800[0] = 1;
+        D_L05_002A1800[0x140/4] = 0;
+    }
+    {
+        int *state = D_L05_002A1800;
+        int flags;
+        state[0x18/4] = 1;
+        flags = D_001A7AF0;
+        if (flags & 0x100) {
+            state[0x1D0/4] = 1;
+            state[0x90/4] = 1;
+        } else if (flags & 0x80) {
+            state[0x1D0/4] = 0;
+            state[0x90/4] = 1;
+        } else {
+            state[0x1D0/4] = 0;
+            state[0x90/4] = 0;
+        }
+    }
+    {
+        int *state = D_L05_002A1800;
+        int flags = D_001A7AF0;
+        state[0x78/4] = 0;
+        state[0x1B8/4] = 0;
+        if (flags & 0x200) {
+            state[0x28/4] = 0;
+            state[0x180/4] = 1;
+            state[0x168/4] = 1;
+        } else {
+            state[0x168/4] = 0;
+            state[0x28/4] = 1;
+        }
+    }
+    {
+        int *state = D_L05_002A1800;
+        int flags;
+        state[0x40/4] = 1;
+        flags = D_001A7AF0;
+        if (flags & 0x800) {
+            state[0x1A8/4] = 1;
+            state[0x68/4] = 1;
+        } else if (flags & 0x400) {
+            state[0x1A8/4] = 0;
+            state[0x68/4] = 1;
+        } else {
+            state[0x1A8/4] = 0;
+            state[0x68/4] = 0;
+        }
+    }
+    {
+        int *state = D_L05_002A1800;
+        int flags = D_001A7AF0;
+        state[0x50/4] = 0;
+        state[0x190/4] = 0;
+        if (flags & 0x1000) state[0xB8/4] = 1;
+        else state[0xB8/4] = 0;
+    }
+    {
+        int *state = D_L05_002A1800;
+        int flags = D_001A7AF0;
+        state[0xA0/4] = 0;
+        if (flags & 0x2000) state[0xE0/4] = 1;
+        else state[0xE0/4] = 0;
+    }
+    {
+        int *state = D_L05_002A1800;
+        int flags = D_001A7AF0;
+        state[0xC8/4] = 0;
+        if (flags & 0x8000) {
+            state[0x1E0/4] = 0;
+            state[0x230/4] = 1;
+            state[0xF0/4] = 0;
+            state[0x248/4] = 1;
+            state[0x1F8/4] = 1;
+        } else if (flags & 0x4000) {
+            state[0x1E0/4] = 1;
+            state[0x1F8/4] = 1;
+            state[0xF0/4] = 0;
+            state[0x248/4] = 0;
+            state[0x230/4] = 0;
+        } else {
+            state[0xF0/4] = 1;
+            state[0x230/4] = 0;
+            state[0x1E0/4] = 0;
+            state[0x248/4] = 0;
+            state[0x1F8/4] = 0;
+        }
+    }
+    {
+        int *state = D_L05_002A1800;
+        int flags;
+        state[0x108/4] = 1;
+        flags = D_001A7AF0;
+        if (flags & 0x10) {
+            state[0x118/4] = 0;
+            state[0x220/4] = 1;
+            state[0x208/4] = 1;
+        } else {
+            state[0x118/4] = 1;
+            state[0x208/4] = 0;
+        }
+    }
+    D_L05_002A1800[0x130/4] = 1;
+}
 
 /* func_L05_00379B60 is defined in L05_00379B60-g8.c. */
 
@@ -102,7 +218,7 @@ void func_L05_00379F68(void) {
     } while (i >= 0);
 }
 
-INCLUDE_ASM("asm/levels", func_L05_00379FA0);
+/* func_L05_00379FA0 is defined in L05_00379FA0-qcopy.c. */
 
 /* func_L05_0037A218 is defined in L05_0037A218-g8.c. */
 

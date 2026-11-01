@@ -228,9 +228,8 @@ extern int func_00283DB8(char *local, float value);
 
 /* func_L00_003EFA00 is in L00_003EFA00-qcopy.c (its own file: the quadword-copy profile). */
 
-INCLUDE_ASM("asm/levels", func_L00_003EFA98);
-
-INCLUDE_ASM("asm/levels", func_L00_003EFD00);
+/* func_L00_003EFA98 and func_L00_003EFD00 are in L00_003EE100-g8.c (their tuning words are
+   read through $gp). */
 
 typedef int TI128_FF58 __attribute__((mode(TI)));
 typedef struct { TI128_FF58 position, normal, velocity; char *owner; int value, phase; float scale; int first, last; } EffectRecord_FF58;
@@ -1117,7 +1116,7 @@ void func_L00_003F8280(Vector *position, float size, float offset, float roll,
     func_002FC560(0x47, 0x5360bULL);
 }
 
-INCLUDE_ASM("asm/levels", func_L00_003F87B0);
+/* func_L00_003F87B0 is in L00_003F87B0.c. */
 
 /* Same body as 23626ad829daa908 with the node field 4 bytes earlier: calls a helper with a referenced node and three identity bytes, then copies them into a linked record guarded by a flag bit and a non-zero leading short. */
 void func_L00_003F89F8(Obj_Fe48725c6 *p)

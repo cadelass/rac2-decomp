@@ -201,7 +201,7 @@ void func_L03_003CC1D8(u8 *a0) {
 
 /* func_L03_003D09D0 is matched in its own unit, src/levels/shared/L03_003D09D0.c (-g). */
 
-INCLUDE_ASM("asm/levels", func_L03_003D0AE0);
+/* func_L03_003D0AE0 lives in L03_003D0AE0-g8.c. */
 
 extern f32 func_002A7878(f32, f32);
 
@@ -540,9 +540,36 @@ s32 func_L03_00419BD8(u32 a0, u8 *first, u8 *second) {
     return func_L03_00419C00((u8 *)D_L03_001B2A1C + (a0 << 8), first, second);
 }
 
-INCLUDE_ASM("asm/levels", func_L03_00419C00);
+/* The route graph a pool record points to. Reading count through the struct matters:
+   the sentinel stores are fixed-address scalars, which cannot alias a varying struct
+   field, so the load does not depend on them. */
+typedef struct {
+    u8 pad[0x80];
+    u8 nodes[0x400];
+    s32 count;
+} L03RouteState;
 
-INCLUDE_ASM("asm/levels", func_L03_00419C58);
+/* Asks ComputeRegionRouteHeading about the two points on the object's route graph; the
+   heading it writes and both node indices stay local. */
+s32 func_L03_00419C00(u8 *object, u8 *first, u8 *second) {
+    float angle;
+    s32 firstIndex, secondIndex;
+    L03RouteState *record = *(L03RouteState **)(object + 0x68);
+    firstIndex = -1;
+    secondIndex = -1;
+    return func_L02_0032E998(first, second, &angle, record->nodes,
+                            record->count, &firstIndex, &secondIndex,
+                            0.0f, 0.1f);
+}
+
+/* Returns the node of the indexed record's route graph that holds a1, or -1. */
+s32 func_L03_00419C58(u32 a0, f32 *a1) {
+    L03RouteState *state = *(L03RouteState **)((u8 *)D_L03_001B2A1C + (a0 << 8) + 0x68);
+    s32 out = -1;
+
+    func_L02_0032EDD8((u8 *)a1, state->nodes, state->count, &out);
+    return out;
+}
 
 INCLUDE_ASM("asm/levels", func_L03_0041B848);
 

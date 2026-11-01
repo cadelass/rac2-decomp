@@ -1,7 +1,3 @@
-src/core/00130428.c	sdk -O2 -G2 -ffunction-sections
-src/levels/shared/L05_003CD280-flags-g8.c	-O2 -G8 -ffunction-sections
-src/levels/shared/L02_004004D0-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
-src/levels/shared/L00_002BA138-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/12_todano/L12_00429610.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
 src/levels/shared/L04_0043BEE8-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
 src/levels/shared/L03_003CC238.c	-O2 -G0 -ffunction-sections -frac2-zero-ti-por -g
@@ -1943,3 +1939,180 @@ src/game/002977A8.c	-O2 -G0 -ffunction-sections -fno-strength-reduce
 src/levels/shared/L00_003E7E40-trails.c	-O2 -G0 -ffunction-sections -mno-split-addresses
 src/levels/shared/L22_002A8B98-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy
 src/levels/01_oozla/L01_002BEB90-nsa-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/levels/11_joba/L11_00415E70.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/00_aranos_tutorial/L00_003CE278-update.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/shared/L00_003A2EE0-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/03_endako/L03_0041BE50-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/06_notak/L06_00419CA8-g8.c	-O2 -G8 -ffunction-sections -g -frac2-hazard-labels
+src/levels/01_oozla/L01_003C0408-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+
+src/game/00300F58-g8.c	-O2 -G8 -ffunction-sections -g -frac2-keep-block-order
+src/game/002BF6F0-c5120-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/11_joba/L11_00454F18-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges -fno-cse-follow-jumps
+src/levels/shared/L02_00422270-g8.c	-O2 -G8 -Wa,-G32 -ffunction-sections -frac2-zero-ti-por
+src/levels/04_barlow/L04_0044D428-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/01_oozla/L01_003DA740-destruct.c	-O2 -G0 -ffunction-sections -mno-split-addresses
+src/levels/01_oozla/L01_003DA740-pose.c	-O2 -G0 -ffunction-sections -mno-split-addresses
+src/levels/shared/L22_003F5688.c	-O2 -G0 -ffunction-sections -g -fno-gcse
+src/levels/shared/L22_003FCF08-g8.c	-O2 -G8 -ffunction-sections -fno-gcse
+src/levels/shared/L00_003D3DE0-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16 -fno-rerun-loop-opt
+src/levels/shared/L00_003D40D8-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/shared/L05_00379FA0-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/shared/L00_004240D8-g8-dbg.c	-O2 -G8 -ffunction-sections -g -fstrict-aliasing
+src/levels/shared/L12_00407DE8-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/shared/L12_00424078-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/shared/L00_0033F678-spline.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L09_003EA108-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/16_snivelak/L16_003F5708-g8.c	-O2 -G8 -ffunction-sections -g -membedded-data
+src/levels/16_snivelak/L16_002F60B8-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -frac2-zero-ti-por
+src/levels/shared/L02_003C43F0-ring-g8.c	-O2 -G8 -ffunction-sections -g
+src/game/00336A78-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
+src/levels/shared/L00_0032A530-g.c	-O2 -G0 -ffunction-sections -g
+src/levels/shared/L13_0041B670-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections
+src/levels/shared/L02_00349BD8.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/shared/L02_0038A008.c	-O2 -G0 -ffunction-sections -mno-split-addresses
+src/game/002D0568-rc2.c	-O2 -G8 -fno-expensive-optimizations -ffunction-sections -fno-builtin
+src/levels/shared/L00_003EB610-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16 -fno-rerun-loop-opt
+src/levels/shared/L00_003EB8E8-g8.c	-O2 -G8 -ffunction-sections -g
+src/game/00345358-input-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/shared/L00_0037E898-trail-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/00_aranos_tutorial/L00_003CD160.c	-O2 -G0 -ffunction-sections -frac2-zero-ti-por -g
+src/levels/shared/L00_003F8E08-burst-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -fno-sched-interblock
+src/levels/shared/L05_0042BB10-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/shared/L05_00442560-q.c	-O2 -G0 -ffunction-sections -frac2-qcopy
+src/levels/12_todano/L12_00420950-g8.c	-O2 -G8 -ffunction-sections -g -frac2-qcopy -frac2-qcopy-barrier
+src/levels/02_maktar_nebula/L02_003E98A8-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/23_damosel_orbit/L23_0042ADB0-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L02_003C9ED0-nsr.c	-O2 -G0 -ffunction-sections -fno-strength-reduce -fno-sched-interblock
+src/levels/09_dobbo/L09_003FE0C0.c	-O2 -G0 -ffunction-sections -fno-gcse
+src/levels/09_dobbo/L09_003FE4D0.c	-O2 -G0 -ffunction-sections -fno-gcse
+src/game/002B50E0.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/game/002B41A8.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/shared/L01_0038EF40.c	-O2 -G0 -ffunction-sections -g
+src/levels/06_notak/L06_004649F0-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/15_gorn/L15_00435E80.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -fstrict-aliasing
+src/levels/15_gorn/L15_004360D8.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/game/0030CAD0-g8.c	-O2 -G8 -ffunction-sections -g -frac2-qcopy -frac2-qcopy-barrier
+src/game/0030DE88-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/game/00308600-spawn.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -fno-gcse
+src/levels/12_todano/L12_003BE7D0-g8.c	-O2 -G8 -ffunction-sections -fno-expensive-optimizations
+src/core/0011BEE0-kputchar.c	sdk -O2 -G2 -ffunction-sections -Wa,--r5900-swap-branch-slots
+src/levels/shared/L00_0041ABB8-shot-g8.c	-O2 -G8 -ffunction-sections -g -frac2-qcopy -frac2-qcopy-barrier
+src/levels/16_snivelak/L16_00417798-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/levels/23_damosel_orbit/L23_00418BC8-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/23_damosel_orbit/L23_0041CD58-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/23_damosel_orbit/L23_0041AFE8-g8.c	-O2 -G8 -ffunction-sections -fno-sched-interblock
+src/game/0027BD70-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/04_barlow/L04_003E5B10.c	-O2 -G0 -ffunction-sections -frac2-keep-block-order
+src/levels/shared/L00_0037A2E8-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/core/00132318-g8.c	-O2 -G8 -ffunction-sections -fno-gcse -fno-cse-follow-jumps
+src/levels/08_tabora/L08_00425AA8.c	-O2 -G0 -ffunction-sections -ffast-math
+src/levels/shared/L05_003979B0-g8.c	-O2 -G8 -ffunction-sections -g
+src/game/0027F128-glow.c	-O2 -G0 -ffunction-sections -fno-rerun-loop-opt
+src/game/0027F128-quad.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/08_tabora/L08_003D8CA8.c	-O2 -G0 -ffunction-sections -g
+src/game/0026EA00-target.c	-O2 -G0 -ffunction-sections -g
+src/game/002E35E0-g8.c	-O2 -G8 -ffunction-sections -fmove-all-movables
+src/game/002E64A0.c	-O2 -G32 -Wa,-G32 -ffunction-sections
+src/game/00345358-wrap.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/shared/L00_00403730.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/core/0011B140.c	sdk -O2 -G2 -ffunction-sections
+src/game/00308600-wavy.c	-O2 -G0 -ffunction-sections -g
+src/game/002BE400.c	-O2 -G0 -ffunction-sections -fno-gcse
+src/levels/02_maktar_nebula/L02_0033C8B8-g.c	-O2 -G0 -ffunction-sections -g
+src/levels/07_siberius/L07_003B72E8-g8.c	-O2 -G8 -ffunction-sections -g
+src/core/001334B8-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/levels/shared/L03_003D0AE0-g8.c	-O2 -G8 -ffunction-sections -g
+src/game/002BEE70-g.c	-O2 -G0 -ffunction-sections -g
+src/game/0029DDC0.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/game/0029DD30.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/18_damosel/L18_003F80A0-state-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/shared/L00_002C3A40.c	-O2 -G0 -ffunction-sections -frac2-keep-block-order
+src/levels/shared/L00_002CA0B0-g8.c	-O2 -G8 -ffunction-sections -fno-thread-jumps -fno-strength-reduce -frac2-hazard-labels
+src/levels/shared/L19_003DCCC8-state-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
+src/game/0032EB28-damage-g8.c	-O2 -G8 -ffunction-sections -ffast-math
+src/game/0032EB28-spark.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/game/00294BC8-nosched.c	-O2 -G0 -ffunction-sections -fno-schedule-insns
+src/levels/19_grelbin/L19_00411890-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/game/0032EB28-ai-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/22_dobbo_orbit/L22_00413B70-g8.c	-O2 -G8 -ffunction-sections -ffast-math
+src/levels/shared/L00_00407E38-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/23_damosel_orbit/L23_004236B8-g8.c	-O2 -G8 -ffunction-sections -ffast-math
+src/game/0032EB28-wander-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L00_003FFA70-wander-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/22_dobbo_orbit/L22_003B9450-g8.c	-O2 -G8 -ffunction-sections -ffast-math
+src/levels/shared/L06_00402570.c	-O2 -G0 -ffunction-sections -g
+src/levels/23_damosel_orbit/L23_003BDA20-g8.c	-O2 -G8 -ffunction-sections -ffast-math
+src/core/00119BF8.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
+src/levels/shared/L04_0040F8F0-route.c	-O2 -G0 -ffunction-sections -g
+src/levels/shared/L00_003AA708-g.c	-O2 -G0 -ffunction-sections -g
+src/levels/17_smolg/L17_0032C070-carrier-g8.c	-O2 -G8 -ffunction-sections -g -ffast-math
+src/levels/shared/L04_00413A38-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L02_0038BD00-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/02_maktar_nebula/L02_003D26B0-turret.c	-O2 -G0 -ffunction-sections -frac2-zero-ti-por -g
+src/levels/01_oozla/L01_003DAE58.c	-O2 -G0 -ffunction-sections -fno-expensive-optimizations
+src/levels/11_joba/L11_00435600-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/shared/L00_002C9448-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-hazard-labels
+src/levels/11_joba/L11_0044AFC8-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/game/002AA800-blast.c	-O2 -G0 -ffunction-sections -g
+src/levels/11_joba/L11_00411D40-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/12_todano/L12_004285A8-g32.c	-O2 -G32 -Wa,-G32 -ffunction-sections -frac2-gcse-unsplit-edges -frac2-keep-block-order -g
+src/levels/02_maktar_nebula/L02_0040BE08-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/shared/L00_003DB118-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
+src/levels/shared/L00_00418A80-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/shared/L04_00403530.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/19_grelbin/L19_0041B078-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/03_endako/L03_003F4638-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/12_todano/L12_0041B2A8-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/06_notak/L06_00420AE8-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/11_joba/L11_003D6270-state-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/19_grelbin/L19_004160A0-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/01_oozla/L01_003B9F30-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
+src/levels/12_todano/L12_003E0BF0-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections
+src/levels/30_insomniac_museum/L30_003B3F70-g8.c	-O2 -G8 -ffunction-sections -ffast-math -g
+src/game/002F5220-7738.c	-O2 -G8 -fno-sched-interblock -ffunction-sections
+src/levels/01_oozla/L01_003D98E0-g8.c	-O2 -G8 -ffunction-sections -ffast-math -g
+src/levels/01_oozla/L01_003BAFB8-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/10_hrugis_cloud/L10_00424528-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/15_gorn/L15_00430DF0-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/02_maktar_nebula/L02_003F9C10-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/08_tabora/L08_00423970-state.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/10_hrugis_cloud/L10_00424028-cloud-g8.c	-O2 -G8 -ffunction-sections -fno-rerun-loop-opt
+src/levels/12_todano/L12_00417CA8-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -g
+src/levels/01_oozla/L01_003B5878-g8.c	-O2 -G8 -ffunction-sections -fno-expensive-optimizations
+src/levels/01_oozla/L01_002BEB90-action-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/05_feltzin_system/L05_00421100-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/10_hrugis_cloud/L10_004166E8-g8-dbg.c	-O2 -G8 -ffunction-sections -g -fstrict-aliasing
+src/levels/30_insomniac_museum/L30_0040C270-g8.c	-O2 -G8 -ffunction-sections -ffast-math -g
+src/levels/18_damosel/L18_00437190-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/00_aranos_tutorial/L00_002FC7A8-lift.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/11_joba/L11_00453358-curve.c	-O2 -G0 -ffunction-sections -ffast-math -frac2-hazard-labels
+src/levels/07_siberius/L07_0040FC88-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-hazard-labels
+src/levels/04_barlow/L04_002D38E8-probe.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/03_endako/L03_003CB398-g8.c	-O2 -G8 -ffunction-sections -fno-gcse
+src/levels/11_joba/L11_003F33E0-g8.c	-O2 -G8 -ffunction-sections -g -frac2-gcse-unsplit-edges
+src/levels/03_endako/L03_002BA278-ground.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/11_joba/L11_0046F8F0.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/09_dobbo/L09_003FC1E8-g64.c	-O2 -G64 -Wa,-G64 -ffunction-sections
+src/levels/03_endako/L03_003C6208-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/07_siberius/L07_0040E198-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -frac2-gcse-unsplit-edges
+src/levels/02_maktar_nebula/L02_003D2DE0-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-keep-block-order
+src/levels/06_notak/L06_0045A5B0-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16 -ffast-math
+src/levels/03_endako/L03_003F09C0-help-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/game/00295F60-map-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -ffast-math -g
+src/levels/02_maktar_nebula/L02_003D7C20-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-zero-ti-por -g
+src/game/00286738-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/02_maktar_nebula/L02_003CFAC8-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-hazard-labels
+src/game/002B1C20-gravity.c	-O2 -G0 -ffunction-sections -g -frac2-hazard-labels
+src/game/002E9268.c	-O2 -G0 -ffunction-sections -g
+src/levels/04_barlow/L04_00422318-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
+src/game/00294988-g8.c	-O2 -G8 -ffunction-sections -Wa,-G32
+src/levels/01_oozla/L01_003CB668-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -g
+src/levels/04_barlow/L04_00422A00-path.c	-O2 -G0 -ffunction-sections -ffast-math
+src/game/0028BE00-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/03_endako/L03_003F5590-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/06_notak/L06_00458138-ribbon-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -frac2-hazard-labels
+src/levels/16_snivelak/L16_0040D4E8-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections
+src/levels/03_endako/L03_0041F720-g8.c	-O2 -G8 -Wa,-G32 -ffunction-sections -frac2-hazard-labels
+src/game/002AF580-qcopy.c	-O2 -G0 -ffunction-sections -g -ffast-math -frac2-qcopy -frac2-qcopy-barrier

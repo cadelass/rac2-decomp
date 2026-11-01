@@ -343,13 +343,9 @@ void func_002F6458(void) { char *base = D_00138180 + 0x1260; int index = *(int *
 
 INCLUDE_ASM("asm/game", func_002F6510);
 
-INCLUDE_ASM("asm/game", func_002F6608);
-
 INCLUDE_ASM("asm/game", func_002F7320);
 
 INCLUDE_ASM("asm/game", func_002F73A8);
-
-INCLUDE_ASM("asm/game", func_002F7738);
 
 INCLUDE_ASM("asm/game", func_002F8178);
 
@@ -361,7 +357,6 @@ extern const char D_001AD2B8[];
 
 void func_002F88D8(void *arg) { func_00115DA8(ref_L00_002F88D8_00.destination, D_001AD2B8, arg); ref_L00_002F88D8_00.clear = 0; }
 
-INCLUDE_ASM("asm/game", func_002F8918);
 
 typedef unsigned int Quad_002F9198 __attribute__((mode(TI), aligned(16)));
 typedef struct { Quad_002F9198 a, b, c; } Three_002F9198;

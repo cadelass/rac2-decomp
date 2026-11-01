@@ -1,20 +1,19 @@
-/* 2026-10-23 reconstruction. Measured with -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-
-   barrier -frac2-zero-ti-por. us: 0/4 placements; 05_feltzin_system: 1156 bytes, expected 1168; us2:
-   0/4 placements; 05_feltzin_system: 1156 bytes, expected 1168; pal: 0/4 placements;
-   05_feltzin_system: 1156 bytes, expected 1168. Three meaningful trials. Historical por-clear
-   impossibility below is superseded by the qualified zero-TI profile. Retained complete HUD traversal
-   preserves64-bit texture/color words and signed color extension. Remaining frame/prologue, zero-clear
-   and scalar scheduling differ by12bytes. Reopen with an exact HUD transform witness. Historical
-   screening is preserved below. */
-
-/* MMI (SPECIAL2) instruction: no C spelling. 1168 bytes, level
-   05_feltzin_system. Retail at 0x0037A5F8 carries the SPECIAL2 words
-   0x700024A9, 0x700014A9 (+0x018C, +0x0304) - opcode 0x1C, which rabbitizer
-   prints as `INVALID`; it is the MMI family (pcpyld and its relatives) the
-   sixth wave recorded and that no C spelling reaches. This cc1 emits
-   `lq`/`sq` for a `mode(TI)` local and `ldl`/`ldr`/`sdl`/`sdr` for a struct
-   assignment, never the packed copy. ASM_FUNC candidate, as for the rest of
-   the family. */
+/* v0893, GPT-6.1 Sol high, USA v1.01, current pinned compiler, 2026-10-29.
+   Dedicated -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+   -frac2-zero-ti-por: 1168/1168 bytes, 0/4 places, first mismatch +0x1C.
+   The absolute macro views remove cached scale/object-table high halves.
+   Camera view is +0x230 from its position, as retail computes it. Corrected
+   scale association to distance*(radius/128), and the clamps to ordered >/<.
+   Reusing distance for marker size and y for scale/screen Y matches saved FP
+   allocation; calculating radius/128 before the clear matches constant order.
+   Remaining: entry saves/conversion scheduling, list-table base hoisted into
+   s7 (retail rematerializes it), loop-next index s6 versus s7, clear register
+   and scale multiply scheduling, and color assembly versus Y conversion.
+   A separate rounded-Y integer/color staging grows to 1180; a macro list-table
+   view with split color staging shrinks to 1148. Debug labels do not close it.
+   Reopen with an evidenced list-base/color lifetime; no handwritten claim.
+   Required declarations are included below.
+*/
 
 #include "common.h"
 typedef int Quad __attribute__((mode(TI)));
@@ -26,12 +25,12 @@ extern int D_L05_001AC4F0 __attribute__((sda));
 extern int D_L05_001AC4F4 __attribute__((sda));
 extern float D_L05_001AC4F8 __attribute__((sda));
 extern int D_L05_001AC4FC __attribute__((sda));
-extern float D_L05_001B2D84 NOT_SDA;
-extern u8 *D_L05_00225DD0[];
+extern float D_L05_001B2D84[] MACRO_ADDR;
+extern u8 *D_L05_00225DD0[] NOT_SDA;
 extern u16 *D_L05_001FB220[];
-extern u8 *D_L05_001B251C NOT_SDA;
-extern float D_L05_001B96C0[4];
-extern float D_L05_001B98F0[12];
+extern u8 *D_L05_001B251C[] MACRO_ADDR;
+typedef struct { float position[4]; u8 pad[0x220]; float view[12]; } L05HudCamera;
+extern L05HudCamera D_L05_001B96C0;
 extern u64 func_0027C878(int);
 extern void func_L05_003008C0(float,float,float,float,int,int,int,int,u64,u64);
 extern int func_L00_004272A0(void);
@@ -47,61 +46,62 @@ extern int func_00283CF0(float);
 void func_L05_0037A5F8(void)
 {
     float offset[4],rotation[4],rotate[12],view[12];
-    float distance,scale,size,x,y,initialY;
+    float distance,x,y;
     u64 texture,color;
     u8 *object,*state;
-    u16 *list;
+    u16 *list,*nextList;
     int i,alpha;
-    initialY = (float)(int)(D_L05_001AC4E4*D_L05_001B2D84+0.5f);
+    y = (float)(int)(D_L05_001AC4E4*D_L05_001B2D84[0]+0.5f);
     texture = func_0027C878(D_L05_001AC4FC);
-    func_L05_003008C0(D_L05_001AC4E0,initialY,D_L05_001AC4E8,D_L05_001AC4EC,0,0,D_L05_001AC4F0,D_L05_001AC4F4,0x80808080ULL,texture);
-    for (i=0;i<func_L00_004272A0();) {
-        list = D_L05_001FB220[D_L05_00225DD0[i][0x21]];
-        i++;
-        if (!list) continue;
+    func_L05_003008C0(D_L05_001AC4E0,y,D_L05_001AC4E8,D_L05_001AC4EC,0,0,D_L05_001AC4F0,D_L05_001AC4F4,0x80808080ULL,texture);
+    for (i=0;i<func_L00_004272A0();i++) {
+        nextList = D_L05_001FB220[D_L05_00225DD0[i][0x21]];
+        if (!nextList) continue;
+        list = nextList;
         do {
-            object = D_L05_001B251C+((*list&0x7FFF)<<8);
+            object = D_L05_001B251C[0]+((*list&0x7FFF)<<8);
             state = (u8 *)func_002ED688(object);
             if (*(int *)(state+0x110) && *(int *)(state+0x14C)) {
-                distance = func_00282E48(D_L05_001B96C0,object+0x10);
+                distance = func_00282E48(D_L05_001B96C0.position,object+0x10);
                 if (distance <= 128.0f) {
+                    y = D_L05_001AC4F8*0.0078125f;
                     *(Quad *)rotation = 0;
                     rotation[2] = 1.5707964f;
-                    scale = distance*D_L05_001AC4F8*0.0078125f;
+                    y = distance*y;
                     func_002833F0(rotate,rotation);
-                    func_00282CF0(offset,object+0x10,D_L05_001B96C0);
-                    func_00282F20(offset,offset,scale);
-                    func_002836E8(view,D_L05_001B98F0);
+                    func_00282CF0(offset,object+0x10,D_L05_001B96C0.position);
+                    func_00282F20(offset,offset,y);
+                    func_002836E8(view,D_L05_001B96C0.view);
                     func_00283098(offset,offset,view);
                     func_00283098(offset,offset,rotate);
                     alpha = func_00283CF0(func_002A7798(1.0f-distance*0.0078125f)*128.0f);
-                    size = offset[2]*0.125f+D_L05_001AC4E8*0.5f;
-                    if (*(int *)(state+0x158)) { alpha=128; size=D_L05_001AC4E8*0.5f; }
-                    if (size <= D_L05_001AC4E8+D_L05_001AC4E8) { if (size < 0.0f) size=0.0f; }
-                    else size=D_L05_001AC4E8+D_L05_001AC4E8;
+                    distance = offset[2]*0.125f+D_L05_001AC4E8*0.5f;
+                    if (*(int *)(state+0x158)) { alpha=128; distance=D_L05_001AC4E8*0.5f; }
+                    if (distance > D_L05_001AC4E8+D_L05_001AC4E8) distance=D_L05_001AC4E8+D_L05_001AC4E8;
+                    else if (distance < 0.0f) distance=0.0f;
                     x = offset[0]+D_L05_001AC4E0;
-                    y = (float)(int)((D_L05_001AC4E4-offset[1])*D_L05_001B2D84+0.5f);
+                    y = (float)(int)((D_L05_001AC4E4-offset[1])*D_L05_001B2D84[0]+0.5f);
                     color = (s64)(*(s32 *)(state+0x150) | (alpha<<24));
                     texture = func_0027C878(D_L05_001AC4FC);
-                    func_L05_003008C0(x,y,size,size,0,0,D_L05_001AC4F0,D_L05_001AC4F4,color,texture);
+                    func_L05_003008C0(x,y,distance,distance,0,0,D_L05_001AC4F0,D_L05_001AC4F4,color,texture);
                 } else if (*(int *)(state+0x158)) {
                     *(Quad *)rotation = 0;
                     rotation[2] = 1.5707964f;
-                    scale = D_L05_001AC4F8;
+                    y = D_L05_001AC4F8;
                     func_002833F0(rotate,rotation);
-                    func_00282CF0(offset,object+0x10,D_L05_001B96C0);
-                    func_00282F20(offset,offset,scale);
-                    func_002836E8(view,D_L05_001B98F0);
+                    func_00282CF0(offset,object+0x10,D_L05_001B96C0.position);
+                    func_00282F20(offset,offset,y);
+                    func_002836E8(view,D_L05_001B96C0.view);
                     func_00283098(offset,offset,view);
                     func_00283098(offset,offset,rotate);
-                    size = D_L05_001AC4E8;
-                    if (size <= D_L05_001AC4E8+D_L05_001AC4E8) { if (size<0.0f) size=0.0f; }
-                    else size=D_L05_001AC4E8+D_L05_001AC4E8;
+                    distance = D_L05_001AC4E8;
+                    if (distance > D_L05_001AC4E8+D_L05_001AC4E8) distance=D_L05_001AC4E8+D_L05_001AC4E8;
+                    else if (distance < 0.0f) distance=0.0f;
                     x = offset[0]+D_L05_001AC4E0;
-                    y = (float)(int)((D_L05_001AC4E4-offset[1])*D_L05_001B2D84+0.5f);
+                    y = (float)(int)((D_L05_001AC4E4-offset[1])*D_L05_001B2D84[0]+0.5f);
                     color = (s64)(s32)(*(u32 *)(state+0x150) | 0x80000000U);
                     texture = func_0027C878(D_L05_001AC4FC);
-                    func_L05_003008C0(x,y,size,size,0,0,D_L05_001AC4F0,D_L05_001AC4F4,color,texture);
+                    func_L05_003008C0(x,y,distance,distance,0,0,D_L05_001AC4F0,D_L05_001AC4F4,color,texture);
                 }
             }
         } while ((s16)*list++ >= 0);

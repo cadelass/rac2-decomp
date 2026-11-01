@@ -1,16 +1,25 @@
 /*
- * Near miss (M23, 2026-10-26): 576/576 bytes, 16 differing instructions. us: 0/28.
- * Profile: -O2 -G32 -Wa,-G32 -ffunction-sections (as its siblings 002D0930-g32.c, 002CFBE8-g32.c).
- * Both cursor loops and the item switch match. Residual: the buy test. Retail tests cost == 0x5A
- * first and re-tests cost != 0x5A after `limit < cost` (no jump threading), with the table copy
- * in $s0 made in the delay slot; this C tests `cost <= limit` first, which keeps the re-test but
- * moves the branch order and registers. The `(unsigned char)item` compare gives retail's andi.
- * M39 (2026-10-26): written `(cost != 0x5A && cost <= limit) || ...` the .jump dump has retail's
- * shape (beq to the re-test, B's fall-through into it), but cse1 skips the B block
- * (-fcse-skip-blocks), threads the first jump and then folds the fall-through re-test away: 34
- * off. Retail's re-test survived, so its cse1 could not skip that block; the first jump was
- * threaded later (jump2). Ternary, unsigned char cost, re-read costs and a separate table
- * address are all worse (34-67 off).
+ * v1665 (Claude Opus 5.5, xhigh, 30 October 2026): 576/576 bytes, 0/28 USA v1.01 places.
+ * Profile: -O2 -G32 -Wa,-G32 -ffunction-sections; -O2 -G8 with or without
+ * -fno-expensive-optimizations gives the same bytes. Build it as its own unit.
+ *
+ * Solved here: the buy test. Retail's re-test of cost != 0x5A survives because the source re-reads
+ * the entry: thread_jumps runs before cse1, so with one `cost` pseudo on every test it threads the
+ * first jump and cse folds the re-test away. Re-reading through a value-returning accessor keeps
+ * the test, and gcse merges the loads. Computing the table address per site also produces retail's
+ * PRE copy of the base into $s0. `(unsigned char)item` on an int keeps retail's andi; unsigned
+ * char locals drop it (572 bytes).
+ *
+ * Still different, 12 words, register choice and the resulting order only:
+ * - retail has the table base in $a0, 0x5A in $a1 and the copy in beq's delay slot. Here the base
+ *   is local-allocated to $v1, which is free because it dies at the addu before cost is born; that
+ *   lets cost share $v1, so 0x5A moves to $a0 and the copy cannot sink past the lbu.
+ * - retail loads item into $a0; here it gets $v0.
+ * Both need something that keeps the pseudo out of a free lower register, such as a conflict or a
+ * preference from another allocno. Sharing the early `status` variable for cost moves the copy into
+ * the slot and 0x5A into $a1, with base and cost swapped ($v1/$a0) and an extra andi (580 bytes).
+ * Ties: -g, -fno-sched-interblock, -fno-sched-spec, and cost local or re-read at all three tests.
+ * Worse: dropping MACRO_ADDR from the table hoists a saved register (596 bytes).
  */
 #include "common.h"
 
@@ -28,6 +37,21 @@ extern short D_001A7A10[4];
 extern int func_002B0E90(void);
 extern int func_002E5E58(int, unsigned int, void *);
 extern void func_002923C0(int);
+
+static __inline__ ShopEntry *shop_entry(int index)
+{
+    return &D_001ABCD0[index];
+}
+
+static __inline__ int shop_cost(int index)
+{
+    return shop_entry(index)->cost;
+}
+
+static __inline__ int shop_item(int index)
+{
+    return shop_entry(index)->item;
+}
 
 int func_002CF5B0(void)
 {
@@ -77,18 +101,18 @@ finish:
             D_001AB9EC = cur;
         }
         if (D_00138180.flags & 0x40) {
-            ShopEntry *table = D_001ABCD0;
-            int cost = table[D_001AB9EC].cost;
-            if ((cost <= limit && cost != 0x5A) || (cost == 0x5A && D_001A7A60[0] != 0)) {
+            int cost = shop_cost(D_001AB9EC);
+            if ((cost != 0x5A && cost <= limit)
+                || (shop_cost(D_001AB9EC) == 0x5A && D_001A7A60[0] != 0)) {
                 unsigned char *slot;
                 func_002E5E58(4, 0, 0);
-                slot = &D_001A7A40[table[D_001AB9EC].item];
+                slot = &D_001A7A40[shop_entry(D_001AB9EC)->item];
                 if (*slot)
                     *slot = 0;
                 else
                     *slot = 1;
                 {
-                    int item = table[D_001AB9EC].item;
+                    int item = shop_item(D_001AB9EC);
                     if (item == 9 || item == 10 || (unsigned char)item == 2 || (unsigned char)item == 11)
                         func_002923C0(D_001A7A10[4]);
                 }

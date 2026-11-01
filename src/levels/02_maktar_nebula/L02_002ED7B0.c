@@ -323,7 +323,7 @@ void func_L02_00300CE8(void) {
 
 /* func_L02_0033C760 is matched in L02_0033C760.c (built with -frac2-qcopy -frac2-qcopy-barrier). */
 
-INCLUDE_ASM("asm/levels", func_L02_0033C8B8);
+/* func_L02_0033C8B8 is matched in L02_0033C8B8-g.c (built with -g). */
 
 INCLUDE_ASM("asm/levels", func_L02_0035BD60);
 
@@ -535,7 +535,7 @@ finish:
 
 INCLUDE_ASM("asm/levels", func_L02_0039D708);
 
-INCLUDE_ASM("asm/levels", func_L02_003CA4A8);
+/* func_L02_003CA4A8 is defined in L02_003CA4A8-g8.c. */
 
 /* func_L02_003CAE68 is matched in L02_003CAE68.c (built with -frac2-qcopy). */
 
@@ -570,7 +570,6 @@ u8 *func_L02_003CD5B0(int group) {
 /* Resets the actor's aim record and hands its descriptor to the object system. */
 /* func_L02_003CD668 is defined in L02_003CD668.c. */
 
-INCLUDE_ASM("asm/levels", func_L02_003CFAC8);
 
 
 INCLUDE_ASM("asm/levels", func_L02_003D0408);

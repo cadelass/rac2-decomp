@@ -366,7 +366,7 @@ INCLUDE_ASM("asm/levels", func_L17_003A4740);
 
 /* func_L17_003BCEC0 is defined in L17_0032C070-path.c. */
 
-INCLUDE_ASM("asm/levels", func_L17_003BD310);
+/* func_L17_003BD310 is defined in L17_0032C070-hazard-g8.c. */
 
 /* runs seven two-stage transforms over a record reached from an id in the sub-object; the id -1
    aborts, and the last id is echoed into the shared resident word */
@@ -412,7 +412,7 @@ INCLUDE_ASM("asm/levels", func_L17_003C3C50);
 
 /* func_L17_003C4090 is defined in L17_0032C070-motion-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L17_003C45A0);
+/* func_L17_003C45A0 is defined in L17_0032C070-carrier-g8.c. */
 
 
 
@@ -496,8 +496,6 @@ void func_L17_003C5E78(char *a2)
 }
 
 
-INCLUDE_ASM("asm/levels", func_L17_003C6130);
-
 /* func_L17_003C69A8 is defined in its dedicated-g8.c source. */
 
 /* func_L17_003C6CE8 is defined in its dedicated-g8.c source. */
@@ -514,7 +512,7 @@ void func_L17_003C7250(char *a0, int a1)
 
 
 
-INCLUDE_ASM("asm/levels", func_L17_003C7680);
+/* func_L17_003C7680 is matched in L17_0032C070-platform-g8.c. */
 
 /* true when the sub-object word at 0xBC holds the value two */
 int func_L17_003C7C58(int a0)

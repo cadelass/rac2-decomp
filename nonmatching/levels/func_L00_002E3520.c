@@ -1,76 +1,61 @@
 /*
- * Retained manual C reconstruction; not linked or counted.
+ * Tier: opus-1 (Claude Opus 5.5, xhigh). Retained near miss; not linked or counted.
  * Profile: -O2 -G0 -ffunction-sections, in place in src/levels/shared/L00_002D7940.c
- * (that unit has no common.h; s32 comes from its own typedefs).
- * Retail: 468 bytes; compiled: 468 bytes.
- * Coverage: us: 0/27 (tools/check.py, 28 October 2026, master 85614b41).
+ * (that unit has no common.h; this draft's declarations go above the function).
+ * Best check.py: 468/468 bytes, 0/27 places, two instructions differ, +0xC0 and +0x194:
+ * this compiler's assembler expands cc1's `dli $a1,0xffffffff` to lui $a1,0xFFFF; dsrl32,
+ * retail has addiu $a1,$zero,-1; dsrl32. Everything else agrees, registers included.
  *
- * Draws the current caption of the level's caption table (index at +0x20 of the
- * control block at 0x1BC200, 40-byte entries at 0x1BC588): the text, six shaded bars
+ * What would unblock it: an assembler correction, not C. Retail's game code builds this
+ * value with addiu -1 at all four sites (func_L00_002E3340 once, this function twice,
+ * func_L03_0041CA78 once), as rac1's model of ps2eeas predicts for a low mask
+ * (tools/ps2eeas_dli.py there). No game code in the boot or the levels has the lui form;
+ * it occurs only in SDK objects (func_0011FC68, func_001213B8, func_00121450,
+ * func_00121AB8, func_00122B00), so the SDK profile has to keep it.
+ * Constant spellings and `unsigned long white = -1; white >>= 32;` all fold to the same dli.
+ *
+ * func_0027DE50's colour is 64-bit, as its matched definition in src/game/0027DE50-sdata.c
+ * declares; func_L00_002E3340 needs that for its allocation.
+ *
+ * Draws the current caption of the level's caption table: the text, six shaded bars
  * shrinking by 5/6 below it, then the text again on top.
- *
- * Control flow, calls, the 5/6 division with its zero check and the per-use reloads of
- * the screen width (an incomplete sda array, as retail expands it) match. Register
- * allocation differs throughout (about 40 lines in level 00): retail keeps the control
- * block in $s5, 40 in $s6, the table in $s1 and table + 0x14 in $s0, and builds the
- * 0xFFFFFFFF colour as addiu -1 / dsrl32 where cc1 uses lui 0xFFFF / dsrl32.
- * The second draw as an inlined helper (with its own base pointers) is what made the
- * final draw rebuild the addresses from their high parts as retail does.
- * Tried: the first draw through the helper too (460 bytes); the y reads through an
- * int pointer at table + 0x14 (this version); both together (464).
  */
-
-typedef int s32;
-
-/* One 40-byte entry of the level's caption table. */
 typedef struct {
-    s32 key;
-    char pad04[0xC];
-    s32 width;
-    s32 y;
-    char pad18[0x10];
-} Caption_2E3520;
-
-extern char D_L00_001BC200[];
-extern Caption_2E3520 D_L00_001BC588[];
-extern s32 D_001A7340[] __attribute__((sda));
-
-extern s32 func_L00_002E36F8(s32 key);
+    int key, base, a08, a0c, width, top, mode, count, step, duration;
+} DrawRec;
+typedef struct {
+    int buffers[7];
+    short buffer, pad1e, index, pad22, active;
+    char pad26[0x384 - 0x26];
+    int style;
+} DrawState;
+extern DrawState D_L00_001BC200;
+extern DrawRec D_L00_001BC588[];
+extern int D_001A7340 __attribute__((sda));
+extern int func_L00_002E36F8(int);
+extern int func_002798A0(int, int *, int *);
 extern void func_002802E0(void *, int, int, int, int, int, int, int, int);
-extern void func_00280190(void *, unsigned long, char *, int);
+extern void func_00280190(void *, unsigned long, int, int);
 extern void func_0027DE50(int, int, int, int, unsigned long);
-
-static __inline__ void func_L00_002E3520_draw(unsigned short *layout, char *text)
-{
-    char *ctl = D_L00_001BC200;
-    Caption_2E3520 *cap = &D_L00_001BC588[*(short *)(ctl + 0x20)];
-
-    func_002802E0(layout, 0, cap->y, 0, D_001A7340[0], D_001A7340[0] / 2, cap->width, 0x12, 1);
-    func_00280190(layout, 0xFFFFFFFFUL, text, -1);
-}
 
 void func_L00_002E3520(void)
 {
-    unsigned short layout[12];
-    char *ctl = D_L00_001BC200;
-    Caption_2E3520 *caps = D_L00_001BC588;
-    char *text;
-    s32 top;
-    s32 h;
-    s32 i;
-    s32 *ys = &D_L00_001BC588[0].y;
+    int text = func_L00_002E36F8(D_L00_001BC588[D_L00_001BC200.index].key);
+    int box[8];
+    int i, y, bottom;
 
-    text = (char *)func_L00_002E36F8(caps[*(short *)(ctl + 0x20)].key);
-    if (text == 0)
-        return;
-    func_002802E0(layout, 0, ys[*(short *)(ctl + 0x20) * 10], 0, D_001A7340[0],
-                  D_001A7340[0] / 2, caps[*(short *)(ctl + 0x20)].width, 0x12, 1);
-    func_00280190(layout, 0xFFFFFFFFUL, text, -1);
-    top = ys[*(short *)(ctl + 0x20) * 10] - 2;
-    h = top - 2;
-    for (i = 5; i >= 0; i--) {
-        func_0027DE50(top - h, top, -D_001A7340[0], D_001A7340[0] * 2, 0x18000000);
-        h = h * 5 / 6;
+    if (text) {
+        func_002802E0(box, 0, D_L00_001BC588[D_L00_001BC200.index].top, 0, D_001A7340, D_001A7340 / 2,
+                      D_L00_001BC588[D_L00_001BC200.index].width, 18, 1);
+        func_00280190(box, 0xFFFFFFFFUL, text, -1);
+        bottom = D_L00_001BC588[D_L00_001BC200.index].top - 2;
+        y = D_L00_001BC588[D_L00_001BC200.index].top - 4;
+        for (i = 0; i < 6; i++) {
+            func_0027DE50(bottom - y, bottom, -D_001A7340, D_001A7340 * 2, 0x18000000);
+            y = y * 5 / 6;
+        }
+        func_002802E0(box, 0, D_L00_001BC588[D_L00_001BC200.index].top, 0, D_001A7340, D_001A7340 / 2,
+                      D_L00_001BC588[D_L00_001BC200.index].width, 18, 1);
+        func_00280190(box, 0xFFFFFFFFUL, text, -1);
     }
-    func_L00_002E3520_draw(layout, text);
 }

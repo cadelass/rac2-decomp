@@ -171,7 +171,6 @@ s32 func_L06_003E3CC8(u8 *a0) {
 
 
 
-INCLUDE_ASM("asm/levels", func_L06_003E3F28);
 
 
 
@@ -221,7 +220,7 @@ INCLUDE_ASM("asm/levels", func_L06_003E5D30);
 
 /* func_L06_004009B8 is defined in L06_004009B8-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L06_00402570);
+/* func_L06_00402570 is defined in L06_00402570.c. */
 
 INCLUDE_ASM("asm/levels", func_L06_00403130);
 
@@ -230,7 +229,7 @@ INCLUDE_ASM("asm/levels", func_L06_00403130);
 /* func_L06_00403DA8 is defined in L06_00403DA8.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L06_00444D00);
+/* func_L06_00444D00 is defined in L06_00444D00.c. */
 
 /* func_L06_004638F0 is defined in L06_004638F0.c. */
 

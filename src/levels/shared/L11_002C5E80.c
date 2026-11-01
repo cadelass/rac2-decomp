@@ -58,7 +58,7 @@ extern void func_002829D8(void *a);
 
 extern unsigned char D_L11_00189EA0[];
 
-INCLUDE_ASM("asm/levels", func_L11_002C5E80);
+/* func_L11_002C5E80 lives in L11_002C5E80-nearby-g8.c. */
 
 /* func_L11_002CDE10 lives in L11_002CDE10-motion.c. */
 
@@ -71,7 +71,7 @@ void func_L11_003404E0(char *a0)
 
 /* func_L11_00397E68 lives in L11_00397E68-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L11_003CF250);
+/* func_L11_003CF250 lives in L11_003CF250-trigger.c. */
 
 /* func_L11_003F4198 lives in L11_003F4198-helpers.c. */
 
@@ -306,7 +306,7 @@ void func_L11_0045FFB0(char *p)
 
 /* func_L11_00460258 is defined in L11_00460258-g32.c. */
 
-INCLUDE_ASM("asm/levels", func_L11_0046B9F0);
+/* func_L11_0046B9F0 lives in L11_0046B9F0-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L11_0046BC08);
 

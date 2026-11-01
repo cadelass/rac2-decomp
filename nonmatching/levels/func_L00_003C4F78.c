@@ -1,25 +1,25 @@
-/* Bounded manual reconstruction, 2026-10-25; not linked.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * 896/916 bytes; us: 0/27 placements; us2: 0/27 placements; pal: 0/27 placements.
- * Full 20-point history and scratch storage, quaternion update, length clamps, both effect
- * allocations and all 11 integer/stack inputs plus three floats to the draw call are retained. The
- * quaternion helper second GPR input is an axis pointer, as confirmed by forwarding to the vector-
- * scale callee. Entry copy/history allocation and division/branch scheduling differ.
- * Reopen with independently observed object/alias lifetimes or exact draw-contract evidence;
- * preserve the saved endpoint reused by both effect allocations and every stack tail.
- * Original complete variants and allocator diagnostics are preserved privately.
- * No candidate or linked-build credit is claimed.
+/* GPT-6.1 Sol high, v0923, 2026-10-29; not linked.
+ * Best check: USA v1.01, -O2 -G8 -ffunction-sections, 912/916 bytes,
+ * 0/27 places. Thirteen bounded check.py trials; declarations are included below.
+ * Recomputing the history-head argument after the clamp restores the outer/last
+ * counters to s5/s4. This draft uses split addresses for the history table and
+ * MACRO_ADDR for the axis/count tables. Measured state/particle fields restore most
+ * effect-field scheduling. A separate endpoint index preserves subtract-before-
+ * shift, matching retail rather than folding it to a -16 byte displacement.
+ * Residual: inner-copy pointer registers s1/s2 and row-address association,
+ * i+1 temporary, first effect's context/scale load order, texture-table address
+ * materialization (one instruction short), and final context-pointer register.
+ * Explicit loop pointers, flat/decomposed row arithmetic and grouped TI copies
+ * did not improve it; struct/union point and array/row-struct variants tie.
+ * Reopen with independently evidenced row/texture pointer lifetimes. Both
+ * allocations reuse the endpoint; all three draw-call stack tails are retained.
  */
-/* M12, 2026-10-26: the four tables declared MACRO_ADDR (as func_L00_003C3A70 needs for the same
- * tables) take the real-diff count from 91 to 62 lines; still 904/916 bytes. Residual: loop counter
- * registers, the history-row address arithmetic (mult/madd placement) and the effect-field schedule. */
 #include "common.h"
 
 
-typedef int UiQuadword __attribute__((mode(TI)));
-typedef union { UiQuadword bits; float f[4]; } UiHistoryPoint;
+typedef struct { float f[4]; } __attribute__((aligned(16))) UiHistoryPoint;
 extern int D_L00_001B2940[] MACRO_ADDR;
-extern UiHistoryPoint D_L00_0023FB80[][20] MACRO_ADDR;
+extern UiHistoryPoint D_L00_0023FB80[][20];
 extern UiHistoryPoint D_L00_001B2900[] MACRO_ADDR;
 extern float D_L00_001AFF4C __attribute__((sda));
 extern int D_L00_001AFF50 __attribute__((sda));
@@ -35,21 +35,35 @@ extern void func_002ACDE8(void *, void *, void *);
 extern void func_002ACB48(float *, float);
 extern float func_00282DF0(void *);
 extern void func_00282D30(void *, void *, float);
-extern char *func_002C36D0(void *, int, int, int);
+typedef struct {
+    char prefix[8];
+    int flags;
+    char pad[0x24];
+    UiHistoryPoint origin;
+} UiTrailState;
+typedef struct {
+    unsigned char prefix[2];
+    unsigned char texture;
+    unsigned char flags;
+    int color;
+    int unused;
+    float size;
+} UiTrailParticle;
+extern UiTrailParticle *func_002C36D0(void *, int, int, int);
 extern void func_L00_003C5310(void *, int, int, int, int, int, int, int,
                               int, int, int, float, float, float);
 
 void func_L00_003C4F78(char *owner)
 {
     UiHistoryPoint vertices[20], origin, change;
-    char *state = *(char **)(owner + 0x68);
+    UiTrailState *state = *(UiTrailState **)(owner + 0x68);
     int i;
-    qcopy(&origin, state + 0x30);
+    qcopy(&origin, &state->origin);
     for (i = 0; i < 4; i++) {
         int last, j;
         UiHistoryPoint *head, *tip;
         float length, limit;
-        char *effect;
+        UiTrailParticle *effect;
         D_L00_001B2940[i]++;
         if (D_L00_001B2940[i] >= 20)
             D_L00_001B2940[i] = 20;
@@ -73,23 +87,26 @@ void func_L00_003C4F78(char *owner)
             if (length < limit)
                 func_00282D30(head, head, limit / length);
         }
-        func_00282CC0(&vertices[last], &origin, head);
+        func_00282CC0(&vertices[last], &origin, &D_L00_0023FB80[i][0]);
         vertices[last].f[3] = 0.05f;
-        tip = &vertices[D_L00_001B2940[i] - 1];
-        effect = func_002C36D0(tip, 2, 0, 1);
-        if (effect != 0) {
-            *(int *)(effect + 4) = D_L00_001AFF50 | *(int *)(state + 8);
-            *(float *)(effect + 12) = D_L00_001AFF5C * 210000.0f;
-            effect[2] = (*(char **)(D_L00_001FE940 + 0xF8))[1];
+        {
+            int endpoint = D_L00_001B2940[i] - 1;
+            tip = vertices + endpoint;
         }
         effect = func_002C36D0(tip, 2, 0, 1);
         if (effect != 0) {
-            *(int *)(effect + 4) = 0x407F7F7F;
-            *(float *)(effect + 12) = D_L00_001AFF5C * 31500.001953125f;
+            effect->color = D_L00_001AFF50 | state->flags;
+            effect->size = D_L00_001AFF5C * 210000.0f;
+            effect->texture = (*(char **)(D_L00_001FE940 + 0xF8))[1];
+        }
+        effect = func_002C36D0(tip, 2, 0, 1);
+        if (effect != 0) {
+            effect->color = 0x407F7F7F;
+            effect->size = D_L00_001AFF5C * 31500.001953125f;
         }
         func_L00_003C5310(vertices, 20, 14, 14,
                           D_L00_001AFF54, D_L00_001AFF54 & 0xFFFFFF,
-                          D_L00_001AFF58 | *(int *)(state + 8), D_L00_001AFF58,
+                          D_L00_001AFF58 | state->flags, D_L00_001AFF58,
                           0, D_L00_001B2940[i] - 1, D_L00_001B2940[i],
                           0.02f, 0.07f, D_L00_001AFF60);
     }

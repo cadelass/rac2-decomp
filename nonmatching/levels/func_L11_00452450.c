@@ -1,20 +1,20 @@
-/*
- * Manual reconstruction retained as a near miss; no linked-build or runtime credit.
- * Prior worker profile: default -O2 -G8 -ffunction-sections.
- * Prior worker coverage: US 0/1; US2 0/1; PAL absent from catalogue.
- * These are the recorded worker checks; no fresh compilation was run for retention.
- * Corrected only the known pointer return of func_002B60B0, consistent with its canonical C
- * definition returning the allocated object. The object and four FP inputs are unchanged. The
- * original 956/956 measurement predates this declaration edit; this corrected source has not
- * been recompiled.
- * Reopen with independent source lifetime/scheduling evidence for the first +0xAC difference
- * after qualifying the constructor declaration; do not treat equal size as a match.
+/* GPT-6.1 Sol, high effort, 28 October 2026; retained near miss.
+ * Fresh pinned toolchain: default -O2 -G8 -ffunction-sections, USA v1.01.
+ * check.py: 956/956 bytes, 0/1 places, first difference +0xB0;
+ * seven non-relocation instructions differ. No linked build or runtime validation.
+ * Chained initialization of the shared 0.5f and 0.4f values recovers retail's
+ * f0/f1 allocation and all eleven float stores in their exact order. Remaining:
+ * +0xB0/+0xC0 load the 4 and 11 integer constants in reverse order;
+ * +0x134..+0x13C rotate the byte/word stores (0x4A, 0x60, 0x98);
+ * +0x170/+0x17C use v1 instead of v0 for the post-constructor state byte.
+ * Keep func_002B60B0's real pointer-return interface (see src/game/002B60B0.c).
+ * Typed initialization fields, -fno-strict-aliasing, a comma-grouped count store,
+ * and a bank-preserving constructor argument interleaving did not improve this
+ * result. Default declaration/order retained. Next useful evidence: original
+ * initialization field types or compiler scheduling/return-value lifetime.
+ * USA v2.00 and PAL were not checked in this attempt.
  */
 
-/* Manual retained reconstruction. Profile: default -O2 -G8 -ffunction-sections.
-   64-byte matrix contract repaired, translation view mtx+12 confirmed by retailsp+30. Still956/956, firstinstructiondifference+AC; prior scheduling/allocation residual unchanged.
-   Final checks: no matching placement in US/US2/PAL carrying releases.
-   Not an exact match or a proof of native behavior. */
 #include "common.h"
 
 extern s32 D_L11_001A8FF4 __attribute__((sda));
@@ -62,16 +62,12 @@ void func_L11_00452450(char *a0)
         *(u8 *)(s1 + 0x60) = 0xB;
         *(s32 *)(s1 + 0x98) = 4;
         *(f32 *)(s1 + 0x100) = 0.8f;
-        *(f32 *)(s1 + 0x104) = 0.5f;
-        *(f32 *)(s1 + 0x10C) = 0.4f;
+        *(f32 *)(s1 + 0x104) = *(f32 *)(s1 + 0x84) = *(f32 *)(s1 + 0x80) = 0.5f;
+        *(f32 *)(s1 + 0x10C) = *(f32 *)(s1 + 0x108) = *(f32 *)(s1 + 0x8C) = 0.4f;
         *(f32 *)(s1 + 0x110) = 1.5707965f;
         *(f32 *)(s1 + 0x130) = 0.52359885f;
         *(f32 *)(s1 + 0x12C) = 0.0055555557f;
         *(f32 *)(s1 + 0x134) = 2.8f;
-        *(f32 *)(s1 + 0x80) = 0.5f;
-        *(f32 *)(s1 + 0x84) = 0.5f;
-        *(f32 *)(s1 + 0x8C) = 0.4f;
-        *(f32 *)(s1 + 0x108) = 0.4f;
         func_002B60B0(a0, 0.004444444552063942f, 0.13333334028720856f,
                       0.0011635529808700085f, 0.10471977293491364f);
         *(u8 *)(s1 + 0x28) = 3;
@@ -125,13 +121,3 @@ void func_L11_00452450(char *a0)
         *(s32 *)(s1 + 0x2C4) = *(s32 *)(s1 + 0x220);
     }
 }
-
-/* Historical comments/maps retained from the previous near miss. These describe
- * that previous source; any superseded type, allocation or impossibility claims
- * are historical observations, not properties of the corrected body above. */
-
-/* func_L11_00452450 (956 bytes, 1 place) -- NEAR MISS, not integrated.
-   state: the exact size (239 instructions); aligned similarity 85.4% with 28 differing
-   blocks, register allocation and scheduling. Belongs in src/levels/11_joba/L11_004465F8-g8.c (G8: retail reads $gp).
-   check.py: 11_joba: instruction at +0xac differs
-*/

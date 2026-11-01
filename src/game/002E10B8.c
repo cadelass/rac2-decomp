@@ -150,7 +150,7 @@ void func_002E3548(void)
 }
 
 
-INCLUDE_ASM("asm/game", func_002E35E0);
+/* func_002E35E0 is in 002E35E0-g8.c. */
 
 /* shared native body of family 060b9f2017649e67 */
 void func_002E37B0(void)
@@ -292,7 +292,6 @@ void func_002E4A68(void)
     func_0026FEB8(D_001ABE10, D_001A79F0, func_001337F0(), func_00133820());
 }
 
-INCLUDE_ASM("asm/game", func_002E4AC8);
 
 s32 func_002E59B0(s32 a0,s32 a1) {
     if(a1>=0) {
@@ -513,11 +512,11 @@ void func_002E6120(void)
 
 /* func_002E6178 is in 002E6178.c. */
 
-INCLUDE_ASM("asm/game", func_002E64A0);
+/* func_002E64A0 is in 002E64A0.c. */
 
 
 /* func_002E6A60 is in 002E6A60.c. */
 
-INCLUDE_ASM("asm/game", func_002E6B78);
+/* func_002E6B78 is in 002E6B78-g8.c. */
 
 /* func_002E6D88 is in 002E10B8-transition-g8.c. */

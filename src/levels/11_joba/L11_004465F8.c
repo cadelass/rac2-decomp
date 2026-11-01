@@ -53,7 +53,7 @@ INCLUDE_ASM("asm/levels", func_L11_004465F8);
 /* func_L11_004471A8 is defined in L11_004465F8-g8.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L11_004475A0);
+/* func_L11_004475A0 is defined in L11_004475A0-g8.c. */
 
 /* func_L11_004484A8 is defined in L11_004465F8-g8.c. */
 
@@ -400,7 +400,7 @@ void func_L11_00449970(char *a0, int a1, int a2)
 
 /* func_L11_00449C70 is defined in L11_004465F8-aim-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L11_0044AFC8);
+/* func_L11_0044AFC8 is defined in L11_0044AFC8-g8.c. */
 
 /* func_L11_0044BD68 is in L11_0044BD68-g8.c. */
 

@@ -1,8 +1,13 @@
-/* Nonmatching: 276/280 bytes.
- * Profile: -O2 -G0 -ffunction-sections.
- * Placement checks: US: 0/5; US2: 0/5; PAL: 0/5.
- * 276/280 bytes. Saved-register allocation and branch/copy address setup differ. The typed slot is independently qualified: func_002B9038 returns a pointer/null, uses a 64-byte allocation stride and clears four complete quadwords. Header16, position16, previous-position16 and context16 therefore describe the real storage without padding. The conversion result plus32 supplies byte9, and the second copy is common to both index branches. The earlier complete280-byte variant is archived privately.
- * Reopen with actual slot/position/context lifetimes and allocator conflicts. One complete typed64-byte form was measured; do not add references or change parameter order to manipulate priorities.
+/* GPT-6.1 Sol high, v0711, pinned upstream compiler, USA v1.01.
+ * Best: 280/280 bytes, 0/5 placements; default -O2 -G0 profile.
+ * Loading/storing class_id before scale leaves two final stores misplaced,
+ * instead of the previous four-word scheduling disagreement. The object,
+ * value and parameter still occupy S2/S0/S3 instead of retail S3/S2/S0.
+ * Class-id snapshot, early return, block-scoped header values and -g did not
+ * repair allocation. Reversed header stores put parameter in S0 but reverse
+ * retail's first two header stores and leave object/value allocation wrong.
+ * Reopen with actual allocator/lifetime evidence. Required types are below.
+ * No linked build claimed.
  */
 #include "common.h"
 
@@ -48,16 +53,18 @@ char *func_L09_003364E0(char *object, int index, u32 value, int parameter,
             position = slot->position;
             func_0029FCC0(object, index, (char *)position);
         } else {
-            position = slot->position;
-            qcopy(position, object + 0x10);
+            qcopy(slot->position, object + 0x10);
         }
-        qcopy(slot->previous_position, position);
+        qcopy(slot->previous_position, slot->position);
         slot->previous_position[3] = second_scale;
         slot->position[3] = first_scale;
-        slot->context.object = object;
-        slot->context.scale = first_scale;
-        slot->context.class_id = *(short *)(object + 0xAA);
-        slot->context.index = index;
+        {
+        ParticleContext *context = &slot->context;
+        context->object = object;
+        context->class_id = *(short *)(object + 0xAA);
+        context->scale = first_scale;
+        context->index = index;
+        }
     }
     return (char *)slot;
 }

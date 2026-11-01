@@ -21,7 +21,13 @@
    - the SDK compiler profile (build/compiler/sdk, "sdk -O2 -G0
      -ffunction-sections -fno-builtin") emits the same words as the game's
      compiler for this body.
-*/
+
+   31 October 2026 (Opus 5.5): recompiled, 64/56 bytes, 0/28.  Same catalogue identity
+   (1ad1112489d5e314, 56 bytes) as RAC1 func_001FA850 (FastDiffRots), listed in RAC1's
+   config/handwritten_asm.txt.  Retail also has a `nop` after `mtc1 $at,$f14` where
+   the next instruction does not read $f14 (this compiler emits none there) and leaves
+   `jr $ra` unfilled after `sub.s` (this compiler fills it).  Reported as HANDWRITTEN.
+ */
 typedef float f32;
 
 f32 func_00283C80(f32 a0, f32 a1) {

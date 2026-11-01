@@ -81,7 +81,7 @@ typedef struct {
 
 extern Entry41D1D8 *D_L03_001FE700[];
 
-INCLUDE_ASM("asm/levels", func_L03_003F09C0);
+/* func_L03_003F09C0 is in L03_003F09C0-help-g8.c. */
 
 /* func_L03_003F11A0 is in L03_003F11A0-g8.c. */
 
@@ -123,9 +123,9 @@ void func_L03_003F1470(u8 *entity) {
     func_0029B3E0(0, -1);
 }
 
-INCLUDE_ASM("asm/levels", func_L03_003F4638);
+/* func_L03_003F4638 is in L03_003F4638-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L03_003F5590);
+/* func_L03_003F5590 is in L03_003F5590-g8.c. */
 
 /* func_L03_003F5B70 is in L03_003F5B70-g8.c. */
 
@@ -170,7 +170,7 @@ void func_L03_003F6458(u8 *entity, s32 selector) {
     state->current = state->table[value];
 }
 
-INCLUDE_ASM("asm/levels", func_L03_003F64E8);
+/* func_L03_003F64E8 lives in L03_003F64E8-g8.c */
 
 /* steps the entity's two blend channels and its rate */
 void func_L03_003F6610(u8 *entity) {
@@ -267,7 +267,7 @@ INCLUDE_ASM("asm/levels", func_L03_0041A090);
 
 /* func_L03_0041A570 is in L03_0041A570-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L03_0041BE50);
+/* func_L03_0041BE50 is in L03_0041BE50-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L03_0041CA78);
 
@@ -374,7 +374,7 @@ void func_L03_0041DCE0(u8 *entity) {
 
 /* func_L03_0041E240 lives in L03_003F09C0-g8.c (same $gp access). */
 
-INCLUDE_ASM("asm/levels", func_L03_0041E2D8);
+/* func_L03_0041E2D8 lives in L03_0041E2D8-g8.c */
 
 INCLUDE_ASM("asm/levels", func_L03_0041EAE0);
 

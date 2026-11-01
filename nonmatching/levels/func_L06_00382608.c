@@ -1,13 +1,24 @@
-/* Complete C near miss; not linked and no matching credit.
- * Game -O2 -G0 -ffunction-sections -fno-rerun-loop-opt: 588/584 bytes.
- * USA v1.01: 0/2 places. Default profile is 600 bytes with an extra saved FPR;
- * disabling the second loop pass retains the retail in-loop scale constant,
- * but the cached mode and vector pointer still extend the frame by 16 bytes.
- * Eight trials include three identical source/edge-control forms; strength
- * reduction control ties and broad GCSE suppression only reaches 596 bytes.
- * All vector locals hold four floats. 82F20 reads/writes 16 bytes; the real
- * marker constructor returns u8* and copies the complete position quadword.
- * Reopen with grounded loop/flag lifetime evidence, never a fake dependency.
+/* Claude Opus 5.5 (xhigh), task v1673. Best: 608/584 bytes default, 596/584 with
+ * -fno-rerun-loop-opt, 0/2 places. 50 and 57 of 146 retail instructions align; the earlier
+ * draft aligned 44 and 49 (it reached 588 bytes with the flag, but with the wrong loop shape).
+ *
+ * New in this draft: `index += stride` as the for-increment and a separate digit counter. gcse
+ * then places `i + step` on each switch path, before the digit loop on case 4, as in retail's
+ * repeated `addu $s1,$s0,$s5`, and `i << 4` becomes the 0x3C stack slot.
+ *
+ * What still differs: retail hoists only (timer << 16) out of the outer loop. This C also hoists
+ * the 1.2f constant, sp+0x10, sp+0x20 and flags & 7. loop.c keeps them in the loop only when
+ * maybe_never is set before them, so during both loop passes retail seems to have a label or jump
+ * at the top of the body that is gone from the final code. Measured control, not landable:
+ * `if (stride == 77777) func_0026FEB8(D_L06_001AA660);` as the first statement of the body gives
+ * retail's frame, slots 0x30-0x3C, in-loop constants and reloads: 119 of 146 align. Left over: the
+ * guard itself, the constant 1 in $v0 against retail's $s1, mul.s placement and the mflo/mfhi and
+ * trap order in the digit loop, which may follow from the guard's own blocks.
+ * No wording tried gives the effect without code: a label alone is deleted by jump1, a dead counter
+ * before loop, `if (...) break` and `if (...) return` are rolled into the exit test, null checks
+ * are deleted before loop, and a guarded loop with a compound test is still rotated.
+ * Next: find a real construct that survives to the second loop pass and then disappears.
+ * Required declarations are retained below.
  */
 #include "common.h"
 
@@ -27,9 +38,6 @@ void func_L06_00382608(void *data, int path, int owner, int flags, int stride, f
     char *polygon;
     int timer;
     int index;
-    int next;
-    int offset;
-    int base;
 
     if (path == -1) {
         func_0026FEB8(D_L06_001AA660);
@@ -37,13 +45,10 @@ void func_L06_00382608(void *data, int path, int owner, int flags, int stride, f
     }
     polygon = D_L06_001FE500[path];
     timer = (flags & 0x40) ? -1 : 2;
-    /* Retain the previous-vertex snapshot present in the retail helper calls. */
     qcopy(previous, polygon + 0x10);
-    for (index = 0; index < *(int *)polygon; index = next) {
+    for (index = 0; index < *(int *)polygon; index += stride) {
         func_00282F20(advance, D_L06_001B9A90, scale * 1.2f);
-        offset = index << 4;
-        qcopy(point, polygon + (offset + 0x10));
-        next = index + stride;
+        qcopy(point, polygon + (index * 16 + 0x10));
         switch (flags & 7) {
         case 1:
             func_L03_00339128(point, data, 0, owner, 0x7F, timer, 0xFF, scale);
@@ -53,15 +58,16 @@ void func_L06_00382608(void *data, int path, int owner, int flags, int stride, f
             break;
         case 4:
             point[2] += scale * 0.5f;
-            base = 10;
-            do {
-                int digit = index % base;
-                index /= base;
-                func_L03_00339128(point, data, digit + 2, owner, 0x7F, timer, 0xFF, scale);
-                func_00282CC0(point, point, advance);
-            } while (index != 0);
+            {
+                int n = index;
+                do {
+                    func_L03_00339128(point, data, n % 10 + 2, owner, 0x7F, timer, 0xFF, scale);
+                    n /= 10;
+                    func_00282CC0(point, point, advance);
+                } while (n != 0);
+            }
             break;
         }
-        qcopy(previous, polygon + (offset + 0x10));
+        qcopy(previous, polygon + (index * 16 + 0x10));
     }
 }

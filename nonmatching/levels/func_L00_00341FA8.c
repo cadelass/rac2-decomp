@@ -1,19 +1,27 @@
-/* Readable C reconstruction, measured 2026-10-23.
- * Profile: -O2 -G0 -ffunction-sections.
- * us: 0/23, us2: 0/23, pal: 0/23.
- * 912 bytes, retail924; qcopy/barrier reached932. Local/vector address lifetimes and register allocation differ.
- * Tried: Full readable two-stage path sampling, using the corrected float-returning distance wrapper; default and copy profiles.
- * Reopen: A vector/local layout and lifetime shape reproducing the retail register choices.
- * Historical screening notes follow unchanged. No handwritten-assembly inference.
+/* GPT-6.1 Sol, high effort; measured 2026-10-29 (task v0924).
+ * Profile: default game -O2 -G0 -ffunction-sections; USA v1.01.
+ * Best check.py: 924/924 bytes, 0/23 places; seven instructions differ.
+ * First difference +0x288: saving the projection distance and preparing a/b
+ * addresses occur in a different order. At +0x298..+0x2A8 the two vector loads
+ * and stores are scheduled differently. All remaining instructions agree.
+ * Requires common.h for the approved qcopy helper; declarations follow below.
+ *
+ * Improvements over the retained 912-byte draft: the first/final transfers use
+ * qcopy; point indexing uses the 16-byte record index (node + 1), avoiding an
+ * extra saved path-point base. A separate searchRange gives the retail FPRs.
+ * A two-step previous-index calculation and ABI-preserving float/integer
+ * interleaving on func_L00_00341820 recover the other scheduling differences.
+ * The interleaving preserves five GPR arguments, one float argument and returns.
+ *
+ * Plain point-before-output copies and explicit quadword load temporaries
+ * (both load orders), plus a separate projection-distance local, tie at seven
+ * remaining instructions. -g, aligned float-array locals and disabling strength
+ * reduction supplied no remedy. Stop at the source tie; reopen with evidence
+ * for the original projection/offset copy and argument-expression lifetimes.
+ * PAL/US2 and linked builds were not run; this function remains assembly.
  */
 
-/* func_L00_00341FA8 - 924 bytes, 23 places, retail at 0x00341FA8.
- *
- * Screened, not matched in wave 13 (worker s1): 12 call(s), no $gp-relative small-data
- * access, MMI words with mostly plain register bases but two of them take $v0 - a
- * scratch register holding a materialised address - so the body is blocked by the lq/sq
- * offset folding for part of the family.  No C was written in this wave.
- */
+#include "common.h"
 
 typedef int Quadword __attribute__((mode(TI)));
 typedef union { Quadword q; float f[4]; } Vector;
@@ -22,10 +30,12 @@ extern void func_00282CF0(void *, const void *, const void *);
 extern void func_00282F20(void *, const void *, float);
 extern void func_00282CC0(void *, const void *, const void *);
 extern float func_L00_00341A88(void *, void *, float);
-extern int func_L00_00341820(const Path *, Vector *, int *, float *, int, float);
+extern int func_L00_00341820(const Path *, Vector *, int *, float *, float, int);
 extern int func_L00_003417B8(const int *, int, int, int);
 extern float func_L00_00341D08(Vector *, const Vector *, const Vector *, const Vector *, float);
 extern void func_00282C88(Quadword *);
+
+
 
 /* Find the nearby path segment and the projected position on that segment. */
 int func_L00_00341FA8(const Path *path, const Vector *point, Vector *out,
@@ -35,20 +45,22 @@ int func_L00_00341FA8(const Path *path, const Vector *point, Vector *out,
     int scanIndex = 0;
     float scanOffset = 0.0f;
     int left, right;
-    int nearestIndex = 0;
-    float nearestOffset = 0.0f;
-    float nearestDistance, distance;
+    int nearestIndex;
+    float nearestOffset;
+    float nearestDistance, distance, searchRange;
     int finished, previous, next;
-    current.q = path->points[0].q;
+    qcopy(&current, &((const Vector *)path)[1]);
     a.q = point->q;
+    nearestIndex = 0;
+    nearestOffset = 0.0f;
     nearestDistance = func_L00_00341A88(&current, &a, height);
     if (path->count == 0) {
         func_00282C88(&out->q);
         return 0;
     }
-    range = step + range;
+    searchRange = step + range;
     do {
-        finished = func_L00_00341820(path, &current, &scanIndex, &scanOffset, wrap, step);
+        finished = func_L00_00341820(path, &current, &scanIndex, &scanOffset, step, wrap);
         a.q = point->q;
         distance = func_L00_00341A88(&current, &a, height);
         if (distance < nearestDistance) {
@@ -57,18 +69,18 @@ int func_L00_00341FA8(const Path *path, const Vector *point, Vector *out,
             nearestOffset = scanOffset;
         }
     } while (!finished);
-    if (range < nearestDistance) return 0;
+    if (searchRange < nearestDistance) return 0;
     left = nearestIndex;
     scanOffset = nearestOffset;
-    func_L00_00341820(path, &current, &left, &scanOffset, wrap, -step);
+    func_L00_00341820(path, &current, &left, &scanOffset, -step, wrap);
     right = nearestIndex;
     scanOffset = nearestOffset;
-    func_L00_00341820(path, &current, &right, &scanOffset, wrap, step);
+    func_L00_00341820(path, &current, &right, &scanOffset, step, wrap);
     right = func_L00_003417B8(&path->count, right, 1, wrap);
     scanIndex = left;
     nearestDistance = 1000000000.0f;
     for (;;) {
-        a.q = path->points[scanIndex].q;
+        a.q = ((const Vector *)path)[scanIndex + 1].q;
         b.q = point->q;
         distance = func_L00_00341A88(&a, &b, height);
         if (distance < nearestDistance) {
@@ -80,20 +92,21 @@ int func_L00_00341FA8(const Path *path, const Vector *point, Vector *out,
     }
     nearestDistance = 1000000000.0f;
     if (nearestIndex > 0 || wrap) {
-        previous = (nearestIndex + path->count - 1) % path->count;
-        nearestDistance = func_L00_00341D08(out, point, &path->points[previous], &path->points[nearestIndex], height);
+        previous = path->count - 1;
+        previous = (nearestIndex + previous) % path->count;
+        nearestDistance = func_L00_00341D08(out, point, &((const Vector *)path)[previous + 1], &((const Vector *)path)[nearestIndex + 1], height);
         *index = previous;
-        a.q = path->points[previous].q;
         b.q = out->q;
+        a.q = ((const Vector *)path)[previous + 1].q;
         *offset = func_L00_00341A88(&a, &b, 0.0f);
     }
     if (nearestIndex < path->count - 1 || wrap) {
         next = (nearestIndex + 1) % path->count;
-        distance = func_L00_00341D08(&a, point, &path->points[nearestIndex], &path->points[next], height);
+        distance = func_L00_00341D08(&a, point, &((const Vector *)path)[nearestIndex + 1], &((const Vector *)path)[next + 1], height);
         if (distance < nearestDistance) {
-            out->q = a.q;
+            qcopy(out, &a);
             *index = nearestIndex;
-            b.q = path->points[nearestIndex].q;
+            b.q = ((const Vector *)path)[nearestIndex + 1].q;
             candidate.q = out->q;
             *offset = func_L00_00341A88(&b, &candidate, 0.0f);
         }

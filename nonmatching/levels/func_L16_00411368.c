@@ -1,25 +1,54 @@
-/* Batch 3 (2026-10-28) handoff notes:
-func_L16_00411368 (276 B): 60 masked lines, but only the FP registers/constant placement differ (see nonmatching/levels/func_L16_00411368.c notes).
-Retail keeps the accumulator in $f20 and loads 120.0f twice (mtc1 into $f12 for the call, again into $f0 before div.s). cse merges the two literals into one pseudo that lives across the call (so it takes a saved FPU reg and the accumulator lands in $f21).
-This session: literals in both places (no f12 local) gives the same code. Not tried (no route found): getting the second 120.0f to be a different value for cse (int vs float forms fold at tree level).
-*/
+/* Claude Opus 5.5 xhigh (opus-1), v2049, 2026-11-01: NOT MATCHING.
+ * USA v1.01: 276/276 bytes, 0 of 1 places; 13 of 69 check rows differ, 4 of them
+ * relocation-only jal rows and 9 registers. Profile: default L16_00403900.c flags
+ * (-O2 -G0 -ffunction-sections).
+ *
+ * Remaining: only register colours. The D_L16_001B2648 load is $v1 where retail
+ * has $a0, mfhi is $a0 where retail has $v1, 120.0f is $f2 where retail has $f0,
+ * and 2*pi is $f0 where retail has $f2. Frame, order and all other operands agree.
+ *
+ * Solved here: the period call through an inline wrapper stops cse merging the two
+ * 120.0f literals, so the accumulator takes $f20 and the constant reloads, which is
+ * what the 28 October notes could not reach. MACRO_ADDR gives the lui/lw pair.
+ *
+ * What should fix it: retail's sched1 order must differ, since local-alloc gets
+ * mod before D only when 2*span(D) > 3*span(mod) (insn distances, for example 5 and
+ * 3, or 4 and 2), and floats 120 -> pi -> 2*pi only when
+ * span(120) <= span(pi) < span(2*pi). One fitting sched1 order is
+ * D, period copy, 2*pi, trap, div, 120, float, pi, div.s, mul.s, sub.s. Sched2 then
+ * sorts by priority back to the retail order. Mine schedules 120 before the trap.
+ * Sched1 ties break by constant LUID, so a wording that creates 2*pi before 120
+ * is the thing to look for.
+ *
+ * Negative controls, same 13 rows: `period = wrapper(120.0f); tau = 6.2831855f;`
+ * with tau used in the product; an inline
+ * `angle(int frame, float period, float offset)` with the 2*pi inside it.
+ *
+ * Declarations: all below. L16_00403900.c already declares func_00283CF0.
+ */
+#include "common.h"
+extern s32 func_00283CF0(float);
+extern s32 D_L16_001B2648 MACRO_ADDR;
+extern float func_00283198(float);
+extern void func_002AA548(void *, void *, float, float, float, float);
+extern void func_L16_00412F48(u8 *);
+static inline s32 func_L16_00411368_period(float seconds)
+{
+    return func_00283CF0(seconds);
+}
 
-/* in src/levels/16_snivelak/L16_00403900.c, default flags; size is right (276 B). Callees: func_00283CF0 (s32 (float)), func_00283198 (float (float)),
-   func_002AA548 (void (void *, void *, float, float, float, float)), func_L16_00412F48 (now exact, in L16_00412F48-g8.c). */
 void func_L16_00411368(u8 *arg)
 {
     u8 *s0;
     u8 *s1;
     float f20;
-    s32 v0;
 
     s0 = arg;
     s1 = *(u8 **)(arg + 0x68);
     f20 = 10.0f;
     if (s0[0x20] == 0xD || s0[0x20] == 0xF || s0[0x20] == 0xE || s0[0x20] == 0x11)
         f20 = 25.0f;
-    v0 = func_00283CF0(120.0f);
-    f20 = f20 + func_00283198((float)(D_L16_001B2648 % v0) / 120.0f * 6.2831855f - 3.1415927f);
+    f20 = f20 + func_00283198((float)(D_L16_001B2648 % func_L16_00411368_period(120.0f)) / 120.0f * 6.2831855f - 3.1415927f);
     func_002AA548(s0 + 0x18, s1 + 0x268, *(float *)(s1 + 0x264) + f20,
                   0.0083333338f, 0.0027777778f, 0.16666667f);
     func_L16_00412F48(s0);

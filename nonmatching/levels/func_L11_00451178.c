@@ -25,6 +25,22 @@
  * sequences, none retail's; assigning them before the func_002B3868 call moves the frame ones
  * out of the block), and the state+0x1A8 clear is scheduled after the lw $s0 reload where
  * retail has it before.
+ * v1932 (opus-1, 2026-10-31), recompiled on v2/c05: this body still gives 4824/4824 bytes, 0/1
+ * places, 6 words differ (+0x1088..0x1094, +0x10D4/+0x10EC). Why single-set locals cannot fix
+ * it: haifa-sched adjust_priority raises an insn that becomes ready when the func_002B3868 call
+ * issues to the call's priority if birthing_insn_p (dest live, REG_N_SETS == 1). out and scale
+ * are $1-based, so they depend on the call ($1 = $at is call-clobbered) and get boosted ahead of
+ * axis. Retail's pointers are gcse PRE reaching registers (REG_N_SETS > 1, never boosted), as in
+ * matched func_L11_0044AFC8. The natural wording (drop out/scale/tmpl/spin/rows/axis, write the
+ * addresses directly, &particle for tmpl; the v1925 wip) gives retail's exact instruction order,
+ * the 0x1A8 clear included. Only 15 spill-slot offsets then differ, because PRE numbers reaching
+ * regs in bucket order, bucket = (14029 + regno + const) % S, S = (max_cuid/2)|1. That wording
+ * has max_cuid 1176 (S 589): $1+176 wraps below $1+32. Retail's slots need S in 575..585, i.e.
+ * max_cuid 1148..1171, 5 to 28 fewer insns after cse1 (or S 599 with state's pseudo >= 88, which
+ * means 20+ more). Checked: deleting three object[0xBC] = 1 stores (max_cuid 1170) gives retail's
+ * slots with no other change. Count-neutral: pointer locals inside one EBB, split head tests,
+ * int vs float 0x1A8 clear, a byte-offset qcopy in the row loop. These change code: hoisted
+ * &work[0]/&work[2] locals in case 9, a ?: argument for case 9's func_002A7750.
  * PERMUTE-FLAGS: -O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
  */
 #include "common.h"

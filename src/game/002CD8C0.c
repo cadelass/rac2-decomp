@@ -189,7 +189,7 @@ int func_002D01C8(void) {
 }
 
 
-INCLUDE_ASM("asm/game", func_002D0568);
+/* func_002D0568 is built from 002D0568-rc2.c. */
 
 
 

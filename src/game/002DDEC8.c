@@ -10,7 +10,7 @@ extern u32 D_L24_001B1B74[] __attribute__((sda));
 
 typedef unsigned char u8;
 
-INCLUDE_ASM("asm/game", func_002DDEC8);
+/* func_002DDEC8 is in 002DDEC8-g8.c (-G8 small data). */
 
 /* func_002DE0D0 is in 002DDEC8-animation.c. */
 

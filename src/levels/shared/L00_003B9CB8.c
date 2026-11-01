@@ -451,7 +451,7 @@ void func_L00_003BD510(float *position, float *direction, int count, int color)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L00_003BD7E0);
+/* func_L00_003BD7E0 is in L00_003B9CB8-update.c. */
 
 /* Normalises and combines two temporary vectors from a state block, dispatches on the combined result and conditionally scales the output vector. */
 void func_L00_003BFDE8(char *self, char *p1, int p2)

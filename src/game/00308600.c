@@ -1,6 +1,6 @@
 #include "common.h"
 
-INCLUDE_ASM("asm/game", func_00308600);
+/* func_00308600 is defined in 00308600-spawn.c. */
 
 INCLUDE_ASM("asm/game", func_00308768);
 
@@ -121,7 +121,7 @@ INCLUDE_ASM("asm/game", func_0030A348);
 
 
 
-INCLUDE_ASM("asm/game", func_0030CAD0);
+/* func_0030CAD0 is defined in 0030CAD0-g8.c. */
 
 INCLUDE_ASM("asm/game", func_0030CCD0);
 
@@ -131,7 +131,7 @@ INCLUDE_ASM("asm/game", func_0030CCD0);
 
 /* func_0030DB88 is defined in 0030DB88-g8.c. */
 
-INCLUDE_ASM("asm/game", func_0030DE88);
+/* func_0030DE88 is defined in 0030DE88-g8.c. */
 
 
 
@@ -184,4 +184,4 @@ INCLUDE_ASM("asm/game", func_0030E8A8);
 
 /* func_0030ECC8 is defined in 00308600-ammo-g8.c. */
 
-INCLUDE_ASM("asm/game", func_0030F408);
+/* func_0030F408 is defined in 00308600-wavy.c. */

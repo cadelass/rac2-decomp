@@ -1,10 +1,18 @@
-/* 544/544 bytes, first difference +0x8 in all three releases. The list walk, score filters, visibility probe and copies are reconstructed. A cached mode pointer and direct containing-object fields recover the target size, but address lifetimes and saved-register allocation differ from the entry block. Disabling GCSE measured 540 bytes and did not recover the frame. Reopen with a solved analogous mode-pointer lifetime; no assembly classification is justified.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
- * us: instruction at +0x8 differs; 0/25 placements
- * pal: instruction at +0x8 differs; 0/25 placements
- * us2: instruction at +0x8 differs; 0/25 placements
- */
+/* Claude Opus 5.5 (opus-1), v1321: USA v1.01 524/544 bytes, 0/25 places under the pinned
+ * toolchain (-O2 -G8 -ffunction-sections, approved qcopy helper; sibling -g8 unit).
+ * This plain form is retail's source shape: compiled with -fcall-used-hi1 -fcall-used-lo1
+ * -fcall-used-accum1 (diagnostic only, not a permitted profile) it matches 25 of 25 places.
+ * What differs: loop.c's movable threshold is (1 + n_non_fixed_regs) with a call in the loop;
+ * compiler patch 0055 keeps the R5900 hi1/lo1/accum1 registers fixed, which lowers it from 64
+ * to 61. With 61, pass 1 (63 insns) hoists nothing and pass 2 (58) hoists only 0x99D and the
+ * mode address; retail (64) hoists 0x99D in pass 1, then the &D_00189E20 copy (s7), 1 and 0x1D
+ * in pass 2, giving the 0x90 frame with s4-s7. No natural wording removes the two RTL insns
+ * a threshold of 61 would need (class/flag/byte tests and call temporaries are minimal).
+ * Older alternative (544/544, two instructions differ): declare `int *modes =
+ * &D_00189E20.mode;` before the do-while and test `*modes`; it forms s7 = root+0x2294.
+ * Declarations follow. No linked match claimed. */
 #include "include_asm.h"
+#include "common.h"
 typedef int Vector __attribute__((mode(TI)));
 typedef struct {
     unsigned char pad0[0x80]; float position[4];
@@ -34,40 +42,35 @@ int func_L00_002C40C0(void)
     float first[4], second[4];
     int blocked[4];
     if (D_00189E20.state == 0x21) return D_00189E20.ready_b14;
-    {
     best = 0;
     closest = 100000000.0f;
     D_00189E20.ready_b14 = 0;
     node = D_L00_001B1EA8;
     if (node) {
-    HeroSelectionState *modes = &D_00189E20;
-    do {
-        float horizontal, vertical, heading;
-        if (*(short *)(node + 0xAA) != 0x99D) continue;
-        if (*(unsigned short *)(node + 0x34) & 1) continue;
-        if (func_002B38B8(node)) continue;
-        horizontal = 0.5235988497734069824f;
-        vertical = -1.0f;
-        if (modes->mode == 1 || modes->mode == 0x1D)
-            horizontal = vertical = 0.087266474962234497f;
-        heading = D_00189E20.heading;
-        if (D_00189E20.state == 0xF)
-            heading = D_00189E20.alternate_heading;
-        score = func_L00_002AE388(node, blocked, heading, 30.0f, horizontal, vertical);
-        if (blocked[0] != 0) continue;
-        if (func_00282E80(D_00189E20.position, node + 0x10) < 4.0f) continue;
-        if ((unsigned char)node[0x31] == 0) score += 10.0f;
-        if (score < closest) { closest = score; best = node; }
-    } while ((node = *(unsigned char **)(node + 0x28)) != 0);
+        do {
+            float horizontal, vertical, heading;
+            if (*(short *)(node + 0xAA) != 0x99D) continue;
+            if (*(unsigned short *)(node + 0x34) & 1) continue;
+            if (func_002B38B8(node)) continue;
+            horizontal = 0.5235988497734069824f;
+            vertical = -1.0f;
+            if (D_00189E20.mode == 1 || D_00189E20.mode == 0x1D)
+                horizontal = vertical = 0.087266474962234497f;
+            heading = D_00189E20.heading;
+            if (D_00189E20.state == 0xF) heading = D_00189E20.alternate_heading;
+            score = func_L00_002AE388(node, blocked, heading, 30.0f, horizontal, vertical);
+            if (blocked[0] != 0) continue;
+            if (func_00282E80(D_00189E20.position, node + 0x10) < 4.0f) continue;
+            if ((unsigned char)node[0x31] == 0) score += 10.0f;
+            if (score < closest) { closest = score; best = node; }
+        } while ((node = *(unsigned char **)(node + 0x28)) != 0);
     }
     if (best) {
         D_00189E20.selected_b10 = best;
-        *(Vector *)first = *(Vector *)(D_00189E20.position);
+        qcopy(first, D_00189E20.position);
         first[2] += 0.5f;
-        *(Vector *)second = *(Vector *)(best + 0x10);
-        if (!func_002761F8(first, second, 2, 0, 0))
-            D_00189E20.ready_b14 = 1;
-    }
+        qcopy(second, best + 0x10);
+        if (!func_002761F8(first, second, 2, 0, 0)) D_00189E20.ready_b14 = 1;
     }
     return D_00189E20.ready_b14;
 }

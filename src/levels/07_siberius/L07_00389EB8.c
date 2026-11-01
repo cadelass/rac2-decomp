@@ -3,11 +3,11 @@
 
 INCLUDE_ASM("asm/levels", func_L07_00389EB8);
 
-INCLUDE_ASM("asm/levels", func_L07_003B72E8);
+/* func_L07_003B72E8 is in L07_003B72E8-g8.c. */
 
 /* func_L07_003E4BD0 is in L07_003E4BD0-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L07_003E5070);
+/* func_L07_003E5070 is in L07_003E5070-g8.c. */
 
 /* func_L07_003E5198 is in L07_003E5198-g8.c. */
 
@@ -129,7 +129,70 @@ void func_L07_003E6F40(unsigned char *arg0)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L07_003E6FE8);
+extern int func_002761F8(void *,void *,int,void *,int);
+extern char *func_002AD0B0(char *);
+extern void func_00282CF0(void *,void *,void *);
+extern void func_002AFDD8(void *,void *,void *,int);
+extern int func_002AD5F8(void *,void *,void *,void *,void *,void *);
+extern int func_002AD470(void *,void *,void *,void *,void *,void *);
+extern void func_002833F0(void *,void *);
+extern void func_002B0408(void *,void *,int);
+extern void func_002AB6D8(void *,void *);
+extern void func_00282D30(void *,void *,float);
+typedef int Quad128 __attribute__((mode(TI)));
+extern void func_00283098(Quad128 *, Quad128 *, char *);
+typedef struct { char pad[24]; char *object; } Collision;
+extern Collision D_L07_001BF640;
+
+/* With no platform attached, probe below the object and attach to the object hit when it is
+   a platform (flag 2), recording the relative offset; otherwise carry the object along with
+   the attached platform and rebuild its orientation. */
+void func_L07_003E6FE8(char *arg)
+{
+    char *state = *(char **)(arg + 0x68);
+    float rayStart[4] __attribute__((aligned(16)));
+    float rayEnd[4] __attribute__((aligned(16)));
+    float localOffset[4] __attribute__((aligned(16)));
+    char *pos, *platform;
+
+    platform = *(char **)(state + 0x338);
+    if (platform == 0) {
+        pos = arg + 0x10;
+        qcopy(rayStart, pos);
+        qcopy(rayEnd, pos);
+        rayStart[2] += 2.0f;
+        rayEnd[2] -= 3.0f;
+        if (func_002761F8(rayStart, rayEnd, 0, arg, 0) && D_L07_001BF640.object != 0) {
+            if (*(int *)(func_002AD0B0(D_L07_001BF640.object) + 0x3C) & 2) {
+                *(char **)(state + 0x338) = D_L07_001BF640.object;
+                func_00282CF0(localOffset, pos, *(char **)(state + 0x338) + 0x10);
+                func_002AFDD8(*(char **)(state + 0x338), localOffset, localOffset, 0);
+                *(float *)(state + 0x33C) = localOffset[2] - 1.0f;
+                func_002AD5F8(arg, *(char **)(state + 0x338), pos, arg + 0xF0,
+                             state + 0x310, state + 0x320);
+            }
+            *(int *)(state + 0x88) |= 0x100;
+        }
+    } else {
+        if (*(unsigned char *)(arg + 0x20) == 9 || *(unsigned char *)(arg + 0x20) == 11) {
+            func_002AD470(arg, platform, state + 0x310, state + 0x320, arg + 0x10, arg + 0xF0);
+        } else {
+            func_002AD0E0(arg, (int)platform, arg + 0x10, arg + 0xF0, arg + 0x10, arg + 0xF0);
+        }
+        func_002833F0(arg + 0xC0, arg + 0xF0);
+        func_002B0408(arg + 0xC0, *(char **)(state + 0x338) + 0xE0, 0);
+        func_002AB6D8(arg + 0xC0, arg + 0xF0);
+        if (*(unsigned short *)(arg + 0x34) & 0x8000)
+            func_00282D30(arg + 0xD0, arg + 0xD0, -1.0f);
+        if (*(unsigned char *)(arg + 0x95) == 3) {
+            func_00282CF0(rayStart, arg + 0x10, *(char **)(state + 0x338) + 0x10);
+            func_002AFDD8(*(char **)(state + 0x338), rayStart, rayStart, 0);
+            rayStart[2] = *(float *)(state + 0x33C);
+            func_00283098((Quad128 *)rayStart, (Quad128 *)rayStart, *(char **)(state + 0x338) + 0xC0);
+            *(float *)(state + 0x180) = rayStart[2] + *(float *)(*(char **)(state + 0x338) + 0x18);
+        }
+    }
+}
 
 /* The 16-byte vector the object keeps. */
 typedef int TI128 __attribute__((mode(TI)));
@@ -274,7 +337,40 @@ void func_L07_003EBBE8(char *arg, int a1, int a2, int a3, int a4)
 
 /* func_L07_003EE3B0 is in L07_003EE3B0-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L07_003EE640);
+extern void func_002A7750(int, int, int);
+
+extern int func_002ACBC8(int, int);
+
+extern void func_L02_0031F858(int, int);
+
+extern char D_00189EA0[];
+
+void func_L07_003EE640(char *arg)
+{
+    int *o = *(int **)(arg + 104);
+    int *p;
+    int *q;
+    int i;
+
+    switch (*(unsigned char *)(arg + 0x20)) {
+    case 0:
+        func_002A7750(arg, 1, -1);
+        break;
+    case 1:
+        q = o;
+        p = o + 8;
+        for (i = 0; i < 8; i++) {
+            if (p[i] != -1) {
+                if (func_002ACBC8((int)D_00189EA0, *q) != 0) {
+                    func_L02_0031F858(p[i], 1);
+                    p[i] = -1;
+                }
+            }
+            q++;
+        }
+        break;
+    }
+}
 
 /* func_L07_003EE708 is matched in L07_003EE708-g8.c (built with -frac2-qcopy -frac2-qcopy-barrier). */
 
@@ -331,4 +427,5 @@ extern void func_003109C8(char *, int, int);
 
 INCLUDE_ASM("asm/levels", func_L07_003F3E80);
 
-INCLUDE_ASM("asm/levels", func_L07_003F43E0);
+/* func_L07_003F43E0 is in the sibling file L07_00389EB8-g8.c: its body
+   reads small-data globals through $gp. */

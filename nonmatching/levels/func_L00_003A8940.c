@@ -1,8 +1,21 @@
-/* Complete nonmatching reconstruction: 1256/1256 bytes.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * Placement checks: US: 0/27; US2: 0/27; PAL: 0/27.
- * Both complete144-byte batches, all80 records and both submissions for each of four sides remain. Shape and UV cursors are captured separately before math calls; this reaches1256/1256 bytes with the retail0x270 frame, without a match. Each112-byte record position and the real zero-vector source use clobbering16-byte transfers. Color alpha is converted to unsigned32 before shifting. The radius sum is captured before the vector calls. The first mismatch is+0x10: the candidate saves f26 where retail saves f27; the remaining FP constant live ranges, pointer spills and nested-loop scheduling differ.
- * Reopen with independently justified FP zero/one/radius lifetimes and actual record/packet cursor allocation. Keep both full batches and all submissions; equal size does not establish matching.
+/* GPT-6.1 Sol high, 29 October 2026; retained near miss.
+ * USA v1.01: 1256/1256 bytes, 0/27 places; ten checker runs plus regalloc.
+ * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+ *          -fno-force-mem.
+ * The FP save set and initial normal stores now match. First difference moves
+ * from +0x10 in the old draft to +0x7C (the saved buffer-base stack slot).
+ * A GP address view for the incomplete shape table reproduces the measured GP
+ * address without inventing its extent. Alpha is shifted before the color calls;
+ * radius uses a separate input temporary; color stores walk backwards and cursor
+ * increments follow their actual consumption. Both complete 144-byte batches,
+ * all 80 records, four sides and both submissions remain.
+ * Remaining: FP zero/radius allocation is f26/f25 rather than retail f25/f26;
+ * zero is initialized per active record rather than outside the outer loop;
+ * saved pointer slots, cursor allocation and nested-loop scheduling still differ.
+ * An explicit zero initialized after setup is hoisted but folds the three FP
+ * stores to integer zero stores; disabling post-loop CSE grows to 1348 bytes.
+ * Next: zero/radius lifetimes and actual packet/cursor ownership. All declarations
+ * are below. This task checked only USA v1.01, not the other releases or linking.
  */
 #include "common.h"
 typedef int Quadword __attribute__((mode(TI)));
@@ -21,7 +34,7 @@ extern float D_L00_001AF720 __attribute__((sda));
 extern float D_L00_001B8DC0[];
 extern int D_L00_001A8FF0[];
 extern float D_L00_001A8F20[];
-extern short D_L00_001AF6D8[][2];
+extern short D_L00_001AF6D8[][2] SDATA(D_L00_001AF6D8);
 extern short D_L00_001AF6DA[];
 extern float D_L00_00294A80[][4];
 extern float D_L00_00294B10[][2];
@@ -57,8 +70,8 @@ void func_L00_003A8940(char *object)
     unsigned int color;
     float age, radius, distance, sine, cosine, width;
     *(Quadword *)normal = 0;
-    normal[3] = 1.0f;
     normal[2] = 1.0f;
+    normal[3] = 1.0f;
     base = func_L00_0032A088(1483, *(short *)(*(char **)(object + 104) + 26));
     func_00281DE8(&first, 54, 0, 128);
     func_00281DE8(&second, 54, 1, 128);
@@ -68,21 +81,20 @@ void func_L00_003A8940(char *object)
         record = base + i * 112;
         if (*(short *)(record + 18)) {
             age = (float)*(short *)(record + 16) * *(float *)(record + 32);
-            alpha = func_00283CF0(alphaScale * age);
+            alpha = (unsigned int)func_00283CF0(alphaScale * age) << 24;
             color = func_00283D38(D_L00_001AF74C, D_L00_001AF748,
                 func_00282C48(func_00283198(func_002ABB18(age * 3.1415927f * D_L00_001AF750))));
-            color |= (unsigned int)alpha << 24;
-            first.color[0] = color;
-            first.color[1] = color;
-            first.color[2] = color;
+            color = (unsigned int)alpha | color;
             first.color[3] = color;
-            second.color[0] = color;
-            second.color[1] = color;
-            second.color[2] = color;
+            first.color[2] = color;
+            first.color[1] = color;
+            first.color[0] = color;
             second.color[3] = color;
-            radius = *(float *)(record + 28);
-            distance = (D_L00_001AF720 - radius) * age;
-            radius += distance;
+            second.color[2] = color;
+            second.color[1] = color;
+            second.color[0] = color;
+            distance = *(float *)(record + 28);
+            radius = distance + (D_L00_001AF720 - distance) * age;
             qcopy(position, record);
             func_00282CF0(forward, D_L00_001B8DC0, position);
             func_00282F20(forward, forward, 1.0f);
@@ -103,18 +115,18 @@ void func_L00_003A8940(char *object)
                 float *weights = (float *)(record + 40);
                 for (corner = 0; corner < 4; ++corner) {
                     index = *shapeCursor;
-                    shapeCursor += 2;
                     texture = *uvCursor;
-                    uvCursor += 2;
-                    if (weights[index] == 0.0f)
-                        qcopy(scaled, D_L00_001A8F20);
-                    else
+                    if (weights[index] != 0.0f)
                         func_00282F20(scaled, D_L00_00294A80[index], weights[index]);
+                    else
+                        qcopy(scaled, D_L00_001A8F20);
                     func_00282CC0(local, D_L00_00294A80[index], scaled);
+                    uvCursor += 2;
                     rotated[0] = local[0];
                     rotated[1] = local[1] * sine - local[2] * cosine;
                     rotated[2] = local[1] * cosine + local[2] * sine;
                     rotated[3] = 1.0f;
+                    shapeCursor += 2;
                     func_00282D30(first.vertex[corner], rotated, radius);
                     width = (1.0f - age) * 0.075f;
                     first.uv[corner][0] = D_L00_00294B10[texture][0];

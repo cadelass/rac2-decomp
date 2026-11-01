@@ -1,17 +1,39 @@
-/* Retained nonmatching C (Opus big42), first full reconstruction, 26 October 2026.
- * Profile: -O2 -G8 -ffunction-sections. 860/847 instructions; about 180 lines differ
- * ignoring registers and relocated offsets. Same control flow and calls as retail.
- * Kept: the resident words read lui/lw (D_001A7288, D_001A79F0, D_001A72F4, D_001A7304,
- * D_001A7290, D_001A7A18, D_001A72C0, D_001A72C4, D_001A7A0A) as incomplete arrays read
- * [0]; a sized declaration puts them in $gp range under -G8, which retail does not use.
- * Level counters (D_L00_001B24D8 and the three others) are plain sized ints: retail stores
- * them through $gp in a delay slot and reads them lui/lw in the loops, the -G8 plain-scalar
- * form. func_00291EC0 takes one argument ($a1 only holds the %hi of D_L00_001BF140).
- * Left: the GS word OR-chains (operand grouping and constant synthesis order), the
- * prologue's param spills (load/resume live in 0x0/0x4($sp)), store scheduling around the
- * D_00152C00/D_L00_001DA680 block, D_L00_001A9520 passed as $gp+offset (needs a sized sda
- * declaration; its extent is not measured), and the D_L00_001C9340 copy block's order.
- * Reopen from this draft; the structure is retail's.
+/* Retained nonmatching C, Claude Opus 5.5 xhigh, 31 October 2026 (task v1860).
+ * USA v1.01: 3392/3388 bytes, 0/27 places. Five rows differ, plus one extra nop.
+ * Unit: src/levels/shared/L00_00303990-g16.c, flags -O2 -G16 -Wa,-G16 -ffunction-sections.
+ * Declarations are below; the INCLUDE_ASM marker goes away when this unit is added.
+ * No PAL, v2.00 or linked check was run because USA does not match.
+ *
+ * Remaining differences:
+ * 1. 0x00303AF4: retail ors the first GS word into the low half (or v1,v1,v0; or v1,v1,t4;
+ *    sd v1); here it lands in the high half's register (or v0,v1,v0). In mips.md the first
+ *    operand of (ior:DI (sign_extend:DI ...) ...) is not a register, so local-alloc can only
+ *    tie the result to the second operand. Retail's second word does tie that way (or a0,a1,a0).
+ *    Tried without effect: lo |= hi, hi | lo, an int lo, RAC1's t/u form (transition.c), hi
+ *    shared across blocks. A 64-bit lo with the constant in a variable made it much worse.
+ * 2. 0x00304350: retail has lw v0,0x30(s2) then daddu a0,s5,zero; here they are swapped.
+ *    The copy is ready in the store's clock, so it issues with the sw and ahead of the load.
+ *    Loading before the store gives lw/daddu/sw, so retail acts as if a scheduling boundary
+ *    follows the sw, but no branch in retail targets 0x00304350. A do/while(0) around the copy
+ *    (61 rows differ) is not that boundary. Reordering statements, base = dst + size,
+ *    -fno-sched-interblock, -frac2-keep-block-order and -frac2-gcse-unsplit-edges all tie.
+ * 3. 0x00304674: one extra nop before the last loop's bne. Everything else in that loop is
+ *    retail's. Retail's loop is seven words with lui/lw inside. mips_r5900_pad_loops counts
+ *    the macro lw as one insn, so it sees six and pads. Likely a toolchain limit, because
+ *    the pass counts insns and retail's assembler counted words; a word-counting fix is
+ *    untested. Splitting the address does not help: a plain array gets its %hi shared by
+ *    PRE into s1, and a macro entry test through a _1 alias with a split loop test
+ *    (3388 bytes) gets its %hi hoisted into s1 (3 rows). A goto loop was not tried: with no
+ *    loop note it should also lose the alignment nop retail has at 0x0030465C.
+ *
+ * Wordings that closed other differences; keep them:
+ * - (D_00139568[0xA] + D_L00_00262570)->b4 gives retail's add operand order.
+ * - func_L00_002FE268 takes the class value in a0 (other callers pass an argument too).
+ * - In loops 2-4 the value goes in a local before the store, so LD's %hi precedes the table's.
+ * - The slot stores run D_L00_001DD180, D_L00_001DA680, D_L00_001D9F00, which gives retail's
+ *   sll order and registers.
+ * - D_L00_001B1EA0 is an incomplete MACRO_ADDR array, reloaded with lui/lw at both tests.
+ * -fno-gcse is far off (808 rows); -g and -frac2-qcopy do not change any differing row.
  */
 #include "common.h"
 
@@ -19,7 +41,7 @@ typedef int TI128 __attribute__((mode(TI)));
 
 typedef union { unsigned char b[0x400]; short h[0x200]; unsigned short uh[0x200]; int i[0x100];
                 char *p[0x100]; unsigned long long d[0x80]; TI128 q[0x40]; } Blk;
-typedef union { int i[0x40]; unsigned short uh[0x80]; short h[0x80]; } Hdr;
+typedef struct { int i[0x40]; } Hdr;
 typedef struct {
     unsigned char pad0[4];
     unsigned char b4;
@@ -30,10 +52,13 @@ typedef struct {
     short h1A;
     int i1C;
 } Slot32;
+typedef struct { char *data; int count; int pad8[2]; } Frame;
 typedef struct {
-    int pad0;
-    int f4;
-    unsigned char pad8[0xC - 8];
+    Frame *frames;
+    unsigned char pad4[2];
+    unsigned char b6;
+    unsigned char b7;
+    unsigned char pad8[4];
     unsigned char bC;
     unsigned char bD;
     unsigned char padE[0x28 - 0xE];
@@ -42,14 +67,19 @@ typedef struct {
     int f48[1];
 } Bank;
 
-extern Blk D_L00_001BF140;
-extern Blk D_L00_001C9340;
-extern char *D_001A7288[];
-extern int D_001A79F0[];
-extern int D_001A72F4[];
-extern int D_001A7304[];
+extern int D_L00_001BF140[];
+#define LD ((Blk *)&D_L00_001BF140)
+extern int D_L00_001C9340[];
+#define TEXBASE ((Blk *)&D_L00_001C9340)
+typedef struct { int stage, busy; int *archive0; int archive1; } ArchiveLoad;
+extern ArchiveLoad D_001A7280 MACRO_ADDR;
+typedef struct { int offset; unsigned short kind; unsigned short pad6; int pad8[2]; } TexRef;
+typedef struct { short off; short count; } Span;
+extern int D_001A79F0;
+extern int D_001A72F4;
+extern int D_001A7304;
 extern unsigned char D_0019B2E8[];
-extern TI128 D_L00_001B1CE0;
+extern unsigned char D_L00_001B1CE0[] MACRO_ADDR;
 extern unsigned long long D_L00_001B1CF0[3];
 extern unsigned long long D_L00_001B1D08[3];
 extern int D_L00_001B24D8;
@@ -67,22 +97,22 @@ extern int D_L00_001B2420;
 extern int D_L00_001B1A44;
 extern int D_L00_001B1A48;
 extern unsigned long long D_L00_001C91C0[3];
-extern int D_L00_001A9520[] __attribute__((sda));
+extern int D_L00_001A9520[4] __attribute__((sda));
 extern int D_L00_001B1E80;
 extern int D_L00_001DD180[];
 extern short D_L00_001DA680[];
 extern Bank *D_L00_001D9F00[];
 extern unsigned char D_L00_001DA860[];
-extern short D_001A7A18[];
-extern int D_001A7290[];
-extern int D_001A72C0[];
-extern int D_001A72C4[];
+extern short D_001A7A18;
+extern int D_001A7290;
+extern int D_001A72C0;
+extern int D_001A72C4;
 extern unsigned char D_00139568[];
 extern ClassEntry D_L00_00262570[];
-extern int D_L00_00226700;
-extern int D_L00_0021EA20;
+extern int D_L00_00226700[];
+extern int D_L00_0021EA20[];
 extern int D_L00_001B1944;
-extern TI128 D_L00_001B1D20, D_L00_001B1D30, D_L00_001B1D40, D_L00_001B1D50;
+extern TI128 D_L00_001B1D20 MACRO_ADDR, D_L00_001B1D30 MACRO_ADDR, D_L00_001B1D40 MACRO_ADDR, D_L00_001B1D50 MACRO_ADDR;
 extern int D_L00_001B1D60;
 extern int D_L00_001B24D4;
 extern Slot32 *D_L00_001B19EC;
@@ -90,10 +120,12 @@ extern int D_L00_001B19E8;
 extern char D_L00_001A95B8[];
 extern char D_L00_001A95D8[];
 extern short D_00152CE4[];
-extern unsigned char D_001A7A0A[];
-extern int D_L00_001B1AD8;
-extern int D_L00_001B1E9C;
-extern int D_L00_001B1EA0;
+typedef struct { unsigned char pad0[0xA]; unsigned char enabled; } Global001A7A00;
+extern Global001A7A00 D_001A7A00 MACRO_ADDR;
+typedef struct { int pad[2]; int f8; } SceneTrigger;
+extern SceneTrigger D_L00_001B1AD0 MACRO_ADDR;
+extern int D_L00_001B1E9C __attribute__((sda));
+extern int D_L00_001B1EA0[] MACRO_ADDR;
 extern int D_L00_001B19C8;
 
 extern void func_00292888(void);
@@ -111,7 +143,7 @@ extern void func_00293890(char *, void *, void *, int);
 extern void func_L00_00300438(void *, int, void *);
 extern void func_00292328(int);
 extern void func_002934B8(Bank *, int);
-extern void func_L00_002FE268(void);
+extern void func_L00_002FE268(int);
 extern void func_00293260(Bank *, int);
 extern void func_L00_002FF6A8(char *, void *, void *, int);
 extern void func_L00_00300610();
@@ -130,171 +162,183 @@ extern void func_L00_0032CF60(void);
 
 int func_L00_00303990(int load, int resume)
 {
-    Hdr *h = (Hdr *)D_L00_001BF140.p[0xC / 4];
-    char *f = D_001A7288[0];
+    Hdr *h = (Hdr *)LD->p[0xC / 4];
+    int *f = D_001A7280.archive0;
     char *base;
     char *end;
+    int used;
     int i;
+    int c1, c2, c3, c4;
     int fx;
     int fy;
     char *e;
-    int *out;
-    int idx;
+    TexRef *t1, *tex, *t3, *t4;
+    int slot8;
     int *list;
-    short *sp;
     int j;
-    Bank *bank;
-    Slot32 *slot;
     char *tab;
-    char *tab2;
-    short *ent;
-    int cnt;
-    unsigned int mem;
-    int n;
+    Span *span;
     unsigned short *us;
+    char *q2, *q, *p;
+    int sq, a3, ci, k;
 
     if (load)
         func_00292888();
-    base = D_L00_001BF140.p[0x18 / 4];
+    base = LD->p[0x18 / 4];
     if (load) {
         func_L00_0036ADB0();
-        D_L00_001C9340.i[0] = 0;
-        func_00282B50(h, f + *(int *)(f + 8), *(int *)(f + 0xC));
-        func_00282AB0(&D_L00_001B1CE0, D_0019B2E8 + D_001A79F0[0] * 16, 16);
-        func_00293000(f + *(int *)(f + 0x10), h->i[0], h->i[0x84 / 4], (char *)h + h->i[1]);
+        TEXBASE->i[0] = 0;
+        func_00282B50(h, (char *)(f[2] + (int)f), f[3]);
+        func_00282AB0(D_L00_001B1CE0, D_0019B2E8 + D_001A79F0 * 16, 16);
+        func_00293000((char *)(f[4] + (int)f), h->i[0], h->i[0x84 / 4], (char *)h + h->i[1]);
         func_0011AEA0(0);
-        end = (char *)func_0029D4D0(f + *(int *)(f + 0x48), base);
-        fx = D_001A72F4[0];
-        fy = D_001A7304[0];
-        D_L00_001BF140.p[0x2C / 4] = base + h->i[0x60 / 4];
-        D_L00_001B1CF0[0] = (unsigned long long)((fy + h->i[0x90 / 4] * 4) >> 8 | 0x1DB08000) |
-                            ((unsigned long long)((fx + h->i[0x94 / 4]) >> 8) << 37 | 0x5C0000000ULL) |
-                            0x8000000000000000ULL;
+        used = func_0029D4D0((char *)(f[0x12] + (int)f), base);
+        fx = D_001A72F4;
+        fy = D_001A7304;
+        LD->p[0x2C / 4] = base + h->i[0x60 / 4];
+        {
+            unsigned long long lo = (unsigned long long)((fy + h->i[0x90 / 4] * 4) >> 8 | 0x1DB08000);
+            unsigned long long hi = (unsigned long long)((fx + h->i[0x94 / 4]) >> 8) << 37 | 0x5C0000000ULL;
+            D_L00_001B1CF0[0] = (lo | hi) | 0x8000000000000000ULL;
+        }
         D_L00_001B1CF0[1] = 0xFFA0000000E0ULL;
         D_L00_001B1CF0[2] = 0x40000400004000ULL;
-        D_L00_001B1D08[0] = (unsigned long long)((fy + h->i[0x98 / 4] * 4) >> 8 | 0x19B04000) |
-                            ((unsigned long long)((fx + h->i[0x9C / 4]) >> 8) << 37 | 0x580000000ULL) |
-                            0x8000000000000000ULL;
+        {
+            unsigned long long lo = (unsigned long long)((fy + h->i[0x98 / 4] * 4) >> 8 | 0x19B04000);
+            unsigned long long hi = (unsigned long long)((fx + h->i[0x9C / 4]) >> 8) << 37 | 0x580000000ULL;
+            D_L00_001B1D08[0] = (lo | hi) | 0x8000000000000000ULL;
+        }
         D_L00_001B1D08[1] = 0xFFA0000000E0ULL;
         D_L00_001B1D08[2] = 0x40000400004000ULL;
 
-        e = (char *)h + h->i[0x34 / 4];
+        t1 = (TexRef *)((char *)h + h->i[0x34 / 4]);
         D_L00_001B24D8 = h->i[0x30 / 4];
-        for (i = 0; i < D_L00_001B24D8; i++) {
-            D_L00_00225900[i] = D_L00_001BF140.i[0x2C / 4] + *(int *)(e + i * 16) +
-                                (func_00282A18(*(unsigned short *)(e + i * 16 + 4)) << 28);
-        }
-        end = base + (int)end;
-        e = (char *)h + h->i[0x3C / 4];
+        for (c1 = 0; c1 < D_L00_001B24D8; c1++)
+            D_L00_00225900[c1] = LD->i[0x2C / 4] + t1[c1].offset + (func_00282A18(t1[c1].kind) << 28);
+        tex = (TexRef *)((char *)h + h->i[0x3C / 4]);
         D_L00_001B1E8C = h->i[0x38 / 4];
-        for (i = 0; i < D_L00_001B1E8C; i++) {
-            D_L00_001DC980[i] = D_L00_001BF140.i[0x2C / 4] + *(int *)(e + i * 16) +
-                                (func_00282A18(*(unsigned short *)(e + i * 16 + 4)) << 28);
+        for (c2 = 0; c2 < D_L00_001B1E8C; c2++) {
+            int value = LD->i[0x2C / 4] + tex[c2].offset + (func_00282A18(tex[c2].kind) << 28);
+            D_L00_001DC980[c2] = value;
         }
-        qcopy(&D_00152CD0, e + h->i[0x80 / 4] * 16);
-        D_00152CD0.uh[0x10 / 2] = h->uh[0x80 / 2];
-        e = (char *)h + h->i[0x44 / 4];
+        qcopy(&D_00152CD0, &tex[h->i[0x80 / 4]]);
+        D_00152CD0.uh[0x10 / 2] = ((unsigned short *)h)[0x80 / 2];
+        t3 = (TexRef *)((char *)h + h->i[0x44 / 4]);
         D_L00_001B2550 = h->i[0x40 / 4];
-        for (i = 0; i < D_L00_001B2550; i++) {
-            D_L00_0022D200[i] = D_L00_001BF140.i[0x2C / 4] + *(int *)(e + i * 16) +
-                                (func_00282A18(*(unsigned short *)(e + i * 16 + 4)) << 28);
+        for (c3 = 0; c3 < D_L00_001B2550; c3++) {
+            int value = LD->i[0x2C / 4] + t3[c3].offset + (func_00282A18(t3[c3].kind) << 28);
+            D_L00_0022D200[c3] = value;
         }
-        e = (char *)h + h->i[0x4C / 4];
+        t4 = (TexRef *)((char *)h + h->i[0x4C / 4]);
         D_L00_001B2410 = h->i[0x48 / 4];
-        for (i = 0; i < D_L00_001B2410; i++) {
-            D_L00_0021FBA0[i] = D_L00_001BF140.i[0x2C / 4] + *(int *)(e + i * 16) +
-                                (func_00282A18(*(unsigned short *)(e + i * 16 + 4)) << 28);
+        for (c4 = 0; c4 < D_L00_001B2410; c4++) {
+            int value = LD->i[0x2C / 4] + t4[c4].offset + (func_00282A18(t4[c4].kind) << 28);
+            D_L00_0021FBA0[c4] = value;
         }
-        D_L00_001BF140.p[0x1C / 4] = base + h->i[0x8 / 4];
-        func_L00_00300090(D_L00_001BF140.p[0x1C / 4], (char *)h + h->i[0x34 / 4]);
-        D_L00_001C9340.p[0x8 / 4] = D_L00_001BF140.p[0x1C / 4];
+        LD->p[0x1C / 4] = base + h->i[0x8 / 4];
+        func_L00_00300090(LD->p[0x1C / 4], (char *)h + h->i[0x34 / 4]);
+        TEXBASE->p[0x8 / 4] = LD->p[0x1C / 4];
         if (h->i[0xC / 4] != 0) {
-            D_L00_001BF140.p[0x20 / 4] = base + h->i[0xC / 4];
-            D_L00_001B1A40 = (int)(base + h->i[0xC / 4]);
+            char *p = base + h->i[0xC / 4];
+            LD->p[0x20 / 4] = p;
+            D_L00_001B1A40 = (int)p;
         } else {
-            D_L00_001BF140.p[0x20 / 4] = 0;
+            LD->p[0x20 / 4] = 0;
             D_L00_001B1A40 = 0;
         }
         if (h->i[0x10 / 4] != 0) {
-            D_L00_001BF140.p[0x24 / 4] = base + h->i[0x10 / 4];
-            func_00291EC0(base + h->i[0x10 / 4]);
+            char *p = base + h->i[0x10 / 4];
+            LD->p[0x24 / 4] = p;
+            func_00291EC0(p);
         } else {
             D_L00_001B2420 = 0;
-            D_L00_001BF140.p[0x24 / 4] = 0;
+            LD->p[0x24 / 4] = 0;
         }
-        D_L00_001BF140.p[0x28 / 4] = base + h->i[0x14 / 4];
-        func_L00_00300378(base + h->i[0x14 / 4]);
-        D_L00_001C9340.p[0x4 / 4] = D_L00_001BF140.p[0x28 / 4];
-        e = (char *)h + h->i[0x1C / 4];
-        for (i = 0; i < h->i[0x18 / 4]; i++, e += 0x20) {
-            char *p = *(int *)e != 0 ? base + *(int *)e : 0;
-            if (*(int *)(e + 8) != 0) {
+        {
+            char *p = base + h->i[0x14 / 4];
+            LD->p[0x28 / 4] = p;
+            func_L00_00300378(p);
+        }
+        TEXBASE->p[0x4 / 4] = LD->p[0x28 / 4];
+        for (i = 0, q2 = (char *)h + h->i[0x1C / 4]; i < h->i[0x18 / 4]; i++, q2 += 0x20) {
+            char *p = *(int *)q2 != 0 ? base + *(int *)q2 : 0;
+            if (*(int *)(q2 + 8) != 0) {
                 D_L00_001C91C0[0] = D_00152C00.d[0x38 / 8];
                 D_L00_001C91C0[1] = 0xFFA0000000E0ULL;
                 D_L00_001C91C0[2] = 0x40000400004000ULL;
-                func_00293890(p, 0, D_L00_001A9520, *(int *)(e + 4));
+                func_00293890(p, 0, D_L00_001A9520, *(int *)(q2 + 4));
                 D_L00_001DD180[D_L00_001B1E80 - 1] = 0xFFFC0000;
             } else {
-                func_00293890(p, (char *)h + h->i[0x3C / 4], e + 0x10, *(int *)(e + 4));
+                func_00293890(p, (char *)h + h->i[0x3C / 4], q2 + 0x10, *(int *)(q2 + 4));
             }
         }
-        D_L00_001BF140.p[0x38 / 4] = (char *)D_L00_001D9F00[0];
+        LD->p[0x38 / 4] = (char *)D_L00_001D9F00[0];
         func_L00_00300438((char *)h + h->i[0x1C / 4], h->i[0x18 / 4], (char *)h + h->i[0x24 / 4]);
-        n = D_L00_001B1E80;
-        D_00152C00.i[0x1C / 4] = n;
-        D_L00_001DA680[D_00152C00.i[0x1C / 4]] = 0xD54;
-        D_L00_001D9F00[D_00152C00.i[0x1C / 4]] = (Bank *)D_L00_001BF140.p[0x70 / 4];
-        D_L00_001DD180[D_00152C00.i[0x1C / 4]] = 0xFFFC0000;
-        D_L00_001DA860[0xD54] = D_00152C00.b[0x1C];
-        D_00152CD0.h[0x12 / 2] = n + 1;
-        D_L00_001B1E80 = n + 2;
-        if (D_001A7290[0] != D_001A7A18[0]) {
-            func_00292328(D_001A7A18[0]);
-            D_001A7290[0] = D_001A7A18[0];
+        {
+            int count = D_L00_001B1E80;
+            D_00152C00.i[0x1C / 4] = count++;
+            D_L00_001DD180[D_00152C00.i[0x1C / 4]] = 0xFFFC0000;
+            D_L00_001DA680[D_00152C00.i[0x1C / 4]] = 0xD54;
+            D_L00_001D9F00[D_00152C00.i[0x1C / 4]] = (Bank *)LD->p[0x70 / 4];
+            D_L00_001DA860[0xD54] = D_00152C00.i[0x1C / 4];
+            D_00152CD0.h[0x12 / 2] = count;
+            D_L00_001B1E80 = count + 1;
         }
-        func_002934B8(D_L00_001D9F00[0], D_L00_001BF140.i[0x78 / 4]);
+        if (D_001A7290 != D_001A7A18) {
+            func_00292328(D_001A7A18);
+            D_001A7290 = D_001A7A18;
+        }
+        func_002934B8(D_L00_001D9F00[0], LD->i[0x78 / 4]);
         D_L00_001DD180[0] = 0xFFFC0000;
-        if (D_L00_001DA860[0xD54] != 0xFF) {
-            bank = D_L00_001D9F00[D_L00_001DA860[0xD54]];
-            if (((unsigned char *)bank)[6] != 0) {
-                char *q = *(char **)bank + ((unsigned char *)bank)[7] * 16;
-                q = *(char **)q + *(int *)(q + 4) * 16;
-                *(unsigned long long *)(q - 0x20) = D_L00_001B1CF0[0];
-                *(unsigned long long *)(q - 0x10) = D_L00_001B1CF0[2];
+        slot8 = D_L00_001DA860[0xD54];
+        if (slot8 != 0xFF) {
+            Bank *bank = D_L00_001D9F00[slot8];
+            if (bank->b6 != 0) {
+                Frame *fr = &bank->frames[bank->b7];
+                char *pkt = fr->data + fr->count * 16;
+                *(unsigned long long *)(pkt - 0x20) = D_L00_001B1CF0[0];
+                *(unsigned long long *)(pkt - 0x10) = D_L00_001B1CF0[2];
             }
         }
-        if (D_001A72C0[0] != D_L00_00262570[D_00139568[0xA]].b4)
-            func_L00_002FE268();
-        D_001A72C4[0] = D_L00_001DA860[0x47];
-        func_002934B8(D_L00_001D9F00[D_L00_001DA860[0x47]], D_L00_001BF140.i[0x74 / 4]);
-        D_L00_001DD180[D_001A72C4[0]] = 0xFFFC0000;
+        {
+            int want = (D_00139568[0xA] + D_L00_00262570)->b4;
+            if (D_001A72C0 != want)
+                func_L00_002FE268(want);
+        }
+        {
+            int hero = D_L00_001DA860[0x47];
+            D_001A72C4 = hero;
+            func_002934B8(D_L00_001D9F00[hero], LD->i[0x74 / 4]);
+        }
+        D_L00_001DD180[D_001A72C4] = 0xFFFC0000;
         us = (unsigned short *)((char *)h + h->i[0xAC / 4]);
         while ((short)*us >= 0) {
-            if (D_L00_001DA860[(short)*us] != 0xFF)
-                D_L00_001DD180[D_L00_001DA860[(short)*us]] = 0xFFF00000;
+            int slot = D_L00_001DA860[(short)*us];
+            if (slot != 0xFF)
+                D_L00_001DD180[slot] = 0xFFF00000;
             us++;
         }
-        list = (int *)((char *)h + h->i[0x78 / 4]);
-        for (i = 0; i < D_L00_001D9F00[0]->bC; i++) {
-            if (list[i] != 0) {
-                D_L00_001D9F00[0]->f48[i] = (int)(base + list[i]);
-                func_00293260(D_L00_001D9F00[0], i);
+        for (sq = 0, p = (char *)h + h->i[0x78 / 4]; sq < D_L00_001D9F00[0]->bC; sq++, p += 4) {
+            if (*(int *)p != 0) {
+                D_L00_001D9F00[0]->f48[sq] = (int)(base + *(int *)p);
+                func_00293260(D_L00_001D9F00[0], sq);
             }
         }
-        D_L00_001BF140.i[0x44 / 4] = D_L00_001D9F00[0]->f48[0];
-        e = (char *)h + h->i[0x24 / 4];
-        for (i = 0; i < h->i[0x20 / 4]; i++, e += 0x20)
-            func_L00_002FF6A8(base + *(int *)e, (char *)h + h->i[0x44 / 4], e + 0x10, *(int *)(e + 4));
-        if (D_L00_00226700 != 0)
-            D_L00_001BF140.i[0x3C / 4] = D_L00_00226700;
+        LD->i[0x44 / 4] = D_L00_001D9F00[0]->f48[0];
+        for (i = 0, q2 = (char *)h + h->i[0x24 / 4]; i < h->i[0x20 / 4]; i++, q2 += 0x20)
+            func_L00_002FF6A8(base + *(int *)q2, (char *)h + h->i[0x44 / 4], q2 + 0x10, *(int *)(q2 + 4));
+        if (D_L00_00226700[0] != 0)
+            LD->i[0x3C / 4] = D_L00_00226700[0];
         func_L00_00300610((char *)h + h->i[0x24 / 4], h->i[0x20 / 4]);
-        e = (char *)h + h->i[0x2C / 4];
-        for (i = 0; i < h->i[0x28 / 4]; i++, e += 0x30)
-            func_L00_002FFAB8(base + *(int *)e, (char *)h + h->i[0x4C / 4], e + 0x10, e + 0x20, *(int *)(e + 4));
-        if (D_L00_0021EA20 != 0)
-            D_L00_001BF140.i[0x40 / 4] = D_L00_0021EA20;
-        D_L00_001BF140.p[0x34 / 4] = base + h->i[0x68 / 4];
-        D_L00_001B1944 = (int)(base + h->i[0x68 / 4]);
+        for (i = 0, q2 = (char *)h + h->i[0x2C / 4]; i < h->i[0x28 / 4]; i++, q2 += 0x30)
+            func_L00_002FFAB8(base + *(int *)q2, (char *)h + h->i[0x4C / 4], q2 + 0x10, q2 + 0x20, *(int *)(q2 + 4));
+        if (D_L00_0021EA20[0] != 0)
+            LD->i[0x40 / 4] = D_L00_0021EA20[0];
+        {
+            char *p = base + h->i[0x68 / 4];
+            LD->p[0x34 / 4] = p;
+            D_L00_001B1944 = (int)p;
+        }
         func_00291DE0((char *)h + h->i[0x5C / 4], h->i[0x58 / 4]);
         if (h->i[0xA4 / 4] != 0) {
             func_L00_002FD480(base + h->i[0xA4 / 4]);
@@ -313,67 +357,84 @@ int func_L00_00303990(int load, int resume)
             D_L00_001B1A48 = (int)(base + h->i[0xB0 / 4]);
         else
             D_L00_001B1A48 = 0;
-        D_L00_001BF140.p[0x30 / 4] = base + h->i[0x64 / 4];
-        func_00291CA8((char *)h + h->i[0x6C / 4], base + h->i[0x64 / 4], (char *)h + h->i[0x54 / 4], h->i[0x50 / 4]);
-        mem = ((unsigned int)end + 0x3F) & ~0x3F;
-        if (D_L00_001B24D4 != D_L00_001C9340.i[0x18 / 4]) {
-            D_L00_001C9340.i[0x10 / 4] = mem;
-            func_00282B50((void *)mem, (char *)h + h->i[0x34 / 4], h->i[0x30 / 4] * 16);
-            mem += h->i[0x30 / 4] * 16;
-            D_L00_001C9340.i[0x14 / 4] = mem;
-            mem = (mem + D_L00_001C9340.i[0x18 / 4] * 2 + 0x7F) & ~0x3F;
+        {
+            char *x1 = base + h->i[0x64 / 4];
+            char *x2;
+            LD->p[0x30 / 4] = x1;
+            x2 = (char *)h + h->i[0x54 / 4];
+            func_00291CA8((char *)h + h->i[0x6C / 4], x1, x2, h->i[0x50 / 4]);
+        }
+        base = (char *)((unsigned int)(base + used + 0x3F) & ~0x3F);
+        if (D_L00_001B24D4 != TEXBASE->i[0x18 / 4]) {
+            char *dst;
+            int size;
+            TEXBASE->p[0x10 / 4] = base;
+            size = h->i[0x30 / 4] * 16;
+            dst = base;
+            base += size;
+            func_00282B50(dst, (char *)h + h->i[0x34 / 4], size);
+            TEXBASE->p[0x14 / 4] = base;
+            base = (char *)(((unsigned int)(base + TEXBASE->i[0x18 / 4] * 2) + 0x7F) & ~0x3F);
         }
         tab = (char *)h + h->i[0x70 / 4];
-        cnt = ((short *)tab)[1];
-        D_L00_001B19EC = (Slot32 *)mem;
-        D_L00_001B19E8 = cnt;
-        func_00282AB0((void *)mem, tab + ((short *)tab)[0], cnt * 32);
-        mem += cnt * 32;
-        ent = (short *)(tab + 4);
-        tab2 = tab + ent[0];
-        for (i = 0; i < D_L00_001B19E8; i++) {
-            if (D_L00_001B19EC[i].h1A >= ent[1]) {
-                func_0026FEB8(D_L00_001A95B8);
-                D_L00_001B19EC[i].h1A = -1;
-            } else {
-                D_L00_001B19EC[i].h1A = *(unsigned short *)(tab2 + D_L00_001B19EC[i].h1A * 4);
-            }
-            D_L00_001B19EC[i].i1C = 0;
+        span = (Span *)tab;
+        {
+            int nslots = span->count;
+            D_L00_001B19EC = (Slot32 *)base;
+            D_L00_001B19E8 = nslots;
+            func_00282AB0(base, tab + span->off, nslots * 32);
+            span++;
+            base += nslots * 32;
         }
-        ent += 2;
-        e = (char *)h + h->i[0x1C / 4];
-        for (i = 0; i < h->i[0x18 / 4]; i++, ent += 2, e += 0x20) {
-            idx = D_L00_001DA860[*(int *)(e + 4)];
-            if (D_L00_001DA680[idx] == *(int *)(e + 4)) {
-                if ((ent[1] != 0 || D_L00_001D9F00[idx]->bD != 0) && ent[1] - 1 != D_L00_001D9F00[idx]->bD)
-                    func_0026FEB8(D_L00_001A95D8);
+        e = tab + span->off;
+        for (a3 = 0; a3 < D_L00_001B19E8; a3++) {
+            if (D_L00_001B19EC[a3].h1A >= span->count) {
+                func_0026FEB8(D_L00_001A95B8);
+                D_L00_001B19EC[a3].h1A = -1;
+            } else {
+                D_L00_001B19EC[a3].h1A = *(unsigned short *)(e + D_L00_001B19EC[a3].h1A * 4);
+            }
+            D_L00_001B19EC[a3].i1C = 0;
+        }
+        end = base + 0x3F;
+        span++;
+        for (ci = 0, q = (char *)h + h->i[0x1C / 4]; ci < h->i[0x18 / 4]; ci++, span++, q += 0x20) {
+            int cls = D_L00_001DA860[*(int *)(q + 4)];
+            if (D_L00_001DA680[cls] == *(int *)(q + 4)) {
+                if ((span->count != 0 || D_L00_001D9F00[cls]->bD != 0) && span->count - 1 != D_L00_001D9F00[cls]->bD)
+                    func_0026FEB8(D_L00_001A95D8, D_L00_001DA680[cls], span->count - 1, D_L00_001D9F00[cls]->bD);
                 {
-                    int *src = (int *)(tab + ent[0]);
-                    for (j = 0; j < D_L00_001D9F00[idx]->bD; j++) {
-                        D_L00_001D9F00[idx]->slots[j].h1A = *(unsigned short *)(src + 1 + j);
-                        D_L00_001D9F00[idx]->slots[j].i1C = src[0] + 1;
+                    int first;
+                    e = tab + span->off;
+                    first = *(int *)e;
+                    e += 4;
+                    for (k = 0; k < D_L00_001D9F00[cls]->bD; k++, e += 4) {
+                        D_L00_001D9F00[cls]->slots[k].h1A = *(unsigned short *)e;
+                        D_L00_001D9F00[cls]->slots[k].i1C = first + 1;
                     }
                 }
             }
         }
-        D_L00_001BF140.i[0x48 / 4] = (mem + 0x3F) & ~0x3F;
+        base = (char *)((unsigned int)end & ~0x3F);
+        LD->p[0x48 / 4] = base;
     }
-    D_L00_001BF140.i[0x68 / 4] = func_L00_00300618(load);
+    LD->i[0x68 / 4] = func_L00_00300618(load);
     if (load)
         D_00152CE4[0] = -1;
-    if (D_L00_001C9340.i[0xC / 4] != 0) {
+    if (TEXBASE->i[0xC / 4] != 0) {
         if (load)
             func_L00_003032F0();
-        func_L00_00303418(D_L00_001C9340.i[0]);
+        func_L00_00303418(TEXBASE->i[0]);
     }
     if (resume)
         func_L00_00358B30();
     else
         func_L00_003588A8();
-    D_L00_001B1AD8 = 0;
-    if (D_001A7A0A[0] != 0) {
-        for (i = D_L00_001B1E9C; i != D_L00_001B1EA0; i += 0x100)
-            func_L00_002E3BA0(i);
+    D_L00_001B1AD0.f8 = 0;
+    if (D_001A7A00.enabled != 0) {
+        int m;
+        for (m = D_L00_001B1E9C; m != D_L00_001B1EA0[0]; m += 0x100)
+            func_L00_002E3BA0(m);
     }
     func_L00_0032CF60();
     D_L00_001B19C8++;

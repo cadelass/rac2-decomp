@@ -1374,7 +1374,7 @@ void func_002C4B10(u8 *a0)
 
 /* func_002C4B50 is in 002BF6F0-c4b50.c. */
 
-INCLUDE_ASM("asm/game", func_002C4D18);
+/* func_002C4D18 is in 002BF6F0-c4b50.c. */
 
 void func_002C4F08(char *self)
 {
@@ -1437,7 +1437,7 @@ void func_002C5068(char *self)
     }
 }
 
-INCLUDE_ASM("asm/game", func_002C5120);
+/* func_002C5120 is in 002BF6F0-c5120-g8.c. */
 
 
 void func_002C5550(Obj_F7cacd225 *o)

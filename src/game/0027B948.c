@@ -105,8 +105,6 @@ void func_0027BA48(void)
 
 INCLUDE_ASM("asm/game", func_0027BA68);
 
-INCLUDE_ASM("asm/game", func_0027BD70);
-
 /* Defined in 0027BD70-g8.c. */
 
 
@@ -145,7 +143,7 @@ void func_0027C520(void)
   return;
 }
 
-INCLUDE_ASM("asm/game", func_0027C540);
+/* func_0027C540: defined in 0027B948-g8.c. */
 
 
 
@@ -284,7 +282,74 @@ void func_0027D4B8(void)
     func_0027FB40(0x5A, y, style, text, -1);
 }
 
-INCLUDE_ASM("asm/game", func_0027D5C0);
+/* Subtitle layout and window path adapted from OpenRAC/rac1-decomp src/game/draw.c's
+ * draw_subtitles (GPL-3.0). D_001A7340 is RAC1's g_screen_extent: retail reads its
+ * second word as an offset from this base, a two-word load that reorg leaves out of
+ * the delay slot. Retail reads the language byte twice, so it is declared volatile. */
+typedef struct { short start, end, text[6]; } SubtitleRecord;
+typedef struct { char pad[0x34]; int time; char gap[0x14]; unsigned char *subs; } SubtitleState;
+extern SubtitleState D_001B8840;
+extern volatile unsigned char D_001A7BB4[] __attribute__((sda));
+extern unsigned char D_001A7B96[] __attribute__((sda));
+extern int D_001A7340[] __attribute__((sda));
+extern unsigned char D_001A8998[];
+extern void func_002802E0(unsigned short *, int, int, int, int, int, int, int, int);
+extern void func_00280200(unsigned short *, unsigned long, unsigned char *, int);
+extern void func_0027F5B8(int, int, unsigned long, unsigned char *, int);
+extern unsigned int func_001157AC(unsigned char *);
+extern void func_0027EB88(int, int, int, int, int, int);
+
+void func_0027D5C0(void)
+{
+    SubtitleRecord *p;
+    int idx;
+    if (!D_001B8840.subs) return;
+    idx = 0;
+    if ((unsigned int)(D_001A7BB4[0] - 2) < 4) idx = D_001A7BB4[0] - 1;
+    for (p = (SubtitleRecord *)D_001B8840.subs; p->start >= 0; ++p) {
+        if (D_001B8840.time < p->start) continue;
+        if (p->end < D_001B8840.time) continue;
+        if (!D_001A7B96[0] && D_001B8840.subs[p->text[idx]] != '*') continue;
+        if (D_001B8840.subs[p->text[idx]] == '*') {
+            int y = 0x40;
+            int alpha = 0xB0000000;
+            unsigned char *str;
+            if (D_001B8840.subs[p->text[idx] + 1] != '*') y = D_001A7340[1] - 0xC8;
+            else if (D_001A7BB1) y = 0x18;
+            if (p->end - D_001B8840.time < 0x12)
+                alpha = (int)(p->end - (long)(D_001B8840.time - 1)) << 27;
+            else if (D_001B8840.time - p->start < 0x12)
+                alpha = (int)(D_001B8840.time - (long)(p->start - 1)) << 27;
+            str = D_001B8840.subs + p->text[idx];
+            if (str[1] != '*')
+                func_0027FB40(0x100, 0xD0, alpha | 0xE0E0E0, str, -1);
+            else
+                func_0027F5B8(0x20, y, alpha | 0xE0E0E0, str, -1);
+        } else {
+            unsigned short win[16];
+            short w, h;
+            int hw, hh;
+            int extent = D_001A7340[1];
+            func_002802E0(win, 0xC8, 0x1A4, 0x28, 0x1D8, 0x100,
+                          D_001A7BB1 ? extent - 0x36 : extent - 0x64, 0x12, 7);
+            func_00280200(win, 0x80B0B0B0UL, &D_001B8840.subs[p->text[idx]], -1);
+            win[5] -= 4;
+            w = win[6];
+            h = win[7];
+            hh = (h >> 1) + 5;
+            hw = (w >> 1) + 10;
+            if ((short)win[5] + hh > D_001A7340[1] - 0x14)
+                win[5] = D_001A7340[1] - ((h >> 1) + 0x19);
+            func_0027EB88((short)win[5] - hh, (short)win[5] + hh, 0x100 - hw, 0x100 + hw, 0x60, 0x40404);
+            win[9] &= ~4;
+            if (func_001157AC(&D_001B8840.subs[p->text[idx]]) < 0x96)
+                func_00280200(win, 0x80B0B0B0UL, &D_001B8840.subs[p->text[idx]], -1);
+            else
+                func_00280200(win, 0x80B0B0B0UL, D_001A8998, -1);
+            return;
+        }
+    }
+}
 
 /* Defined in 0027D900-g8.c. */
 
@@ -298,10 +363,69 @@ INCLUDE_ASM("asm/game", func_0027D5C0);
 /* Defined in 0027DE50-g8.c. */
 
 
-INCLUDE_ASM("asm/game", func_0027E018);
+/* func_0027E018 is in 0027E018.c. */
 
 
-INCLUDE_ASM("asm/game", func_0027E1A0);
+/* Adapted from OpenRAC/rac1-decomp src/game/draw.c's emit_textured_rectangle (GPL-3.0).
+ * RAC2 writes a 16-word GS packet with a per-vertex colour, a closing (5, 0) pair and
+ * z in the top of each XYZ word; the CLAMP word is built up in retail's OR order. */
+void func_0027E1A0(float x, float y, float w, float h, int u, int v, int uw, int vh,
+                   const unsigned int *rgba, unsigned long tex)
+{
+    int x0 = func_00283CF0(x * 16.0f) + D_001A7340[4] - 8;
+    int x1 = func_00283CF0((x + w) * 16.0f) + D_001A7340[4] - 8;
+    int y0 = func_00283CF0(y * 16.0f) + D_001A7340[5] - 8;
+    int y1 = func_00283CF0((y + h) * 16.0f) + D_001A7340[5] - 8;
+    int vb;
+    int ub;
+    int s0, s1;
+    QuadDmaTag *header;
+    QuadDmaTag *tag;
+    long *p;
+    long max_u, min_u, min_v, clamp, wide_u, z;
+
+    if (x0 > 0x9000 || x1 < 0x7000 || y0 > 0x9000 || y1 < 0x7000) {
+        return;
+    }
+    ub = u + uw;
+    z = (long)0xFFFFF0 << 32;
+    s0 = u * 16;
+    s1 = ub * 16;
+    D_001B22A8.tag->tag = 0x10000009;
+    D_001B22A8.tag->addr = 0;
+    D_001B22A8.tag->vif0 = 0;
+    D_001B22A8.tag->vif1 = 0x50000009;
+    wide_u = u;
+    max_u = ((long)ub << 14) | 0xA;
+    min_u = (wide_u << 4) | max_u;
+    min_v = min_u | ((long)v << 24);
+    vb = v + vh;
+    clamp = min_v | ((long)vb << 34);
+    header = D_001B22A8.tag;
+    D_001B22A8.tag = header + 1;
+    *(long *)(header + 1) = 0x0400000000008001;
+    *(long *)&D_001B22A8.tag->vif0 = 0x8531531531531068;
+    tag = D_001B22A8.tag;
+    D_001B22A8.tag = tag + 1;
+    p = (long *)(tag + 1);
+    p[0] = clamp;
+    p[1] = tex;
+    p[2] = 0x15C;
+    p[3] = rgba[0];
+    p[4] = (v << 20) + s0;
+    p[5] = x0 | ((long)y0 << 16) | z;
+    p[6] = rgba[1];
+    p[7] = (v << 20) + s1;
+    p[8] = x1 | ((long)y0 << 16) | z;
+    p[9] = rgba[2];
+    p[10] = (vb << 20) + s0;
+    p[11] = x0 | ((long)y1 << 16) | z;
+    p[12] = rgba[3];
+    p[13] = (vb << 20) + s1;
+    p[14] = x1 | ((long)y1 << 16) | z;
+    p[15] = 5;
+    D_001B22A8.bytes += 0x80;
+}
 
 
 /* Adapted from OpenRAC/rac1-decomp src/game/draw.c's append_rotated_sprite_quad,

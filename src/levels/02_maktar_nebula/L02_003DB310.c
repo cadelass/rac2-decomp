@@ -141,7 +141,7 @@ void func_L02_003DBE60(char *arg0) {
 /* func_L02_003DBFD8 is defined in L02_003DB310-g8.c (it reads D_L02_001B0530 through $gp). */
 
 
-INCLUDE_ASM("asm/levels", func_L02_003E6D70);
+/* func_L02_003E6D70 is defined in L02_003E6D70-g8.c. */
 
 /* func_L02_003E7370 is defined in L02_003E7370-g8.c. */
 
@@ -321,7 +321,7 @@ INCLUDE_ASM("asm/levels", func_L02_003E80F8);
 
 INCLUDE_ASM("asm/levels", func_L02_003E91F0);
 
-INCLUDE_ASM("asm/levels", func_L02_003E98A8);
+/* func_L02_003E98A8 is in L02_003E98A8-g8.c. */
 
 
 /* func_L02_003EA180 is in L02_003EA180-g8.c. */

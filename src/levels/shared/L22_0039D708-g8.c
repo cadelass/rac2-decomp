@@ -135,3 +135,53 @@ void func_L22_003A45F0(char *a0, int a1, int a2, int a3, int a4, float a5) {
         }
     }
 }
+
+/* ---- 0x003A3B50: spawn one object of a random kind. ---- */
+
+typedef struct Hero3B50 {
+    unsigned char pad[0x43];
+    unsigned char state;
+} Hero3B50;
+
+/* In .data, so that -G8 keeps the split lui/lw the entry block allocates around. */
+extern Hero3B50 *D_0018C0B0 __attribute__((section(".data")));
+extern int D_L22_0023B530[3][60];
+/* The target object: the same $gp slot in both levels, under a name each level binds itself. */
+extern int ref_L22_003A3B50_00 __attribute__((sda));
+extern int func_002A77E0(int);
+extern int func_L22_003A39C8(char *, char *, int, int);
+
+/* Picks a kind at random (one of two when the hero's or the target's state says so), scans that
+ * kind's row of 50 slots and spawns the object at POS. */
+void func_L22_003A3B50(char *pos, int arg) {
+    int n;
+    int mode = 0;
+    int i;
+    int *row;
+
+    n = 3;
+    if (D_0018C0B0->state == 6 || ((Hero3B50 *)ref_L22_003A3B50_00)->state == 4) n = 2;
+    switch (func_002A77E0(n)) {
+    case 0:
+        mode = 1;
+        break;
+    case 1:
+        mode = 2;
+        break;
+    case 2:
+        mode = 0;
+        break;
+    }
+    row = D_L22_0023B530[mode];
+    i = 0;
+    if (*row != 0) {
+        int *walk = row;
+        do {
+            i++;
+            if (i > 0x31) break;
+            walk++;
+            if (*walk == 0) break;
+        } while (i != 0x31);
+    }
+    func_L22_003A39C8((char *)ref_L22_003A3B50_00, pos, mode, arg);
+}

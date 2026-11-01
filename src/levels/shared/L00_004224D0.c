@@ -127,7 +127,7 @@ INCLUDE_ASM("asm/levels", func_L00_004233F8);
 
 /* func_L00_004237C8 is in a separate compilation unit. */
 
-INCLUDE_ASM("asm/levels", func_L00_004239A8);
+/* func_L00_004239A8 is in L00_004239A8-g8.c. */
 
 int func_L00_00423BB0(void)
 {
@@ -173,7 +173,7 @@ int func_L00_00424070(int a0, int a1)
     return r;
 }
 
-INCLUDE_ASM("asm/levels", func_L00_004240D8);
+/* func_L00_004240D8 is in L00_004240D8-g8-dbg.c. */
 
 INCLUDE_ASM("asm/levels", func_L00_004243C0);
 

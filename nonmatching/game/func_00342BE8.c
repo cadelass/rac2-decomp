@@ -1,72 +1,92 @@
-/* Complete manual reconstruction; not linked.
- * Profile: -O2 -G8 -ffunction-sections. 900/900 bytes, frame 0xB0 as retail; us 0/28.
- * 26 October 2026 (M10): -G8 with D_001A7340/D_001A7344 and the clip rectangle as plain
- * declarations (retail:  in delay slots, lui/lw elsewhere) gives the right size and frame
- * (the &alternate pseudo spills to 0x30). 90 differing lines remain: retail keeps object+0x28 as
- * a loop-invariant base in  (ours folds 0x28 into the load), the colour word read order,
- * and the clip copy addressing ( la, unshared lui/lw field reads). Pointer locals, struct
- * views and do/while forms did not hoist the base.
+/* GPT-6.1 Sol (high), pinned game compiler, -O2 -G8 -ffunction-sections.
+ * Best check: 900/900 bytes, frame 0xB0, 0/28 placements in USA v1.01,
+ * PAL and USA v2.00. Nineteen instruction differences (relocation operands
+ * excluded diagnostically); the first is at +0x1C8. These are the colour-word
+ * loads/updates/stores, the initialization-flag load and branch slot, and
+ * the order of the clip.x1/clip.y1 stores. No linked build was run.
+ * A fully typed MenuList recovers the invariant ids base and saved registers.
+ * The explicit SDATA views preserve the complete 16-byte clip rectangle
+ * while reproducing its GP copy destination and ordinary absolute field reads.
+ * The width view expresses the GP initialization read and absolute reset read.
+ * The alpha helper's integer/FP interleaving preserves each EE register bank
+ * and fixes only its first call's load order. Retained source uses that EE ABI.
+ * Preloaded colours, scalar result temporaries, named fields, a union view,
+ * and an inline scalar alpha helper tie; bitfield alpha emits byte stores.
+ * Disabling sched1 regresses. Reopen with a measured colour storage/access
+ * model that explains the remaining schedule; do not add volatile stack fields.
+ * All required types and declarations follow.
  */
 #include "common.h"
-typedef struct { float x, y; } VEC_F6bf9ce42;
+typedef struct { float x, y; } MenuListPosition;
 typedef struct { unsigned int values[4]; } MenuColourQuad;
 typedef struct { int x0, x1, y0, y1; } MenuClipRectangle;
-extern void func_00343068(VEC_F6bf9ce42 **);
-extern int func_003427C0(char *, int, float, float, float, float);
+extern void func_00343068(MenuListPosition **);
+extern int func_003427C0(char *, float, float, float, float, int);
 extern unsigned char D_00139568[], D_00239BA0[];
 extern MenuColourQuad D_001AE1D8, D_001AE1E8;
 extern float D_001AE1D0 __attribute__((sda));
 extern int D_001AE1D4 __attribute__((sda));
 extern int D_001B23C0 __attribute__((sda));
-extern MenuClipRectangle D_001B23B0;
-extern int D_001A7340, D_001A7344;
+extern MenuClipRectangle D_001B23B0 MACRO_ADDR;
+extern MenuClipRectangle menuClipGP SDATA(D_001B23B0);
+extern int D_001A7340 MACRO_ADDR, D_001A7344 MACRO_ADDR;
+extern int screenWidthGP SDATA(D_001A7340);
 extern void func_002FC620(int, int, int, int);
 extern int func_0028E588(int, int);
 extern void func_0028EA58(int, int, int, int, int, unsigned int *);
 
 
-void func_00342BE8(char *object)
+typedef struct {
+    MenuListPosition *position;
+    float iconSize, unused08, rowHeight;
+    int count, selected, state, backward, firstVisible, lastVisible;
+    int ids[25];
+    void *allocation;
+    int scrollOffset, frames;
+} MenuList;
+
+void func_00342BE8(MenuList *object)
 {
     float high, low, current;
     int index, first, second, texture;
     MenuColourQuad normal, alternate, *colours;
     MenuClipRectangle clip;
     unsigned char *entry;
-    func_00343068((VEC_F6bf9ce42 **)object);
-    low = (*(VEC_F6bf9ce42 **)object)->y + *(float *)(object + 0xC) * -4.0f;
-    high = (*(VEC_F6bf9ce42 **)object)->y + *(float *)(object + 4) * 0.5f;
-    for (index = *(int *)(object + 0x20);
-            index <= *(int *)(object + 0x24) && *(int *)(object + 0x10); index++) {
+    func_00343068(&object->position);
+    low = object->position->y + object->rowHeight * -4.0f;
+    high = object->position->y + object->iconSize * 0.5f;
+    for (index = object->firstVisible;
+            index <= object->lastVisible && object->count; index++) {
         normal = D_001AE1D8;
         alternate = D_001AE1E8;
-        entry = D_00239BA0 + D_00139568[((int *)(object + 0x28))[*(int *)(object + 0x14) + index]] * 224;
+        entry = D_00239BA0 + D_00139568[object->ids[object->selected + index]] * 224;
         colours = &normal;
         if (*(int *)entry && entry[4]) colours = &alternate;
         current = (float)index;
-        first = func_003427C0(object, D_001AE1D4, low,
-                (*(VEC_F6bf9ce42 **)object)->y + *(float *)(object + 0xC) * current + (float)*(int *)(object + 0x90),
-                high, D_001AE1D0);
-        second = func_003427C0(object, D_001AE1D4, low,
-                (*(VEC_F6bf9ce42 **)object)->y + *(float *)(object + 0xC) * current + *(float *)(object + 4) + (float)*(int *)(object + 0x90),
-                high, D_001AE1D0);
+        first = func_003427C0((char *)object, low,
+                object->position->y + object->rowHeight * current + (float)object->scrollOffset,
+                high, D_001AE1D0, D_001AE1D4);
+        second = func_003427C0((char *)object, low,
+                object->position->y + object->rowHeight * current + object->iconSize + (float)object->scrollOffset,
+                high, D_001AE1D0, D_001AE1D4);
         colours->values[0] = (colours->values[0] & 0xFFFFFF) | (first << 24);
         colours->values[1] = (colours->values[1] & 0xFFFFFF) | (first << 24);
         colours->values[2] = (colours->values[2] & 0xFFFFFF) | (second << 24);
         colours->values[3] = (colours->values[3] & 0xFFFFFF) | (second << 24);
         if (D_001B23C0 == 0) {
             clip.x0 = 0;
-            clip.x1 = D_001A7340 - 1;
+            clip.x1 = screenWidthGP - 1;
             clip.y0 = 63;
             clip.y1 = 340;
             D_001B23C0 = 1;
-            D_001B23B0 = clip;
+            menuClipGP = clip;
         }
         func_002FC620(D_001B23B0.x0, D_001B23B0.x1, D_001B23B0.y0, D_001B23B0.y1);
-        entry = D_00239BA0 + D_00139568[((int *)(object + 0x28))[*(int *)(object + 0x14) + index]] * 224;
+        entry = D_00239BA0 + D_00139568[object->ids[object->selected + index]] * 224;
         texture = func_0028E588(*(unsigned short *)(entry + 0x3C), 0);
-        func_0028EA58(texture, (int)(*(VEC_F6bf9ce42 **)object)->x,
-                (int)((*(VEC_F6bf9ce42 **)object)->y + *(float *)(object + 0xC) * current + (float)*(int *)(object + 0x90)),
-                (int)*(float *)(object + 4), (int)*(float *)(object + 4), colours->values);
+        func_0028EA58(texture, (int)object->position->x,
+                (int)(object->position->y + object->rowHeight * current + (float)object->scrollOffset),
+                (int)object->iconSize, (int)object->iconSize, colours->values);
         func_002FC620(0, D_001A7340 - 1, 0, D_001A7344 - 1);
     }
 }

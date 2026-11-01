@@ -9,8 +9,6 @@ typedef float f32;
 
 INCLUDE_ASM("asm/levels", func_L11_00420C88);
 
-INCLUDE_ASM("asm/levels", func_L11_00424A60);
-
 extern void func_00282CF0(f32 *, f32 *, f32 *);
 extern f32 func_00282DF0(f32 *);
 extern void func_00282F20(f32 *, f32 *, f32);

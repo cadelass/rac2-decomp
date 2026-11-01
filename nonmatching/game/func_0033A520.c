@@ -1,34 +1,87 @@
-/* func_0033A520 (360 bytes, boot + 27 levels, src/game/003399B0.c, default -G0) - near miss,
-   measured 21 October 2026 and rechecked 28 October 2026 with the current compiler (#222's
-   mfc1 interlock is in: plain C remains 360/360 bytes, 0/28 USA v1.01 places).
+/* func_0033A520 (360 bytes, boot + 27 levels, src/game/003399B0.c, default -G0) - near miss.
+   Opus 5.5 xhigh (opus-1), 31 October 2026: EXACT BYTES IN USA v1.01, NOT CLAIMED AS A MATCH, not
+   integrated. Two things stop it landing: a do/while (0) wrapper (below), and PAL and v2.00.
 
-   The plain C below is 360 bytes, 0 of 28 places: 26 of the 90 words differ, all in +0x58..+0xBC.
-   Everything before (prologue, the allocation, the four clears) and after (from the first call's
-   delay slot on) is retail's.
+   Best check.py results:
+   - The form below, with the wrapper: 360/360 bytes, 28 of 28 USA v1.01 places. PAL and v2.00: 0 of
+     28 each, 8 words differ, all field offsets (0x1F8, 0x1FC, 0x200, 0x204 are +0x10 there, 0x134 and
+     0x170 are not). One definition cannot give both; the function needs carry.py --demote or a ruling.
+     No linked build was run.
+   - The plain C at the end of this file, which breaks no rule: 360/360 bytes, 0 of 28 places, 25 of
+     the 90 words differ, all in +0x58..+0xBC, with relocated halves and call targets masked (cdiff.py
+     shows 34 rows, 8 of them calls; earlier records counted 26).
 
-   What differs, and why: retail schedules two blocks there with no branch between them:
-   block A = the rounding `(f32)(s32)(D_001B23A4 * 300.0f + 0.5f)` with the store of 70.0f to
-   alloc[0] (300.0f loaded before D_001B23A4, alloc in $v0, the rounded value in $f0), ending at
-   `cvt.s.w`; block B = `lui $s1,%hi(D_001ADC88)` first, then the alloc reload, the store of the
-   rounded value to alloc[1] and the first call's arguments. One block (plain C) lets sched2
-   interleave the argument set-up with the conversion chain. Calls do not end blocks in this cc1;
-   no single flag separates them. The same block boundary after a scale-and-round of D_001B23A4
-   is in func_0033C028 (its record) and twice in func_002900B8.
-   - The previous record's `if (obj) { A } else { A }` (identical arms, cross-jumped by jump2
-     after sched2) gives the boundary and 12 words off: the 300.0f/D_001B23A4 load order, alloc
-     in $v1 (local-alloc's false-dependency rule: alloc dies right before the fix result is born
-     in sched1's order), and block B's order. It is not admissible (identical arms).
-   - `do { A } while (0);` (the loop-end note as a scheduling barrier, as func_00124818 and
-     func_L23_0041C8C0 use it) plus `char *text = D_001ADC88;` written right after it (so the
-     barrier insn is the `lui $s1`, which sched2 must issue first) gives block B exactly
-     retail's; 6 words still differ in block A: the two loads' order, alloc in $v1 for $v0, the
-     rounded value in $f1 for $f0 (it is a local pseudo then, and local-alloc keeps it off the
-     add result's $f0; with a real block boundary it is a global pseudo and gets $f0).
-     Statement order inside the loop, `300.0f * D` and a local copy of D_001B23A4 change nothing
-     useful (the 70.0f store first is worse).
-   What would unblock it: the original's construct for that boundary (probably a branch whose two
-   arms compile alike, as func_0033C028's record argues), or evidence that a do-while(0) barrier
-   is admissible here, plus the block-A allocation. */
+   The exact form, in place of the INCLUDE_ASM line in src/game/003399B0.c (the file already declares
+   the typedefs, func_00335F88 and D_001ADC88):
+
+   extern void func_00336710(void *a0, void *a1, void *a2);
+   extern int *func_00335E20(void *a0);
+   extern void func_003369A8(void *a0, void *a1, void *a2);
+   extern int *func_00336DA8(int a0, int a1);
+   extern int func_00336E40(void *a0);
+   extern const f32 D_001B23A4 __attribute__((sda));
+
+   void func_0033A520(unsigned char *obj, void *arg)
+   {
+       float v;
+       float *p;
+       char *text;
+
+       *(int *)(obj + 0x1F8) = 0;
+       *(void **)(obj + 0x200) = arg;
+       if (arg != 0) {
+           int *alloc = func_00336DA8(16, func_00336E40(arg));
+           *(int **)(obj + 0x1FC) = alloc;
+           alloc[1] = 0;
+           alloc[2] = 0;
+           alloc[3] = 0;
+           alloc[0] = 0;
+       }
+       do {
+           v = (float)(int)(D_001B23A4 * 300.0f + 0.5f);
+           p = *(float **)(obj + 0x1FC);
+           p[0] = 70.0f;
+       } while (0);
+       text = D_001ADC88;
+       p = *(float **)(obj + 0x1FC);
+       p[1] = v;
+       func_00336710(obj + 0x134, text, *(void **)(obj + 0x200));
+       func_00335F88(obj + 0x134, 24.0f, 24.0f, 0.0f, 0.0f);
+       *func_00335E20(obj + 0x134) = 0x60F0F0B0;
+       v = 65.0f;
+       *(float *)(obj + 0x204) = v;
+       func_003369A8(obj + 0x170, text, *(void **)(obj + 0x200));
+       *func_00335E20(obj + 0x170) = 0x80F0F0F0;
+       func_00335F88(obj + 0x170, 0.7f, 0.7f, 0.0f, 0.0f);
+   }
+
+   What each part of that form does. The byte effects were measured by taking each part away from the
+   exact form; the reasons come from the scheduler and allocator dumps and recalled GCC behaviour, as
+   no compiler source is at hand:
+   - The wrapper. The LOOP_END note makes `lui $s1` a scheduling barrier, so the argument set-up stays
+     after the conversion chain and block B comes out as retail's. Without it, 25 words differ. WORKER2.md
+     rules this wrapper out until the maintainers answer the question in MATCHING-BLOCKERS.md, and no
+     other construct found gives the same barrier.
+   - `const` on D_001B23A4. An unchanging read has no anti-dependence on the later store to p[0], so
+     300.0f goes first by insn order. Plain `extern float` with a store in the same block loads D first;
+     scratch compiles of small functions show the same flip. D_001B23A4 is not really constant: 0x335DE0
+     writes it. The const is a read-only view in this unit, and a reviewer has to accept that. The sda
+     attribute stays, for the `lui $at` form at -G0.
+   - One variable p for both reloads. Two deaths make it a global pseudo, so it is not kept off $v0 by
+     local-alloc's false-dependency rule at the fix insn. Separate reloads put alloc in $v1 (2 words).
+   - v reused for 65.0f. Again two deaths, so global, and it gets $f0. Otherwise $f1 (3 words).
+   - -G8 is not needed: the form also matches 28 of 28 in the -g8 sibling, but no $gp access calls for it.
+
+   This corrects the earlier record, which asked for a real block boundary after the rounding. With const
+   and both reused variables, `if (obj) { A } else { A }` makes block A exact but leaves 7 words of block B
+   wrong ($v0 reload before `lui $s1`, then the argument moves). A do/while (0) around an if on the
+   rounded int, whose loop-end note then sits just before the join label, leaves block B wrong too; the
+   note seems to count only inside a block. Retail looks like a loop note, not a merged branch. That
+   rests on these measurements, not on the original source. Plain struct fields (mem/s) do not help: the load order and
+   interleaving stay, and the clears lose their retail order. Inline helpers with a float parameter give
+   the same bytes as a direct expression.
+
+   Reopen with a ruling on non-empty do/while (0) wrappers, or evidence of the original construct. */
 
 typedef float f32;
 typedef unsigned char u8;

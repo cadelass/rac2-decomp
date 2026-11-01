@@ -150,7 +150,7 @@ INCLUDE_ASM("asm/game", func_002E8368);
 
 
 
-INCLUDE_ASM("asm/game", func_002E9268);
+/* func_002E9268 is in 002E9268.c. */
 
 extern short D_00152C20;
 extern int D_001B1594 __attribute__((sda));

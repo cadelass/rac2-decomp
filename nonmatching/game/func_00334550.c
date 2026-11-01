@@ -1,7 +1,7 @@
-/* No attempt: the catalogue's extent for func_00334550 is 8 bytes too long at
-   the front.  The extent starts on addiu $sp, $sp, 0x40 ; nop
-   - the epilogue area of the previous function, which no C can produce at the
-   start of a function - and the body starts at +0x8 with `addiu $sp, $sp, 0x90`.  The bytes in between belong to no
-   catalogued function, the same catalogue defect as func_L00_00341798 and
-   func_L00_002E6440.  A fix in tools/levels.py that moves the start of the
-   extent to the prologue would make the function matchable. */
+/* GPT-6.1 Sol low tier, USA v1.01.
+ * 444-byte residual extent, confirmed with current retail bytes. Previous body
+ * returns at 00334548, restoring its 0x90 frame at 0033454C. This extent is
+ * positive stack adjustments and nops, plus sw zero,0x14(a2) at 00334598.
+ * The +8 instruction is another positive adjustment, not a prologue.
+ * Next body starts at 00334710. Requires catalogue investigation, not C.
+ */
