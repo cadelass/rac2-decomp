@@ -1943,7 +1943,9 @@ src/game/002977A8.c	-O2 -G0 -ffunction-sections -fno-strength-reduce
 src/levels/shared/L00_003E7E40-trails.c	-O2 -G0 -ffunction-sections -mno-split-addresses
 src/levels/shared/L22_002A8B98-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy
 src/levels/01_oozla/L01_002BEB90-nsa-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/levels/00_aranos_tutorial/L00_003CE278-update.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
 src/levels/shared/L00_003A2EE0-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/01_oozla/L01_003C0408-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/game/00300F58-g8.c	-O2 -G8 -ffunction-sections -g -frac2-keep-block-order
 src/game/002BF6F0-c5120-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L02_00422270-g8.c	-O2 -G8 -Wa,-G32 -ffunction-sections -frac2-zero-ti-por
@@ -1968,6 +1970,7 @@ src/levels/shared/L00_003EB610-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16 -fno-
 src/levels/shared/L00_003EB8E8-g8.c	-O2 -G8 -ffunction-sections -g
 src/game/00345358-input-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L00_0037E898-trail-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/levels/00_aranos_tutorial/L00_003CD160.c	-O2 -G0 -ffunction-sections -frac2-zero-ti-por -g
 src/levels/shared/L00_003F8E08-burst-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -fno-sched-interblock
 src/levels/shared/L05_0042BB10-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/levels/shared/L05_00442560-q.c	-O2 -G0 -ffunction-sections -frac2-qcopy
@@ -2021,11 +2024,18 @@ src/levels/shared/L00_003DB118-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -fr
 src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/levels/shared/L00_00418A80-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
 src/levels/shared/L04_00403530.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
+src/levels/01_oozla/L01_003B9F30-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
 src/game/002F5220-7738.c	-O2 -G8 -fno-sched-interblock -ffunction-sections
+src/levels/01_oozla/L01_003D98E0-g8.c	-O2 -G8 -ffunction-sections -ffast-math -g
+src/levels/01_oozla/L01_003BAFB8-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/01_oozla/L01_003B5878-g8.c	-O2 -G8 -ffunction-sections -fno-expensive-optimizations
+src/levels/01_oozla/L01_002BEB90-action-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+src/levels/00_aranos_tutorial/L00_002FC7A8-lift.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
 src/game/00295F60-map-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -ffast-math -g
 src/game/00286738-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/game/002B1C20-gravity.c	-O2 -G0 -ffunction-sections -g -frac2-hazard-labels
 src/game/002E9268.c	-O2 -G0 -ffunction-sections -g
 src/game/00294988-g8.c	-O2 -G8 -ffunction-sections -Wa,-G32
+src/levels/01_oozla/L01_003CB668-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -g
 src/game/0028BE00-g8.c	-O2 -G8 -ffunction-sections -g
 src/game/002AF580-qcopy.c	-O2 -G0 -ffunction-sections -g -ffast-math -frac2-qcopy -frac2-qcopy-barrier

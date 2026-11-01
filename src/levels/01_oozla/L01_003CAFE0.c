@@ -55,7 +55,7 @@ extern void func_00288E18(int, int);
 INCLUDE_ASM("asm/levels", func_L01_003CAFE0);
 
 
-INCLUDE_ASM("asm/levels", func_L01_003CB668);
+/* func_L01_003CB668 is in L01_003CB668-g16.c. */
 
 /* func_L01_003CBCD8 is in L01_003CBCD8-qcopy.c. */
 
@@ -409,7 +409,7 @@ INCLUDE_ASM("asm/levels", func_L01_003D1A48);
 
 INCLUDE_ASM("asm/levels", func_L01_003D2890);
 
-INCLUDE_ASM("asm/levels", func_L01_003D2E50);
+/* func_L01_003D2E50 is in L01_003D2E50.c. */
 
 /* func_L01_003D68C0 is defined in a sibling -g8.c unit. */
 
@@ -421,10 +421,10 @@ INCLUDE_ASM("asm/levels", func_L01_003D8830);
 
 /* func_L01_003D8C00 is defined in L01_003D8C00-qcopy-barrier.c. */
 
-INCLUDE_ASM("asm/levels", func_L01_003D8E80);
+/* func_L01_003D8E80 is defined in L01_003CAFE0-g8.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L01_003D98E0);
+/* func_L01_003D98E0 is defined in L01_003D98E0-g8.c. */
 
 /* func_L01_003DA300 is in L01_003DA300-g8.c. */
 

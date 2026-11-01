@@ -75,6 +75,8 @@ void func_L01_003A6350(u8 *arg0) {
     }
 }
 
+INCLUDE_ASM("asm/levels", func_L01_003A6638);
+
 void func_L01_003A6448(float *arg0, float *arg1) {
     *arg0 = -D_00189E20.f1FB0;
     *arg1 = -D_00189E20.f1FB4;
@@ -89,9 +91,8 @@ void func_L01_003A6448(float *arg0, float *arg1) {
 }
 
 
-INCLUDE_ASM("asm/levels", func_L01_003A6638);
 
-INCLUDE_ASM("asm/levels", func_L01_003B1F08);
+/* func_L01_003B1F08 lives in L01_003B1F08.c. */
 
 /* func_L01_003B4200 lives in L01_003B4200.c: its grouped copies and
    global-address scheduling need a per-file profile. */
@@ -267,10 +268,10 @@ void func_L01_003B57A8(u8 *arg0, u8 *out) {
     *(f32 *)(out + 0x8) = func_002A89A8(out, 0, 10.0f);
 }
 
-INCLUDE_ASM("asm/levels", func_L01_003B5878);
+/* func_L01_003B5878 is defined in L01_003B5878-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L01_003B9F30);
+/* func_L01_003B9F30 is defined in L01_003B9F30-g16.c. */
 
 /* func_L01_003BAFB0 lives in the -g8 sibling file (it reads a float through $gp). */
 
-INCLUDE_ASM("asm/levels", func_L01_003BAFB8);
+/* func_L01_003BAFB8 is defined in L01_003BAFB8-g8.c. */

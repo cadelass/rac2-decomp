@@ -60,8 +60,6 @@ extern void func_2E3470(void *, void *, void *);
 
 extern void func_2E2608(void *, int, int, unsigned int, int);
 
-INCLUDE_ASM("asm/levels", func_L01_002C1A70);
-
 /* Builds the four-slice trail mesh for the ship's current colour. */
 void func_L01_002F21F0(char *arg0) {
     char buffer[0x40];
