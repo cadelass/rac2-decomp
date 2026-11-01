@@ -1,50 +1,41 @@
-/*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
- * Profile: -O2 -G0 -ffunction-sections.
- * Reported final C / retail: 1080 / 1112 bytes; size equality is not a match.
- * us: 0/27 placements; 1080/1112 bytes.
- * us2: 0/27 placements; 1080/1112 bytes.
- * pal: absent from catalogue (not a match).
- * Residual: Sequence-controller state/base expressions, branches and saved-register lifetimes differ. Startup, abort, object interpolation/update and all teardown calls are complete. F5AF8 keeps its integer return and the button mask keeps all 64 bits. Reopen on the original controller-field expressions and actor-loop lifetimes.
- * Reopening condition: Reopen only after independent source, data-layout, ABI or compiler evidence specifically explains the residual above; then test that single hypothesis. Do not repeat tied source forms or flag sweeps.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
+/* GPT-6.1 Sol high-effort worker, 29 October 2026; retained near miss.
+ * Current game compiler, -O2 -G0 -ffunction-sections: 1108/1112 bytes,
+ * 0 of 27 USA v1.01 placements match (tools/check.py --diff).
+ * Retail's 0x70 frame and saved-register set are reproduced. Controller
+ * +0x40/+0x44/+0x48 are signed halfwords. An explicit ended snapshot,
+ * typed controller, shared actor-frame snapshot and typed input/playback
+ * objects improve the earlier 1080-byte reconstruction.
+ * Residual: initial counter store/compare scheduling, the GP flags load in
+ * an FP branch slot instead of retail's absolute load, skip-input branch
+ * orientation, and stop-call block placement. Best size was reached at
+ * trials 3 and 8 and confirmed by a twelfth checker run. No linked build
+ * was run.
+ * The later explicit per-arm stop-call form aligns the actor loop and
+ * teardown after an offset, but is 1104 bytes; signed masks, local boolean
+ * snapshots, nested/goto input forms and nosda did not close the residual.
+ * Next: independent evidence for skip-input expression/block structure,
+ * not forced reloads or scheduling barriers. Required declarations follow.
  */
 
-/*
- * Manual C reconstruction retained after bounded retail comparison.
- * Profile: -O2 -G0 -ffunction-sections
- * Measured text: 1080 bytes; retail: 1112 bytes. Stack frame 0x80.
- * Final coverage: US 0/27, US2 0/27, PAL absent. Absences are not matches.
- * 1 measured source/profile forms. Sequence-controller state/base expressions, branches and
- * saved-register lifetimes differ. Startup, abort, object interpolation/update and all
- * teardown calls are complete. F5AF8 keeps its integer return and the button mask keeps all
- * 64 bits. Reopen on the original controller-field expressions and actor-loop lifetimes.
- * All carrying checks ended as nonmatches (exit 1); no linked-build credit.
- */
-
-extern char D_L00_001BCAC0[];
-extern char D_L00_001BEFC0[];
-extern float D_L00_001B18E0;
-extern unsigned int D_001A7A08;
-extern int D_001A7478, D_001A79F0, D_001A7B90;
-extern unsigned long long D_00138320;
+typedef struct { char prefix[0x3C]; int abort; } SequencePlayback;
+extern SequencePlayback D_L00_001BEFC0;
+extern float D_L00_001B18E0 __attribute__((sda));
+extern int D_001A7A08[] __attribute__((sda));
+extern int D_001A7478 __attribute__((sda)), D_001A79F0 __attribute__((sda)), D_001A7B90 __attribute__((sda));
+typedef struct { char prefix[0x1A0]; union { unsigned long long all; struct { unsigned int low, high; } word; } buttons; } SequenceInput;
+extern SequenceInput D_00138180;
 extern short D_001A63AC;
 extern void func_00288BB8(void *);
 extern int func_002B4B70(int, int);
-extern void func_002F5220(void);
 extern void func_L00_002FC7A8(void);
 extern void func_002B6658(void);
 extern void func_002E5F60(void);
 extern void func_L00_002A6DD0(void);
-extern void func_002B9390(void);
 extern float func_002AA2E8(float *, float, float);
 extern int func_002B6D28(void);
 extern int func_00288BE8(void *);
-extern short func_002B7CE0(int);
+
 extern void func_00293D30(void);
-extern int func_L00_003046D0(int);
 extern int func_002F5AF8(void);
 extern void func_0029F390(unsigned char *);
 extern float func_00283CE0(int);
@@ -57,15 +48,32 @@ extern void func_002A93B0(void *);
 extern void func_L00_002D4E58(void *, int);
 extern void func_L00_002A70F8(void *);
 extern void func_L00_002FCBE8(void);
-extern void func_002E4AC8(void);
 extern void func_002914B8(void);
 extern void func_0029FFB8(void);
+
+extern int D_L00_001BCAC0[];
+extern void func_002B7CE0(int);
+extern void func_002F5220(void);
+extern void func_002B9390(void);
+extern int func_L00_003046D0(int);
+extern void func_002E4AC8(void);
 extern void func_002F52B8(void);
+
+typedef struct {
+    char prefix[0x34];
+    int time, frame, chunk;
+    short end_time, pad42, count, pad46, fade_time;
+    char pad4a[14];
+    int done;
+    char pad5c[0x130];
+    unsigned char *actors[0];
+} SequenceState;
+#define SEQUENCE ((SequenceState *)D_L00_001BCAC0)
 
 void func_L00_00370408(void) {
     float first[4];
     float second[4];
-    char *state = D_L00_001BCAC0;
+    int ended;
     unsigned char *object;
     char *path;
     int abort;
@@ -73,10 +81,10 @@ void func_L00_00370408(void) {
     int complete;
     int i;
     short id;
-    if (*(int *)(state + 0x58)) return;
-    if (*(int *)(state + 0x40) == 0) {
-        func_00288BB8(D_L00_001BEFC0);
-        *(int *)(state + 0x58) = 1;
+    if (SEQUENCE->done) return;
+    if (SEQUENCE->end_time == 0) {
+        func_00288BB8(&D_L00_001BEFC0);
+        SEQUENCE->done = 1;
         func_002B4B70(0, 0);
         return;
     }
@@ -86,41 +94,46 @@ void func_L00_00370408(void) {
     func_002E5F60();
     func_L00_002A6DD0();
     func_002B9390();
-    ++*(int *)(state + 0x34);
-    ++*(int *)(state + 0x38);
-    if (*(int *)(state + 0x34) < 18) {
+    ++SEQUENCE->time;
+    ++SEQUENCE->frame;
+    if (SEQUENCE->time < 18) {
         func_002AA2E8(&D_L00_001B18E0, 0.0f, 0.16666667f);
         if (D_L00_001B18E0 > 1.0f) D_L00_001B18E0 = 1.0f;
     }
-    if (*(int *)(state + 0x48) <= *(int *)(state + 0x34)) func_002B6D28();
+    if (SEQUENCE->fade_time <= SEQUENCE->time) func_002B6D28();
+    ended = SEQUENCE->time >= SEQUENCE->end_time;
     abort = 0;
-    if (*(int *)(state + 0x34) > 17 && D_L00_001B18E0 == 0.0f) {
-        if (((D_001A7A08 & 0xFFFF0000u) == 0 && D_001A7478 == 0 && D_001A79F0 > 0) ||
-            !((unsigned int)(D_00138320 >> 32) & 0x800)) {
-            if ((D_00138320 & 0x8000000000FULL) == 0x8000000000FULL) abort = 1;
+    if (SEQUENCE->time > 17 && D_L00_001B18E0 == 0.0f) {
+        if (((D_001A7A08[0] & -0x10000) == 0 && D_001A7478 == 0 && D_001A79F0 > 0) ||
+            !(D_00138180.buttons.word.high & 0x800)) {
+            if ((D_00138180.buttons.all & 0x8000000000FULL) == 0x8000000000FULL) abort = 1;
         } else abort = 1;
     }
     if (abort) {
-        *(int *)(D_L00_001BEFC0 + 0x3C) = 1;
-        func_00288BB8(D_L00_001BEFC0);
-        *(int *)(state + 0x58) = 1;
+        D_L00_001BEFC0.abort = 1;
+        func_00288BB8(&D_L00_001BEFC0);
+        SEQUENCE->done = 1;
     } else {
-        if (*(int *)(state + 0x34) < *(int *)(state + 0x40)) {
+        if (ended) {
+            SEQUENCE->done = 1;
+            if (func_00288BE8(&D_L00_001BEFC0)) goto finish;
+        } else {
             threshold = D_001A7B90 ? 80 : 96;
-            if (*(int *)(state + 0x38) >= threshold) {
-                ++*(int *)(state + 0x3C);
+            if (SEQUENCE->frame >= threshold) {
+                ++SEQUENCE->chunk;
                 if (D_001A63AC) func_002B7CE0(1);
                 func_00293D30();
-                func_L00_003046D0(*(int *)(state + 0x3C) + 1);
+                func_L00_003046D0(SEQUENCE->chunk + 1);
             }
             complete = func_002F5AF8();
-            for (i = 0; i < *(int *)(state + 0x44); i++) {
-                object = *(unsigned char **)(state + 0x18C + i * 4);
-                object[0x41] = (*(int *)(state + 0x38) >> 1) + 1;
-                object[0x40] = *(int *)(state + 0x38) >> 1;
+            for (i = 0; i < SEQUENCE->count; i++) {
+                object = SEQUENCE->actors[i];
+                { int frame = SEQUENCE->frame >> 1;
+                object[0x41] = frame + 1;
+                object[0x40] = frame; }
                 func_0029F390(object);
-                *(float *)(object + 0x44) = func_00283CE0(*(int *)(state + 0x38) & 1) * 0.5f;
-                if (complete && (*(int *)(state + 0x38) & 1)) *(float *)(object + 0x44) = 1.0f;
+                *(float *)(object + 0x44) = func_00283CE0(SEQUENCE->frame & 1) * 0.5f;
+                if (complete && (SEQUENCE->frame & 1)) *(float *)(object + 0x44) = 1.0f;
                 path = *(char **)(object + 0x68);
                 func_00282D30(first, path + object[0x40] * 16, 1.0f - *(float *)(object + 0x44));
                 func_00282D30(second, path + object[0x41] * 16, *(float *)(object + 0x44));
@@ -136,8 +149,6 @@ void func_L00_00370408(void) {
             }
             goto finish;
         }
-        *(int *)(state + 0x58) = 1;
-        if (func_00288BE8(D_L00_001BEFC0)) goto finish;
     }
     func_002B4B70(0, 0);
 finish:

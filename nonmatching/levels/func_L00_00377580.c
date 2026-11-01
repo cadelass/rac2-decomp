@@ -1,37 +1,39 @@
 /*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
- * Profile: -O2 -G16 -Wa,-G16 -ffunction-sections.
- * Reported final C / retail: 820 / 876 bytes; size equality is not a match.
- * us: 0/27 placements; 820/876 bytes.
- * us2: absent from catalogue (not a match).
- * pal: absent from catalogue (not a match).
- * Residual: Text/argument lifetimes and the 0x240 frame differ from retail 0x250. -mno-split-addresses worsens size to 808 and was reverted. The three format strings keep measured extents 10,9,9 including terminators, with standard G16/Wa-G16; both buffers are 256 bytes. Reopen on formatted-text/width-result lifetimes.
- * Reopening condition: Reopen only after independent source, data-layout, ABI or compiler evidence specifically explains the residual above; then test that single hypothesis. Do not repeat tied source forms or flag sweeps.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
+ * High-effort worker, task v0902, 29 October 2026.
+ * Current pinned game compiler: -O2 -G8 -ffunction-sections.
+ * Best check.py: 876/876 bytes, 0/27 USA v1.01 placements.
+ * Eighteen instructions differ, all within +0x0C through +0x90: opening
+ * slot/group address allocation, load order and localization-table setup.
+ * The remaining body and 0x250 frame agree after relocated fields are ignored;
+ * this is a diagnostic comparison, not a linked match.
+ * Formats have measured extents 10/9/9 and ordinary absolute declarations.
+ * Nesting localization calls in sprintf preserves their format-pointer lifetimes.
+ * Typed global model views and raw class-byte indexing recover address ordering.
+ * The wide byte-mask idiom follows matched func_002CF340.
+ * Named mask/table-base locals tied. Next useful evidence: initial slot/group
+ * lifetimes and the localization-table base. Do not repeat tied variants.
+ * Required declarations are included below. Other releases and linking untested.
  */
 
-/*
- * Manual C reconstruction retained after bounded retail comparison.
- * Profile: -O2 -G16 -Wa,-G16 -ffunction-sections
- * Measured text: 820 bytes; retail: 876 bytes. Stack frame 0x240.
- * Final coverage: US 0/27, US2 absent, PAL absent. Absences are not matches.
- * 2 measured source/profile forms. Text/argument lifetimes and the 0x240 frame differ from
- * retail 0x250. -mno-split-addresses worsens size to 808 and was reverted. The three format
- * strings keep measured extents 10,9,9 including terminators, with standard G16/Wa-G16; both
- * buffers are 256 bytes. Reopen on formatted-text/width-result lifetimes.
- * All carrying checks ended as nonmatches (exit 1); no linked-build credit.
- */
-
-extern char D_L00_0022F7C0[];
-extern unsigned char D_001A7A80[];
+/* Partial model and class layouts measured from the item fields. */
+typedef struct { int group; int pad[3]; } UpgradeGroup;
+typedef union {
+    struct { char prefix[0x144]; UpgradeGroup rows[0];
+} groups;
+    struct { char prefix[0x140]; UpgradeGroup rows[0];
+} slots;
+    struct { char prefix[0x148]; UpgradeGroup rows[0];
+} prices;
+} UpgradeModel;
+extern UpgradeModel D_L00_0022F7C0;
+extern unsigned char D_001A7A80[] __attribute__((sda));
 extern int D_L00_001A8E40[];
 extern unsigned char D_00139568[];
-extern char D_L00_00262570[];
-extern char D_L00_001AD738[10] __attribute__((sda));
-extern char D_L00_001AD748[9] __attribute__((sda));
-extern char D_L00_001AD758[9] __attribute__((sda));
+typedef struct { char prefix[8]; int name; char tail[0xE0-12]; } UpgradeInfo;
+extern UpgradeInfo D_L00_00262570[];
+extern char D_L00_001AD738[10];
+extern char D_L00_001AD748[9];
+extern char D_L00_001AD758[9];
 extern int D_L00_001AD718 __attribute__((sda));
 extern int D_L00_001AD71C;
 extern int D_L00_001AD724;
@@ -53,27 +55,22 @@ void func_L00_00377580(void) {
     char first[256];
     char second[256];
     unsigned int colors[4];
-    char *model = D_L00_0022F7C0;
-    char *row = model + *(int *)(model + 0x80) * 16;
-    int group = *(int *)(row + 0x144);
-    int slot = *(int *)(row + 0x140);
-    unsigned char *text;
-    unsigned char *description;
-    unsigned char *suffix;
+    char *model = (char *)&D_L00_0022F7C0;
+    int slot = D_L00_0022F7C0.slots.rows[*(int *)(model + 0x80)].group;
+    int group = D_L00_0022F7C0.groups.rows[*(int *)(model + 0x80)].group;
     int handle;
     int width;
-    if ((D_001A7A80[group] & (1u << ((slot & 15) << 1)) & 255u) != 0) return;
+    if (((unsigned long)D_001A7A80[group] & ((1U << (slot * 2)) & 255UL)) != 0) return;
     if (group != 0) {
-        text = (unsigned char *)func_00288FB8(D_L00_001A8E40[slot]);
-        description = (unsigned char *)func_00288FB8(*(int *)(D_L00_00262570 + (unsigned int)D_00139568[group] * 0xE0 + 8));
-        func_00115DA8(first, D_L00_001AD738, text, description);
+        func_00115DA8(first, D_L00_001AD738,
+            (unsigned char *)func_00288FB8(D_L00_001A8E40[slot]),
+            (unsigned char *)func_00288FB8(((UpgradeInfo *)((char *)D_L00_00262570 + D_00139568[D_L00_0022F7C0.groups.rows[*(int *)(model + 0x80)].group] * 224))->name));
         func_0027FB40(D_L00_001AD728, (int)((float)D_L00_001AD72C * D_L00_001B25E0 + 0.5f),
                       0x80F0F0F0ULL, (unsigned char *)first, -1);
     }
-    func_002F9BC0(first, *(int *)(model + 0x148 + *(int *)(model + 0x80) * 16));
-    text = (unsigned char *)func_00288FB8(0x114E);
-    suffix = (unsigned char *)func_00288FB8(0x3262);
-    func_00115DA8(second, D_L00_001AD748, text, first, suffix);
+    func_002F9BC0(first, D_L00_0022F7C0.prices.rows[*(int *)(model + 0x80)].group);
+    func_00115DA8(second, D_L00_001AD748, (unsigned char *)func_00288FB8(0x114E), first,
+        (unsigned char *)func_00288FB8(0x3262));
     func_0027FB40(D_L00_001AD718, (int)((float)D_L00_001AD71C * D_L00_001B25E0 + 0.5f),
                   0x80F0F0F0ULL, (unsigned char *)second, -1);
     colors[0] = 0x60F0F0B0;
@@ -85,10 +82,8 @@ void func_L00_00377580(void) {
     func_0028EA58(handle, D_L00_001AD718 + (width >> 1) + 4,
                   (int)((float)D_L00_001AD724 * D_L00_001B25E0 + 0.5f), 16,
                   (int)(D_L00_001B25E0 * 16.0f + 0.5f), colors);
-    text = (unsigned char *)func_00288FB8(0x2F2D);
-    width = func_002B0D70();
-    suffix = (unsigned char *)func_00288FB8(0x3262);
-    func_00115DA8(first, D_L00_001AD758, text, width, suffix);
+    func_00115DA8(first, D_L00_001AD758, (unsigned char *)func_00288FB8(0x2F2D),
+        func_002B0D70(), (unsigned char *)func_00288FB8(0x3262));
     func_0027FB40(D_L00_001AD730, (int)((float)D_L00_001AD734 * D_L00_001B25E0 + 0.5f),
                   0x80F0F0F0ULL, (unsigned char *)first, -1);
     handle = func_0028E588(0xEAA2, 0);

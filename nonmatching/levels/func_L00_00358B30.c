@@ -1,93 +1,132 @@
-/* Readable C reconstruction, measured 2026-10-23.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * us: 0/27, us2: 0/27, pal: not carried.
- * 512 bytes, retail544. Data-base reuse, mixed GP/absolute references and save-state copy scheduling differ.
- * Tried: Truthful C70-byte state buffers,16-byte parameter block and measured player/settings subfields, qualified qcopy/barrier with G8.
- * Reopen: A verified data-layout/declaration remedy for the retail mixed address forms.
- * Historical screening notes follow unchanged. No handwritten-assembly inference.
+/* Claude Opus 5.5 (opus-1, task v1649), 30 October 2026. USA v1.01: 544/544 bytes, 0/27 places.
+ * Profile: its own unit L00_0033F678-g8.c with -O2 -G8 -ffunction-sections
+ * -frac2-keep-block-order (keeps the switch's default-last body and its branch);
+ * requires the common.h transfer helpers. Everything matches up to +0x194, the
+ * store group included, and from the loop exit on. What still differs (about nine
+ * instructions) is the moby-list loop setup and its registers: retail clears i (a3)
+ * first, then loads begin (a1) and end (a0); this C loads begin (a3), clears i (a0),
+ * loads end (a1), so the loop body uses the other registers too. A probe that kept i
+ * live into the SetHeroMode call (an extra fourth argument: a false prototype, not
+ * kept) gave retail's allocation, so retail's i conflicts with a0-a2 there or begin/end
+ * prefer a0/a1; the i=0 first order is a separate sched1 tie (load latency outranks it).
+ * Fixed here against the older drafts: Hero and GameState structs give the base+offset
+ * accesses and the shared high halves (s2/s3) of retail; the store order follows
+ * register-death weights (the 6B |= 7 and the halfword store are the last uses of their
+ * bases); the selector is a switch; the loop is a goto loop (no strength reduction);
+ * func_L00_002B2A40 (SetHeroMode) takes the entity as its real third argument; the list
+ * bounds are unsized sda arrays (assembler macro loads). Tried and tied: direct global
+ * reads in the loop (PRE hoists them the same way), begin/end as one struct, loads
+ * before i = 0, -frac2-gcse-unsplit-edges. -fno-schedule-insns and for(;;) are worse.
  */
-
-/* func_L00_00358B30 - 544 bytes, 27 places (every level), retail at 0x00358B30.
- *
- * Screened, not matched in wave 13 (worker s1): 9 call(s), 1 `$gp`-relative small-data
- * access (`swc1 $f3, 0x29A0($gp)`), MMI words [lq `$v1` / sq `$a0`, lq `$v1` / sq `$a1`].
- * Two obstacles: the 16-byte copies are retail's materialised-pointer form (this cc1
- * always folds a constant offset into the lq/sq pair) and the `$gp` access needs a
- * `-G8` unit, so the body belongs in a `L00_00358B30-g8.c` file.  No C was written in
- * this wave.
- */
+#include "common.h"
 
 typedef int Quadword __attribute__((mode(TI)));
-extern unsigned char D_00189E20[];
-extern unsigned char D_00188660[];
-extern unsigned short D_001A63F0 __attribute__((nosda));
-extern unsigned char D_L00_0021DDB0[0xC70];
+typedef struct {
+    unsigned char pad00[0x80];
+    Quadword position;
+    Quadword rotation;
+    unsigned char padA0[0x21F0];
+    unsigned char *moby;
+    unsigned char pad2294[0x32];
+    unsigned char state;
+} Hero;
+extern Hero D_00189E20;
+typedef struct {
+    unsigned char pad00[0x64];
+    int field64;
+    unsigned char field68, field69, field6A, field6B;
+} GameState;
+extern GameState D_00188660;
+extern unsigned short D_001A63F0[];
+typedef struct {
+    int active, reserved04[3];
+    Quadword position, rotation;
+    int field30, field34, field38;
+    unsigned char field3C, field3D, field3E, field3F, field40, field41;
+    unsigned char reserved42[2];
+    float field44, field48, field4C, field50;
+    int field54, field58, field5C;
+    unsigned char reserved60[0xC04];
+    unsigned short fieldC64, reservedC66;
+    int fieldC68, reservedC6C;
+} SavedState;
+extern SavedState D_L00_0021DDB0;
 extern unsigned char D_L00_0021D140[0xC70];
-extern int D_L00_001C9340 __attribute__((nosda));
-extern unsigned char D_L00_001B1980[16];
+extern int D_L00_001C9340[];
+extern unsigned char D_L00_001B1980[] __attribute__((sda));
+extern unsigned char D_L00_001B1981[] __attribute__((sda));
+extern unsigned char D_L00_001B1982[] __attribute__((sda));
+extern float D_L00_001B1984[] __attribute__((sda));
+extern float D_L00_001B1988[] __attribute__((sda));
+extern float D_L00_001B198C[] __attribute__((sda));
 extern float D_L00_001B1990;
-extern unsigned char *D_L00_001B1E9C __attribute__((nosda));
-extern unsigned char *D_L00_001B1EA0 __attribute__((nosda));
+extern unsigned char *D_L00_001B1E9C[] __attribute__((sda));
+extern unsigned char *D_L00_001B1EA0[] __attribute__((sda));
 extern void *func_00282A60(void *, int, unsigned int);
 extern void *func_00282AB0(void *, const void *, unsigned int);
 extern void func_L00_00303530(int, int);
 extern void func_00282A28(void);
-extern void func_L00_002B2A40(int, int);
+extern void func_L00_002B2A40(int, int, void *);
 extern void func_002A0F48(void *);
 extern void func_002833F0(void *, const void *);
 extern void func_L00_002D9D98(void);
 extern void func_L00_00358E50(void);
 
 void func_L00_00358B30(void) {
-    unsigned char *saved = D_L00_0021DDB0;
-    unsigned char *player = D_00189E20;
-    unsigned char *settings = D_00188660;
     unsigned char *entity;
+    unsigned char *begin, *end;
     int kind;
     int i;
-    player[0x22C6] = 15;
-    if (*(int *)saved == 0) {
+    D_00189E20.state = 15;
+    if (D_L00_0021DDB0.active == 0) {
         func_00282A60(D_L00_0021D140, 0, 0xC70);
-    } else {
-        func_00282AB0(D_L00_0021D140, saved, 0xC70);
-        *(Quadword *)(player + 0x80) = *(Quadword *)(saved + 0x10);
-        *(Quadword *)(player + 0x90) = *(Quadword *)(saved + 0x20);
-        *(int *)(*(unsigned char **)(player + 0x2290) + 0x38) = *(int *)(saved + 0x30);
-        *(int *)(*(unsigned char **)(player + 0x2290) + 0x3C) = *(int *)(saved + 0x34);
-        settings[0x6B] |= 7;
-        D_001A63F0 = *(unsigned short *)(saved + 0xC64);
-        *(int *)(settings + 0x64) = *(int *)(saved + 0x38);
-        settings[0x68] = saved[0x3C];
-        settings[0x69] = saved[0x3D];
-        settings[0x6A] = saved[0x3E];
-        if (D_L00_001C9340 != *(int *)(saved + 0xC68))
-            func_L00_00303530(*(int *)(saved + 0xC68), *(int *)(saved + 0xC64));
-        D_L00_001B1980[0] = saved[0x3F];
-        D_L00_001B1980[1] = saved[0x40];
-        D_L00_001B1980[2] = saved[0x41];
-        *(float *)(D_L00_001B1980 + 4) = *(float *)(saved + 0x44);
-        *(float *)(D_L00_001B1980 + 8) = *(float *)(saved + 0x48);
-        *(float *)(D_L00_001B1980 + 12) = *(float *)(saved + 0x4C);
-        D_L00_001B1990 = *(float *)(saved + 0x50);
-        if (*(int *)(saved + 0x54) != 0 && *(int *)(saved + 0x54) != 3) {
-            kind = 0;
-            switch (*(int *)(saved + 0x54)) {
-            case 1: kind = 0x57; break;
-            case 2: kind = 0x1A3; break;
-            default: func_00282A28(); break;
-            }
-            i = 0;
-            while ((entity = D_L00_001B1E9C + (i << 8)) < D_L00_001B1EA0) {
-                ++i;
-                if (*(short *)(entity + 0xAA) == kind) {
-                    func_L00_002B2A40(*(int *)(saved + 0x54), *(int *)(saved + 0x5C));
-                    break;
-                }
-            }
-        }
-        func_002A0F48(*(unsigned char **)(player + 0x2290));
-        func_002833F0(*(unsigned char **)(player + 0x2290) + 0xC0, player + 0x90);
-        func_L00_002D9D98();
-        func_L00_00358E50();
+        return;
     }
+    func_00282AB0(D_L00_0021D140, &D_L00_0021DDB0, 0xC70);
+    qcopy(&D_00189E20.position, &D_L00_0021DDB0.position);
+    qcopy(&D_00189E20.rotation, &D_L00_0021DDB0.rotation);
+    *(int *)(D_00189E20.moby + 0x38) = D_L00_0021DDB0.field30;
+    *(int *)(D_00189E20.moby + 0x3C) = D_L00_0021DDB0.field34;
+    D_00188660.field64 = D_L00_0021DDB0.field38;
+    D_00188660.field68 = D_L00_0021DDB0.field3C;
+    D_00188660.field69 = D_L00_0021DDB0.field3D;
+    D_00188660.field6A = D_L00_0021DDB0.field3E;
+    D_00188660.field6B |= 7;
+    D_001A63F0[0] = D_L00_0021DDB0.fieldC64;
+    if (D_L00_001C9340[0] != D_L00_0021DDB0.fieldC68)
+        func_L00_00303530(D_L00_0021DDB0.fieldC68, *(int *)&D_L00_0021DDB0.fieldC64);
+    D_L00_001B1980[0] = D_L00_0021DDB0.field3F;
+    D_L00_001B1981[0] = D_L00_0021DDB0.field40;
+    D_L00_001B1982[0] = D_L00_0021DDB0.field41;
+    D_L00_001B1984[0] = D_L00_0021DDB0.field44;
+    D_L00_001B1988[0] = D_L00_0021DDB0.field48;
+    D_L00_001B198C[0] = D_L00_0021DDB0.field4C;
+    D_L00_001B1990 = D_L00_0021DDB0.field50;
+    if (D_L00_0021DDB0.field54 != 0 && D_L00_0021DDB0.field54 != 3) {
+        kind = 0;
+        switch (D_L00_0021DDB0.field54) {
+        case 1:
+            kind = 0x57;
+            break;
+        case 2:
+            kind = 0x1A3;
+            break;
+        default:
+            func_00282A28();
+        }
+        i = 0;
+        begin = D_L00_001B1E9C[0];
+        end = D_L00_001B1EA0[0];
+    next:
+        entity = begin + (i << 8);
+        if (entity >= end) goto done;
+        i++;
+        if (*(short *)(entity + 0xAA) != kind) goto next;
+        func_L00_002B2A40(D_L00_0021DDB0.field54, D_L00_0021DDB0.field5C, entity);
+    }
+done:
+    func_002A0F48(D_00189E20.moby);
+    func_002833F0(D_00189E20.moby + 0xC0, &D_00189E20.rotation);
+    func_L00_002D9D98();
+    func_L00_00358E50();
 }
