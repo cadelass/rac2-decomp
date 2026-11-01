@@ -31,7 +31,7 @@ extern void func_L11_004320F8(u8 *a0, f32 *a1);
 /* func_L11_00425F10 lives in L11_00425F10-g-g8.c (-G8 -g: it reaches level globals
    through $gp and needs the -g line labels before its divisions). */
 
-INCLUDE_ASM("asm/levels", func_L11_004295A0);
+/* func_L11_004295A0 lives in L11_00425F10-g8.c (it reaches level globals through $gp). */
 
 extern float func_00282DF0(void *);
 extern void func_00282CF0(void *, void *, void *);

@@ -1,19 +1,3 @@
-/* Retained complete C reconstruction; not linked or counted.
- * Profile: -O2 -G8 -ffunction-sections.
- * Compiled 3372 bytes; retail 3364 bytes.
- * us: 0/1 placements match (exit 1).
- * us2: canonical name absent; no match credit.
- * pal: canonical name absent; no match credit.
- * Remaining: The complete initialization, linked-object updates and damage/removal controller
- * remain. Shared qcopy preserves every position/state snapshot, object-table entries use actual
- * pointer fields and the state-transition helper uses full-width integer arguments. Recomputing
- * object position at use gives 3372 bytes against 3364; the 0x70 frame remains larger than
- * retail 0x50. The 60 static call sites remain, with differing branch-block order and
- * constant/pointer lifetimes.
- * Reopen: Independent original local/state lifetime evidence explaining the smaller 0x50 frame;
- * preserve actual pointer/FP returns and the canonical seven-input func_002B3670 contract.
- */
-
 #include "common.h"
 
 typedef unsigned int QuadWord __attribute__((mode(TI)));
@@ -42,7 +26,7 @@ extern void func_0026FEB8(const char *, ...);
 extern float func_002A78D8(float, float);
 extern int func_002A77E0(int);
 extern void func_L00_003294F0(unsigned char *, int);
-extern void *func_002B60B0(unsigned char *, float, float, float, float);
+extern void func_002B60B0(unsigned char *, float, float, float, float);
 extern void func_002A7750(unsigned char *, int, int);
 extern void func_002A7470(void *, int, int, int);
 extern char *func_0029EFD0(int);
@@ -61,22 +45,51 @@ extern int func_002A8508(int, int);
 extern int func_002B3670(void *, int *, int, int, void *, float, float);
 extern void func_002A6C58(void *, int, int);
 
+/* A group's ID list entry names an object; bit 15 only marks the list's last entry. */
+static inline int group_entry_id(unsigned short *entry)
+{
+    return *entry & 0x7fff;
+}
+
+static inline char *moby_at(int id)
+{
+    return D_L11_001B359C + id * 0x100;
+}
+
+static inline signed char moby_state(char *moby)
+{
+    return SIGNED_BYTE(moby, 0x20);
+}
+
+static inline short moby_class(char *moby)
+{
+    return HALF(moby, 0xaa);
+}
+
+static inline char *moby_vars(char *moby)
+{
+    return POINTER(moby, 0x68);
+}
+
+static inline int rider_kind(char *moby)
+{
+    return WORD(moby_vars(moby), 0x540);
+}
+
 /* Initializes the rider, maintains its linked objects and handles damage/removal. */
 int func_L11_00424A60(unsigned char *object)
 {
     Vector hit_position;
     char *state = POINTER(object, 0x68);
-    char *linked, *other_state;
-    unsigned short *ids;
-    unsigned short id;
+    char *other_state;
     int index, kind, result;
-    float angle, ground;
+    float angle, altitude;
 
     if (BYTE(object, 0x20) == 0) {
         BYTE(object, 0x30) = 0x80;
         ++D_L11_001AED04;
         POINTER(state, 0x18) = state + 0x140;
-        REAL(object, 0x18) = func_002A89A8(((char *)object+0x10), 0, 0.5f);
+        REAL(object, 0x18) = func_002A89A8(((char *)object + 0x10), 0, 0.5f);
         WORD(state, 0x554) = 0;
         WORD(state, 0x560) = 0;
         WORD(state, 0x568) = 0;
@@ -88,8 +101,11 @@ int func_L11_00424A60(unsigned char *object)
             func_0026FEB8(D_L11_001B0FD8, index);
         }
         angle = REAL(state, 0x298);
-        if (angle == 0.0f) angle = func_002A78D8(15.0f, 25.0f);
-        REAL(state, 0x298) = angle * 0.017453294f;
+        if (angle == 0.0f) {
+            REAL(state, 0x298) = 0.017453294f * func_002A78D8(15.0f, 25.0f);
+        } else {
+            REAL(state, 0x298) = angle * 0.017453294f;
+        }
         if (func_002A77E0(2) == 1) {
             UHALF(object, 0x34) |= 0x8000;
             func_L00_003294F0(object, 1);
@@ -118,22 +134,59 @@ int func_L11_00424A60(unsigned char *object)
         if (WORD(state, 0x57c) != -1) WORD(state, 0xdc) = WORD(state, 0x57c);
         POINTER(state, 0x188) = state + 0x2a0;
         REAL(state, 0x174) = 0.25f;
-        REAL(state, 0x14c) = 0.60000002384185791016f;
         REAL(state, 0x140) = 0.75f;
         REAL(state, 0x144) = 0.75f;
         REAL(state, 0x148) = 0.60000002384185791016f;
+        REAL(state, 0x14c) = 0.60000002384185791016f;
         if (WORD(state, 0x288) != -1) WORD(state, 0x17c) = WORD(state, 0x288);
-        REAL(state, 0x170) = 1.4835300445556640625f;
         REAL(state, 0x150) = 1.5533431768417358398f;
+        REAL(state, 0x170) = 1.4835300445556640625f;
         REAL(state, 0x16c) = 0.0013888889225199818611f;
         func_002B60B0(object, 0.0015277778729796409607f, 0.04583333432674407959f,
                      0.0011635529808700084686f, 0.10471977293491363525f);
+        REAL(state, 0x28c) = (float)BYTE(state, 0x34);
         BYTE(state, 0x28) = 3;
         BYTE(state, 0x29) = 1;
         REAL(state, 0x30) = 0.75f;
-        REAL(state, 0x28c) = (float)BYTE(state, 0x34);
         BYTE(state, 0x2e) = 1;
-        if (WORD(state, 0x26c) == 0) {
+        if (WORD(state, 0x26c) != 0) {
+            char *mount;
+            func_002A7750(object, 1, 5);
+            if (WORD(state, 0x270) != -1) {
+                mount = (char *)(D_L11_001B359C + WORD(state, 0x270) * 0x100);
+                POINTER(state, 0x274) = mount;
+                qcopy(((char *)object + 0x10), mount + 0x10);
+                qcopy((char *)(object)+0xf0, mount + 0xf0);
+                WORD(object, 0x98) = 0;
+                UHALF(object, 0x34) &= 0xafff;
+                POINTER(POINTER(POINTER(state, 0x274), 0x68), 0x27c) = (char *)object;
+                POINTER(state, 0x280) = func_0029EFD0(0x911);
+                if (POINTER(state, 0x280) == 0) return 1;
+                BYTE(POINTER(state, 0x280), 0x30) = BYTE(object, 0x30);
+                BYTE(POINTER(state, 0x280), 0x31) = 0;
+                func_002A0F48(POINTER(state, 0x280));
+                {
+                    char *child = POINTER(state, 0x280);
+                    qcopy(child + 0x10, ((char *)object + 0x10));
+                    REAL(child, 0x18) += 0.75f;
+                }
+                POINTER(state, 0x278) = func_0029EFD0(0xff9);
+                if (POINTER(state, 0x278) == 0) return 1;
+                BYTE(POINTER(state, 0x278), 0x30) = BYTE(object, 0x30);
+                UHALF(POINTER(state, 0x278), 0x32) = UHALF(object, 0x32);
+                BYTE(POINTER(state, 0x278), 0x31) = 1;
+                *(long *)(POINTER(state, 0x278) + 0x38) = *(long *)(object + 0x38);
+                func_002A0F48(POINTER(state, 0x278));
+                func_002AF1D0(object, POINTER(state, 0x278), 1, 0);
+                WORD(state, 0x290) = 0;
+            } else {
+                func_0026FEB8(D_L11_002BACF0);
+                --D_L11_001AED04;
+                WORD(state, 0x26c) = 0;
+                func_002A7750(object, 4, 0);
+                return 1;
+            }
+        } else {
             func_002A7750(object, 4, 0);
             if (BYTE(object, 0x43) != 0x24) func_002A7470(object, 0x24, 0, 0);
             kind = WORD(state, 0x540);
@@ -146,17 +199,19 @@ int func_L11_00424A60(unsigned char *object)
                 func_002A7750(object, 5, 0);
                 if (BYTE(object, 0x43) != 0x1e) func_002A7470(object, 0x1e, 5, 0);
             } else if (kind == 3) {
+                unsigned short *ids;
+                char *candidate;
                 ids = D_L11_001FC420[BYTE(object, 0x21)];
-                do {
-                    id = *ids;
-                    linked = (char *)(D_L11_001B359C + (id & 0x7fff) * 0x100);
-                    if (SIGNED_BYTE(linked, 0x20) >= 0 && HALF(linked, 0xaa) == 0xcf5 &&
-                        WORD(POINTER(linked, 0x68), 0x540) == 1) {
-                        POINTER(state, 0x55c) = linked;
+                for (;;) {
+                    candidate = moby_at(group_entry_id(ids));
+                    if (moby_state(candidate) >= 0 && moby_class(candidate) == 0xcf5 &&
+                        rider_kind(candidate) == 1) {
+                        POINTER(state, 0x55c) = candidate;
                         break;
                     }
+                    if (*(short *)ids < 0) break;
                     ++ids;
-                } while ((short)id >= 0);
+                }
                 func_002A7750(object, 5, 0);
                 if (BYTE(object, 0x43) != 0x1e) func_002A7470(object, 0x1e, 0, 0);
             } else if (WORD(state, 0x54c) != -1) {
@@ -173,38 +228,6 @@ int func_L11_00424A60(unsigned char *object)
             func_002A0F48(POINTER(state, 0x29c));
             WORD(POINTER(state, 0x29c), 0x98) = 0;
             func_002AF1D0(object, POINTER(state, 0x29c), 3, 0);
-        } else {
-            func_002A7750(object, 1, 5);
-            if (WORD(state, 0x270) == -1) {
-                func_0026FEB8(D_L11_002BACF0);
-                --D_L11_001AED04;
-                WORD(state, 0x26c) = 0;
-                func_002A7750(object, 4, 0);
-                return 1;
-            }
-            linked = (char *)(D_L11_001B359C + WORD(state, 0x270) * 0x100);
-            POINTER(state, 0x274) = linked;
-            qcopy((char *)(object)+0x10, (char *)(linked)+0x10);
-            qcopy((char *)(object)+0xf0, (char *)(linked)+0xf0);
-            WORD(object, 0x98) = 0;
-            UHALF(object, 0x34) &= 0xafff;
-            POINTER(POINTER(linked, 0x68), 0x27c) = (char *)object;
-            POINTER(state, 0x280) = func_0029EFD0(0x911);
-            if (POINTER(state, 0x280) == 0) return 1;
-            BYTE(POINTER(state, 0x280), 0x30) = BYTE(object, 0x30);
-            BYTE(POINTER(state, 0x280), 0x31) = 0;
-            func_002A0F48(POINTER(state, 0x280));
-            qcopy((char *)(POINTER(state, 0x280))+0x10, (char *)(object)+0x10);
-            REAL(POINTER(state, 0x280), 0x18) += 0.75f;
-            POINTER(state, 0x278) = func_0029EFD0(0xff9);
-            if (POINTER(state, 0x278) == 0) return 1;
-            BYTE(POINTER(state, 0x278), 0x30) = BYTE(object, 0x30);
-            UHALF(POINTER(state, 0x278), 0x32) = UHALF(object, 0x32);
-            BYTE(POINTER(state, 0x278), 0x31) = 1;
-            *(long *)(POINTER(state, 0x278) + 0x38) = *(long *)(object + 0x38);
-            func_002A0F48(POINTER(state, 0x278));
-            func_002AF1D0(object, POINTER(state, 0x278), 1, 0);
-            WORD(state, 0x290) = 0;
         }
         if (WORD(state, 0x270) != -1 && POINTER(state, 0x278) == 0) {
             POINTER(state, 0x278) = func_0029EFD0(0xff9);
@@ -217,12 +240,12 @@ int func_L11_00424A60(unsigned char *object)
             func_002AF1D0(object, POINTER(state, 0x278), 1, 0);
             WORD(state, 0x290) = 0;
         }
-        qcopy((char *)(state)+0x110, (char *)(object)+0x10);
+        qcopy((char *)(state)+0x110, ((char *)object + 0x10));
         REAL(state, 0x120) = 1.0f;
         REAL(state, 0x12c) = 8.0f;
         REAL(state, 0x130) = 10.0f;
     }
-    if (BYTE(object, 0x31) != 0 && func_00282E48(((char *)object+0x10), &D_L11_001BA8C0) < 24.0f) {
+    if (BYTE(object, 0x31) != 0 && func_00282E48(((char *)object + 0x10), &D_L11_001BA8C0) < 24.0f) {
         func_002A93B0(object);
         BYTE(object, 0x6f) = 0x16;
     }
@@ -240,11 +263,11 @@ int func_L11_00424A60(unsigned char *object)
             POINTER(state, 0x280) = 0;
         }
         if (BYTE(object, 0xbc) == 1) {
-            linked = (char *)(D_L11_001B359C + WORD(state, 0x548) * 0x100);
-            if (BYTE(linked, 0x20) != 5) {
-                BYTE(linked, 0x20) = 4;
-                func_002A7470(linked, 0, 0, 5);
-                REAL(linked, 0x48) = 1.0f;
+            char *damaged = (char *)(D_L11_001B359C + WORD(state, 0x548) * 0x100);
+            if (BYTE(damaged, 0x20) != 5) {
+                BYTE(damaged, 0x20) = 4;
+                func_002A7470(damaged, 0, 0, 5);
+                REAL(damaged, 0x48) = 1.0f;
                 REAL(object, 0x48) = 1.0f;
                 BYTE(object, 0xbc) = 0;
             }
@@ -262,18 +285,18 @@ int func_L11_00424A60(unsigned char *object)
     }
     result = func_002B0ED8(object, state + 0x60, WORD(state, 0x290));
     if (result != 0) {
-        linked = POINTER(state, 0x38);
-        if (linked != 0) {
-            kind = HALF(linked, 0xaa);
+        char *attacker = POINTER(state, 0x38);
+        if (attacker != 0) {
+            kind = HALF(attacker, 0xaa);
             if (kind != 0x47 && kind != 0xdd9 && kind != 0xd1b && kind != 0xce7 && kind != 0xd07 && kind != 0)
                 D_L11_001AED00 = 0;
         }
-        if (BYTE(object, 0xbc) == 1) {
-            linked = (char *)(D_L11_001B359C + WORD(state, 0x548) * 0x100);
-            if (result != 1 && BYTE(linked, 0x20) != 5) {
-                BYTE(linked, 0x20) = 4;
-                func_002A7470(linked, 0, 0, 5);
-                REAL(linked, 0x48) = 1.0f;
+        if (BYTE(object, 0xbc) == 1 && result != 1) {
+            char *damaged = (char *)(D_L11_001B359C + WORD(state, 0x548) * 0x100);
+            if (BYTE(damaged, 0x20) != 5) {
+                BYTE(damaged, 0x20) = 4;
+                func_002A7470(damaged, 0, 0, 5);
+                REAL(damaged, 0x48) = 1.0f;
                 REAL(object, 0x48) = 1.0f;
                 BYTE(object, 0xbc) = 0;
             }
@@ -298,12 +321,15 @@ int func_L11_00424A60(unsigned char *object)
         if (BYTE(object, 0x95) != 2) func_L11_00425AF8(object);
         if ((unsigned int)(result - 4) < 2 && D_L11_001B35B8 >= BYTE(object, 0x21) &&
             func_002A8508(BYTE(object, 0x21), -1) >= 2) {
+            unsigned short *ids;
+            unsigned short id;
             ids = D_L11_001FC420[BYTE(object, 0x21)];
             do {
+                char *candidate;
                 id = *ids;
-                linked = (char *)(D_L11_001B359C + (id & 0x7fff) * 0x100);
-                if (HALF(linked, 0xaa) == 0xcf5 && WORD(POINTER(linked, 0x68), 0x294) == 0) {
-                    WORD(POINTER(linked, 0x68), 0x294) = 1;
+                candidate = (char *)(D_L11_001B359C + (id & 0x7fff) * 0x100);
+                if (HALF(candidate, 0xaa) == 0xcf5 && WORD(POINTER(candidate, 0x68), 0x294) == 0) {
+                    WORD(POINTER(candidate, 0x68), 0x294) = 1;
                     break;
                 }
                 ++ids;
@@ -315,34 +341,42 @@ int func_L11_00424A60(unsigned char *object)
     HALF(state, 0x264) = func_002B3670(object, (int *)(state + 0x268), WORD(state, 0x250),
                                     WORD(state, 0x254), 0, REAL(state, 0x258), REAL(state, 0x25c));
     if (BYTE(object, 0x95) != 4 && BYTE(object, 0x20) != 0x25) {
-        ground = func_002A89A8(((char *)object+0x10), 0, 0.5f);
-        REAL(object, 0x18) -= 0.31333333253860473633f;
-        if (REAL(object, 0x18) < ground) REAL(object, 0x18) = ground;
+        float ground = func_002A89A8(((char *)object + 0x10), 0, 0.5f);
+        float drop = 0.31333333253860473633f;
+        float height = REAL(object, 0x18) - drop;
+        REAL(object, 0x18) = height;
+        if (height < ground) REAL(object, 0x18) = ground;
     }
-    ground = func_002A89A8(((char *)object+0x10), 0, 0.5f);
-    if (REAL(object, 0x18) - ground > 20.0f && ground < REAL(object, 0x18) && BYTE(object, 0x95) != 5) {
+    altitude = func_002A89A8(((char *)object + 0x10), 0, 0.5f);
+    if (REAL(object, 0x18) - altitude > 20.0f && altitude < REAL(object, 0x18) && BYTE(object, 0x95) != 5) {
         func_002A7750(object, 0x25, 9);
         if (BYTE(object, 0x43) != 0x23) func_002A7470(object, 0x23, 0, 10);
     }
-    if (REAL(object, 0x18) >= 75.0f || D_L11_001B30C8 < 6) return 0;
-    func_002A6C58(object, 0, 3);
-    if (D_L11_001B35B8 >= BYTE(object, 0x21) && func_002A8508(BYTE(object, 0x21), -1) >= 2) {
-        ids = D_L11_001FC420[BYTE(object, 0x21)];
-        do {
-            id = *ids;
-            other_state = POINTER((char *)(D_L11_001B359C + (id & 0x7fff) * 0x100), 0x68);
-            if (WORD(other_state, 0x294) == 0) {
-                WORD(other_state, 0x294) = 1;
-                break;
-            }
-            ++ids;
-        } while ((short)id >= 0);
+    if (REAL(object, 0x18) < 75.0f && D_L11_001B30C8 >= 6) {
+        func_002A6C58(object, 0, 3);
+        if (D_L11_001B35B8 >= BYTE(object, 0x21) && func_002A8508(BYTE(object, 0x21), -1) >= 2) {
+            unsigned short *ids;
+            unsigned short id;
+            ids = D_L11_001FC420[BYTE(object, 0x21)];
+            do {
+                char *member;
+                id = *ids;
+                member = D_L11_001B359C + (id & 0x7fff) * 0x100;
+                other_state = POINTER(member, 0x68);
+                if (WORD(other_state, 0x294) == 0) {
+                    WORD(other_state, 0x294) = 1;
+                    break;
+                }
+                ++ids;
+            } while ((short)id >= 0);
+        }
+        if (POINTER(state, 0x29c) != 0) {
+            func_002AC728(object, POINTER(state, 0x29c) + 0x10, -1, 0.5f, 3.0f);
+            func_0029F338(POINTER(state, 0x29c));
+            POINTER(state, 0x29c) = 0;
+        }
+        --D_L11_001AED04;
+        return 1;
     }
-    if (POINTER(state, 0x29c) != 0) {
-        func_002AC728(object, POINTER(state, 0x29c) + 0x10, -1, 0.5f, 3.0f);
-        func_0029F338(POINTER(state, 0x29c));
-        POINTER(state, 0x29c) = 0;
-    }
-    --D_L11_001AED04;
-    return 1;
+    return 0;
 }
