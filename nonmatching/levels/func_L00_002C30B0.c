@@ -1,12 +1,36 @@
-/* Nonmatching reconstruction, 2026-10-23. Game -O2 -G8, -frac2-qcopy
- * -frac2-qcopy-barrier. US/US2: 0/16 placements, 1908 versus retail 1928 bytes.
- * The canonical function is absent from PAL's catalogue.
- * Six bounded trials covered resident phase scopes, an explicit resident position
- * view, signed do-while timer traversal, a history base and fixed sample count,
- * default and debug/copy profiles. An earlier pointer-loop wording was 1920 bytes,
- * but used an unsigned comparison unlike retail. Remaining differences include
- * saved-register allocation, address hoisting, branch merges and TI copy ordering.
- * Reopen with a measured register-lifetime or loop-hoisting remedy.
+/* Nonmatching reconstruction, GPT-6.1 Sol high, 2026-10-29.
+ * Current pinned game compiler: -O2 -G8 -ffunction-sections -frac2-qcopy
+ * -frac2-qcopy-barrier. USA v1.01: 1928/1928 bytes, 0/16 places;
+ * first instruction mismatch +0xC (s6 save versus retail s5 save).
+ * Relative to the preceding Sol-low draft, explicit current then previous
+ * history-index remainder locals improve +0x4E0..+0x51C from 3/16 to 14/16
+ * textually identical arithmetic instructions. The remaining two use s3
+ * instead of retail s2 for -1. History base allocation/add operand order,
+ * counter stores, resident bases and branch merges still differ.
+ *
+ * regalloc.py's baseline and diagnostic objects were byte-identical. GCSE
+ * inserts the timer high-half pseudo 358 before the preceding object loop;
+ * it has 4 refs/216 live insns and crosses 6 calls. The resident high half
+ * (pseudo 357) has 15 refs/766 live insns and crosses 53 calls. The object
+ * class constant 0x16 ends up in fp, requiring the extra save/restore.
+ *
+ * Eighteen bounded check.py calls, including baseline and final confirmation:
+ * gcse-unsplit-edges, no-expensive-optimizations and explicit timer-end local
+ * preserve the main blocker. No-gcse removes hoisting but gives 1940 bytes
+ * and loses retail's resident high-half reuse. No-split-addresses gives 1868
+ * bytes with the same loss. A 448-byte sda timer declaration hoists full
+ * addresses; moving the object resident view inside its guard or indexing
+ * the object table does not resolve allocation. Typed history views either
+ * tie or add address materializations; explicit byte-array sda declarations
+ * speculate the load into a branch slot and give 1924 bytes with unwanted GP.
+ * Reopen with a measured GCSE/address-lifetime remedy; do not repeat these
+ * forms. No linked build or other-release check run. All declarations follow.
+ *
+ * Previous Sol-low: 1928 bytes, 0/16; phase views/rematerialized counter stores
+ * improved the earlier 1908-byte draft. Scoped locals, no-rerun-loop-opt,
+ * timer incomplete-array sda and first-copy qcopy were already tried then.
+ * The 2026-10-23 draft tested US/US2 at 1908/1928 bytes, 0/16; PAL has no
+ * canonical catalogue entry.
  */
 
 extern char D_00189EA0[];
@@ -18,7 +42,7 @@ extern float D_L00_001B18E4;
 extern unsigned int D_L00_001B19C8;
 extern char *D_L00_001FACE0[];
 extern char D_L00_0025BC60[];
-extern unsigned char D_001A7AFF;
+extern unsigned char D_001A7AFF __attribute__((section(".data")));
 extern void func_L00_002B9380(void);
 extern void func_00282978(void *);
 extern void func_00282948(void *);
@@ -45,10 +69,7 @@ void func_L00_002C30B0(void)
 {
 
     float delta[4], step[4];
-    char **entry;
-    char *object;
-    char *timer;
-    int i;
+
     { char *p = D_00189E20;
     if (!*(unsigned char *)(p + 0x22BD))
         func_L00_002B9380();
@@ -145,8 +166,9 @@ void func_L00_002C30B0(void)
     }
     { char *p = D_00189E20;
     if (*(short *)(p + 0x224)) {
-        entry = D_L00_001FACE0;
-        object = *entry;
+        char *resident = D_00189E20;
+        char **entry = D_L00_001FACE0;
+        char *object = *entry;
         if (object) {
             do {
                 if ((func_002ABB78(object)
@@ -157,7 +179,7 @@ void func_L00_002C30B0(void)
                     if (func_00282E48(D_00189EA0, object + 0x10) < 15.37f) {
                         func_00282CF0(delta, object + 0x10, D_00189EA0);
                         func_00282F20(delta, delta, 1.7f);
-                        func_002A8F70(object, *(void **)(p + 0x2290), 0x4000000,
+                        func_002A8F70(object, *(void **)(resident + 0x2290), 0x4000000,
                                 D_00189EA0, delta, 1.0f);
                     }
                 }
@@ -165,33 +187,39 @@ void func_L00_002C30B0(void)
             } while (object);
         }
     }
-    timer = D_L00_0025BC60;
+    { char *timer = D_L00_0025BC60;
     do {
         func_00282948(timer);
         timer += 0x70;
     } while ((int)timer < (int)(D_L00_0025BC60 + 0x1C0));
     }
+    }
     { char *p = D_00189E20;
     *(float *)(p + 0x24DC) = 9999.0f;
     if (*(short *)(p + 0x34E) && func_L00_002D3B00(p + 0xF0) < 0.0f) {
         if (*(int *)(p + 0x23C8) == 0x20) {
-            char *history = p + 0x1D90;
+            int i;
+            char *resident = D_00189E20;
+            char *history;
             int samples = 8;
             func_00282C88(delta);
+            history = resident + 0x1D90;
             for (i = 0; i < samples; ++i) {
-                int index = *(int *)(p + 0x23C4) - i;
-                func_00282CF0(step, history + ((index + 31) % 32) * 16,
-                        history + ((index + 30) % 32) * 16);
+                int index = *(int *)(resident + 0x23C4) - i;
+                int current = (index + 31) % 32;
+                int previous = (index + 30) % 32;
+                func_00282CF0(step, history + current * 16,
+                        history + previous * 16);
                 func_00282CC0(delta, delta, step);
             }
             func_00282D30(delta, delta, 1.0f / (float)samples);
             if (func_00282DF0(delta) < 0.016666668f)
-                ++*(short *)(p + 0x202);
+                ++*(short *)(D_00189E20 + 0x202);
             else
-                *(short *)(p + 0x202) = 0;
+                *(short *)(D_00189E20 + 0x202) = 0;
         }
     } else {
-        *(short *)(p + 0x202) = 0;
+        *(short *)(D_00189E20 + 0x202) = 0;
     }
     func_L00_002C3838();
     }
@@ -223,7 +251,7 @@ void func_L00_002C30B0(void)
     }
     }
     { char *p = D_00189E20;
-    object = *(char **)(p + 0x5C0);
+    char *object = *(char **)(p + 0x5C0);
     if (object) {
         if (!(*(unsigned short *)(object + 0x34) & 0x1000) || object == *(char **)(p + 0x33C))
             *(int *)(p + 0x5C0) = 0;
