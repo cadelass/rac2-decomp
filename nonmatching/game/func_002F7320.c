@@ -1,43 +1,46 @@
-/* Semantically equivalent explicit search-loop near miss.
+/*
+ * func_002F7320 (boot 0x002F7320, 132 bytes, 28 places).
+ * Tier: control flow solved, allocation open.
+ * Best check.py: 132/132 bytes, 0/28 places, 18 of 33 rows differ; every
+ * differing row is a register number, plus one zero-copy instruction.
  *
- * The original nested-condition candidate was 132 bytes, matching retail's
- * 132-byte extent, but 0/28 places. A temporary single-loop/goto form compiled
- * to 120 bytes, 0/28 USA v1.01 places. It better exposes the shared loop exit,
- * but differs in table-base setup, cursor/index allocation, branch layout and
- * return-value scheduling. A structured `for (;;)` with `break` for the same
- * terminators measures 144 bytes and 0/28; it adds cursor/index work and is
- * farther from the 132-byte target. Keep the 120-byte form as the closer near
- * miss and the assembly marker until a strict check passes.
+ * Solved here (do not rework):
+ * - The plain indexed while is the original shape.  jump1 duplicates the exit
+ *   test before the loop, cse1 folds `i < 56` there, thread_jumps sends the
+ *   first test straight past the found-block test, and strength reduction
+ *   makes T[i] the two-step base (la; += 16) with the increment first in the
+ *   loop, which reorg steals for the bnel slot.
+ *
+ * Still differs: retail has `daddu a3,t1,zero` (i = result) where this has
+ * `daddu a3,zero,zero`.  With that copy alive, result = 0 has a dependent, so
+ * sched1 puts it ahead of the argument copies, result conflicts with hard a0,
+ * and allocation becomes retail's: a0 value, a3 i, t0 base, t1 result,
+ * t2 field, t3 reach.  A probe with an opaque (forbidden) asm zero confirmed
+ * those registers.
+ *
+ * Why the copy is hard: cse folds it (const 0 costs less than a pseudo), and
+ * reload_cse will not swap a cheap CONST_INT for a register.  Yet retail's
+ * first load and base have no shift, so `i` must be known to be 0 by cse2.
+ * The copy therefore needs either i = literal-T[0] code plus a label that
+ * flushes cse through cse2, or a zero cse cannot see that combine folds.
+ *
+ * Declarations needed: Func_002F7320Row and ref_L00_002F7320_00, below.
  */
-extern int ref_L00_002F7320_00[];
+typedef struct {
+    int key;
+    int values[3];
+} Func_002F7320Row;
+
+extern Func_002F7320Row ref_L00_002F7320_00[];
 
 int func_002F7320(int value, int key, int field)
 {
-    int *base = ref_L00_002F7320_00;
-    int *cursor;
-    int count = 0;
-    int entry;
     int result = 0;
+    int i = result;
 
-    if (base[0] == 0)
-        goto done;
-    if (key == base[0])
-        goto found;
-    cursor = base + 4;
-loop:
-    entry = *cursor;
-    if (entry == 0)
-        goto done;
-    count++;
-    if (count >= 56)
-        goto found;
-    if (key == entry)
-        goto found;
-    cursor += 4;
-    goto loop;
-found:
-    if (base[count * 4] != 0)
-        result = base[count * 4 + field + 1] == value;
-done:
+    while (ref_L00_002F7320_00[i].key != 0 && i < 56 && key != ref_L00_002F7320_00[i].key)
+        i++;
+    if (ref_L00_002F7320_00[i].key != 0)
+        result = value == ref_L00_002F7320_00[i].values[field];
     return result;
 }
