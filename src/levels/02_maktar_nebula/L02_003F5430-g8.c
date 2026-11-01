@@ -18,8 +18,6 @@ extern void func_00282C88(void *);
 
 extern void func_00335438(char *, char *, int, int, int);
 
-INCLUDE_ASM("asm/levels", func_L01_0042A6F0);
-
 void func_L02_003F56C0(void) {
     int v0 = D_L02_001AD410;
     float *p = (float *)((char *)v0 + 0x74);

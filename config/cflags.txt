@@ -1949,6 +1949,8 @@ src/levels/01_oozla/L01_003C0408-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-
 src/game/00300F58-g8.c	-O2 -G8 -ffunction-sections -g -frac2-keep-block-order
 src/game/002BF6F0-c5120-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L02_00422270-g8.c	-O2 -G8 -Wa,-G32 -ffunction-sections -frac2-zero-ti-por
+src/levels/01_oozla/L01_003DA740-destruct.c	-O2 -G0 -ffunction-sections -mno-split-addresses
+src/levels/01_oozla/L01_003DA740-pose.c	-O2 -G0 -ffunction-sections -mno-split-addresses
 src/levels/shared/L22_003F5688.c	-O2 -G0 -ffunction-sections -g -fno-gcse
 src/levels/shared/L22_003FCF08-g8.c	-O2 -G8 -ffunction-sections -fno-gcse
 src/levels/shared/L00_003D3DE0-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16 -fno-rerun-loop-opt
@@ -1974,6 +1976,7 @@ src/levels/00_aranos_tutorial/L00_003CD160.c	-O2 -G0 -ffunction-sections -frac2-
 src/levels/shared/L00_003F8E08-burst-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -fno-sched-interblock
 src/levels/shared/L05_0042BB10-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/levels/shared/L05_00442560-q.c	-O2 -G0 -ffunction-sections -frac2-qcopy
+src/levels/02_maktar_nebula/L02_003E98A8-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/shared/L02_003C9ED0-nsr.c	-O2 -G0 -ffunction-sections -fno-strength-reduce -fno-sched-interblock
 src/game/002B50E0.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/002B41A8.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
@@ -1997,6 +2000,7 @@ src/levels/shared/L00_00403730.c	-O2 -G0 -ffunction-sections -frac2-hazard-label
 src/core/0011B140.c	sdk -O2 -G2 -ffunction-sections
 src/game/00308600-wavy.c	-O2 -G0 -ffunction-sections -g
 src/game/002BE400.c	-O2 -G0 -ffunction-sections -fno-gcse
+src/levels/02_maktar_nebula/L02_0033C8B8-g.c	-O2 -G0 -ffunction-sections -g
 src/core/001334B8-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
 src/levels/shared/L03_003D0AE0-g8.c	-O2 -G8 -ffunction-sections -g
 src/game/002BEE70-g.c	-O2 -G0 -ffunction-sections -g
@@ -2018,8 +2022,11 @@ src/levels/shared/L04_0040F8F0-route.c	-O2 -G0 -ffunction-sections -g
 src/levels/shared/L00_003AA708-g.c	-O2 -G0 -ffunction-sections -g
 src/levels/shared/L04_00413A38-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/shared/L02_0038BD00-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/02_maktar_nebula/L02_003D26B0-turret.c	-O2 -G0 -ffunction-sections -frac2-zero-ti-por -g
+src/levels/01_oozla/L01_003DAE58.c	-O2 -G0 -ffunction-sections -fno-expensive-optimizations
 src/levels/shared/L00_002C9448-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-hazard-labels
 src/game/002AA800-blast.c	-O2 -G0 -ffunction-sections -g
+src/levels/02_maktar_nebula/L02_0040BE08-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/shared/L00_003DB118-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/levels/shared/L00_00418A80-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges
@@ -2028,11 +2035,15 @@ src/levels/01_oozla/L01_003B9F30-g16.c	-O2 -G16 -ffunction-sections -Wa,-G16
 src/game/002F5220-7738.c	-O2 -G8 -fno-sched-interblock -ffunction-sections
 src/levels/01_oozla/L01_003D98E0-g8.c	-O2 -G8 -ffunction-sections -ffast-math -g
 src/levels/01_oozla/L01_003BAFB8-g8.c	-O2 -G8 -ffunction-sections -g
+src/levels/02_maktar_nebula/L02_003F9C10-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/01_oozla/L01_003B5878-g8.c	-O2 -G8 -ffunction-sections -fno-expensive-optimizations
 src/levels/01_oozla/L01_002BEB90-action-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/levels/00_aranos_tutorial/L00_002FC7A8-lift.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
+src/levels/02_maktar_nebula/L02_003D2DE0-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-keep-block-order
 src/game/00295F60-map-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -ffast-math -g
+src/levels/02_maktar_nebula/L02_003D7C20-g16.c	-O2 -G16 -Wa,-G16 -ffunction-sections -frac2-zero-ti-por -g
 src/game/00286738-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/levels/02_maktar_nebula/L02_003CFAC8-g8.c	-O2 -G8 -ffunction-sections -frac2-qcopy -frac2-hazard-labels
 src/game/002B1C20-gravity.c	-O2 -G0 -ffunction-sections -g -frac2-hazard-labels
 src/game/002E9268.c	-O2 -G0 -ffunction-sections -g
 src/game/00294988-g8.c	-O2 -G8 -ffunction-sections -Wa,-G32

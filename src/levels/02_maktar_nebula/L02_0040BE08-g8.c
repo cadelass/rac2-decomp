@@ -1,36 +1,18 @@
-/*
- * Retained handwritten near miss; historical evidence only.
- * No linked-image equality or complete retail semantics is established.
- * Compiler: game EE-GCC 2.9-ee-991111b (project profile).
- * Profile: -O2 -G8 -ffunction-sections -g -frac2-qcopy -frac2-qcopy-barrier.
- * Reported final C / retail: 3348 / 3304 bytes; size equality is not a match.
- * us: 0/1 placements; 3348/3304 bytes.
- * us2: 0/1 placements; 3348/3304 bytes.
- * pal: absent from catalogue (not a match).
- * Residual: Exact frame 0xA0. Pointer/route-field loads, register lifetime and CFG residue; no-GCSE 3316 but wrong frame 0x90.
- * Reopening condition: New concrete supported compiler/API/identity hypothesis only; see retained source comment. No repeated flag or permutation sweep.
- * Where listed, tools/check.py measurements predate retention; no compilation was rerun for this copy.
- */
-
-/* Complete retained patrol controller: 3348/3304 bytes, frame 0xA0.
-   Profile: -O2 -G8 -ffunction-sections -g -frac2-qcopy -frac2-qcopy-barrier.
-   Three trials: default 3348; no-GCSE 3316/frame0x90; delayed ground binding
-   3348 tie. US/US2 remain 0/1; PAL absent. Pointer lifetimes, route-point
-   loads, branch joins and allocation remain. Reopen with a supported address
-   or CFG hypothesis. Duplicate initial nearest-point distance calls are retail.
-   002A8D70 receives a bone index in a1: its current common C pointer spelling
-   is inconsistent with the actual 0029FCC0 index consumer. 002C2210 t1 is a
-   real vector pointer. Prepared 003FC248 extras await independent review. */
 #include "common.h"
 
 typedef int TI128 __attribute__((mode(TI)));
 typedef union { TI128 quad; float f[4]; u32 word[4]; } PatrolVector;
-extern PatrolVector D_00189EA0;
-extern u8 *D_0018C2BC;
+typedef struct {
+    char pad0[0x80];
+    PatrolVector pos;
+    char pad1[0x249C - 0x90];
+    u8 *contact;
+} HeroBlock;
+extern HeroBlock D_00189E20;
 extern u8 *D_L02_001FF1C0[];
 extern float D_L02_001B1970 __attribute__((sda));
-extern float D_L02_001B1974 __attribute__((nosda));
-extern float D_L02_001B1978 __attribute__((nosda));
+extern float D_L02_001B1974[] __attribute__((sda));
+extern float D_L02_001B1978[] __attribute__((sda));
 extern float D_L02_001B1930 __attribute__((sda));
 extern float D_L02_001B1934 __attribute__((sda));
 extern float D_L02_001B1938 __attribute__((sda));
@@ -69,7 +51,7 @@ extern s32 func_002A8D70(float, float, float, void *, s32, s32, s32, s32, s32);
 extern float func_002AA150(float, float, float);
 extern float func_00283B98(float, float);
 extern void func_002A7A00(float *, float, float);
-extern void *func_002C2210(void *, s32, u32, s32, s32, float *, s32, float, float, float);
+extern void *func_002C2210(float, float, float, void *, s32, u32, s32, s32, float *, s32);
 extern void func_L02_0040CEE8(u8 *);
 
 /* Follow the patrol path, handle landing and contact states, then emit the trail. */
@@ -89,18 +71,17 @@ void func_L02_0040BE08(u8 *object)
     state = *(u8 **)(object + 0x68);
     func_L02_0040CAF0(object);
     if (*(u8 **)(state + 0x184)) {
-        u8 *other = *(u8 **)(state + 0x184);
-        target.quad = *(TI128 *)(other + 0x10);
-        func_00283248(*(float *)(other + 0x10) - *(float *)(object + 0x10), *(float *)(other + 0x14) - *(float *)(object + 0x14));
+        target.quad = *(TI128 *)(*(u8 **)(state + 0x184) + 0x10);
+        func_00283248(*(float *)(*(u8 **)(state + 0x184) + 0x10) - *(float *)(object + 0x10), *(float *)(*(u8 **)(state + 0x184) + 0x14) - *(float *)(object + 0x14));
     } else {
-        target.quad = D_00189EA0.quad;
-        func_00283248(D_00189EA0.f[0] - *(float *)(object + 0x10), D_00189EA0.f[1] - *(float *)(object + 0x14));
+        target.quad = *(TI128 *)&D_00189E20.pos;
+        func_00283248(D_00189E20.pos.f[0] - *(float *)(object + 0x10), D_00189E20.pos.f[1] - *(float *)(object + 0x14));
     }
     range = func_00282E80(object + 0x10, &target);
     if (object[0x20] == 1 || object == 0 || object[0x20] == 0xFE || object[0x20] == 0xFD)
         return;
     if (object[0x95] == 4) {
-        point.quad = *(TI128 *)(object + 0x10);
+        qcopy(&point, object + 0x10);
         *(float *)(state + 0x108) -= *(float *)(state + 0x8C);
         func_00282CC0(object + 0x10, object + 0x10, state + 0x100);
         if (func_002761F8(&point, object + 0x10, 0, object, 0) ||
@@ -124,7 +105,7 @@ void func_L02_0040BE08(u8 *object)
             func_002B60B0(object, 0.016666668f, 0.33333334f, 0.001163553f, 0.10471977f);
             object[0xBC] = 0;
         }
-        if (!object[0xBC] && *(s16 *)(state + 0x1BA) < (s32)*(u16 *)(object + 0x96))
+        if (!object[0xBC] && (s32)*(u16 *)(object + 0x96) > *(s16 *)(state + 0x1BA))
             object[0xBC] = 1;
         else if (object[0xBC] == 1) {
             if (func_L00_003206B8(object + 0x10, func_L02_003FC0B8(*(char **)(object + 0xB8))))
@@ -144,22 +125,20 @@ void func_L02_0040BE08(u8 *object)
             if (func_002B3868(object)) {
                 u8 *cursor = path + 0x10;
                 s32 closest = 0;
+                s32 index;
                 float best;
                 func_002B60B0(object, 0.027777778f, 3.3333335f, 0.001163553f, 0.10471977f);
                 *(float *)(state + 0x188) = *(float *)(ground + 8) + func_002A7878(1.0f, 3.0f);
                 best = func_00282E80(object + 0x10, cursor);
-                for (i = 0; i < *(s32 *)path - 1; i++) {
+                for (index = 0; index < *(s32 *)path - 1; index++) {
                     float next = func_00282E80(object + 0x10, cursor);
-                    if (!(best <= next)) { best = next; closest = i; }
+                    if (next < best) { best = next; closest = index; }
                     cursor += 0x10;
                 }
                 *(s32 *)(state + 0x194) = closest;
                 *(u16 *)(state + 0x1B4) = func_002A77E0(2);
             } else {
-                u8 *entry = path + 0x10 + *(s32 *)(state + 0x194) * 0x10;
-                point.f[0] = *(float *)entry;
-                point.f[1] = *(float *)(entry + 4);
-                point.word[3] = *(u32 *)(entry + 0xC);
+                qcopy(&point, &((PatrolVector *)(path + 0x10))[*(s32 *)(state + 0x194)]);
                 point.f[2] = *(float *)(state + 0x188);
                 func_00282CF0(&velocity, &point, object + 0x10);
                 func_00282F20(&velocity, &velocity, *(float *)(state + 0x198));
@@ -202,17 +181,12 @@ void func_L02_0040BE08(u8 *object)
             if (object[0x43] != 3) func_002A7470(object, 3, 0, 5);
             func_002A7750(object, 11, -1);
         }
-        break;
-    case 10:
-        if (*(u16 *)(object + 0x96) > 44) {
-            func_002A7750(object, 9, -1);
-            if (object[0x43] != 2) func_002A7470(object, 2, 0, 2);
-            *(float *)(object + 0x48) = 1.0f;
-        }
+        /* Emits nothing, but keeps a label here, so case 9's tail stays apart from case 12's. */
+        height = 0.0f;
         break;
     case 11:
         if (func_002B3890(object)) {
-            func_002B60B0(object, 0.0011111112f, 0.033333335f, 0.001163553f, 0.10471977f);
+            func_002B60B0(object, 0.0011111111380159855f, 0.033333335f, 0.001163553f, 0.10471977f);
             *(u16 *)(object + 0x96) = 0;
         }
         *(float *)(object + 0x48) = 1.75f;
@@ -229,7 +203,7 @@ void func_L02_0040BE08(u8 *object)
         do {
             func_002A8D70(0.5f, (float)state[0x34], 1.0f, object, i, 0x4000001, 0, 1, 0);
         } while (++i < 4);
-        if (D_0018C2BC == object) {
+        if (D_00189E20.contact == object) {
             func_002A7750(object, 12, -1);
             if (object[0x43] != 4) func_002A7470(object, 4, 0, 5);
             *(float *)(object + 0x48) = 1.0f;
@@ -246,10 +220,17 @@ void func_L02_0040BE08(u8 *object)
             func_002A7750(object, 8, -1);
         }
         break;
+    case 10:
+        if (*(u16 *)(object + 0x96) > 44) {
+            func_002A7750(object, 9, -1);
+            if (object[0x43] != 2) func_002A7470(object, 2, 0, 2);
+            *(float *)(object + 0x48) = 1.0f;
+        }
+        break;
     }
     *(float *)(state + 0x170) = func_002AA150(*(float *)(state + 0x170), D_L02_001B1970 * 0.00029088825f, 0.0625f);
-    *(float *)(state + 0x174) = func_002AA150(*(float *)(state + 0x174), D_L02_001B1974 * 0.00029088825f, 0.0625f);
-    *(float *)(state + 0x178) = func_002AA150(*(float *)(state + 0x178), D_L02_001B1978 * 0.00029088825f, 0.0625f);
+    *(float *)(state + 0x174) = func_002AA150(*(float *)(state + 0x174), D_L02_001B1974[0] * 0.00029088825f, 0.0625f);
+    *(float *)(state + 0x178) = func_002AA150(*(float *)(state + 0x178), D_L02_001B1978[0] * 0.00029088825f, 0.0625f);
     *(float *)(object + 0xF0) = func_00283B98(*(float *)(object + 0xF0), *(float *)(state + 0x170));
     *(float *)(object + 0xF4) = func_00283B98(*(float *)(object + 0xF4), *(float *)(state + 0x174));
     *(float *)(object + 0xF8) = func_00283B98(*(float *)(object + 0xF8), *(float *)(state + 0x178));
@@ -270,7 +251,7 @@ void func_L02_0040BE08(u8 *object)
             if (!side) side--;
             func_002A7A00(velocity.f, D_L02_001B1938 * 0.016666668f, D_L02_001B193C * 0.016666668f);
             velocity.f[2] = func_002A7878(D_L02_001B1940, D_L02_001B1944) * 0.016666668f;
-            func_002C2210(&point, 60, 0x7F007F7F, 0, side, velocity.f, 0, size * 0.1f, size, D_L02_001B1948);
+            func_002C2210(size * 0.1f, size, D_L02_001B1948, &point, 60, 0x7F007F7F, 0, side, velocity.f, 0);
         }
     }
     if (*(s32 *)(state + 0xE0) > 180) {

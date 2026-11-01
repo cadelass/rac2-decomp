@@ -1,22 +1,3 @@
-/*
- * Complete manual reconstruction retained as nonmatching; no exact-C, linked-build
- * or runtime credit. Fresh worker checks on 2026-10-25, base dcfcd1f90746f3fbba715825d25bf19e88bf875c.
- * Tested profile: -O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
- * Coverage: US: 0/1 placements; US2: 0/1 placements; PAL: absent from both catalogues.
- * US compiled size: 1820 bytes; retail: 1832 bytes.
- * Remaining difference: 1820 bytes versus 1832. The function-scope (self + 0x10) view and actor pointer have different saved-register assignments from retail; prologue/global-test scheduling and later branches differ. The complete constructor and emitter argument banks are retained.
- * Reopen only with: A qualified actor/(self + 0x10) access shape and state lifetime that explains the retail register interference while retaining the six-GPR/three-FP emitter and twelve-GPR/two-FP constructor.
- * Earlier complete variants and command logs are preserved privately.
- */
-/* M34 2026-10-26: 1832/1832, profile -O2 -G0 -ffunction-sections -frac2-hazard-labels.
- * Closed: self+0x10 at each use (retail's PRE copy into $s5), the radius store as if/else,
- * the two state stores swapped, the detonate and respawn calls written in place (cross-jumped
- * by the compiler), NOT_SDA on the absolute globals, the shake slots as a struct, the else-arm
- * first for the radius ramp, the 0xD8 state word through a union view.
- * Left (two instructions, order only): before func_L01_0031BC68 retail issues the 0xD8 store,
- * both word loads, then mov.s $f12 in the slot; here the loads come first and the store fills
- * the slot. Register/order-only: permuter queued.
- */
 #include "common.h"
 typedef int Quad __attribute__((mode(TI)));
 typedef union { Quad quad; float f[4]; } Vector;
@@ -25,13 +6,13 @@ extern char *D_L02_001C0958 NOT_SDA;
 extern char D_00189E20[] NOT_SDA;
 typedef struct { float amount; int unk4; int time; int phase; char pad[0x10]; } ShakeSlot;
 typedef struct { char pad[0x160]; ShakeSlot slot[2]; } Shake;
-typedef union { char b[0x100]; int i[0x40]; float f[0x40]; } PlatformState;
 extern Shake D_L02_001BA3C0;
 extern u16 D_0018CA60 NOT_SDA;
 extern Vector D_L02_001BA500;
-extern int D_L02_001B0130 __attribute__((sda)), D_L02_001B0138 __attribute__((sda));
+extern int D_L02_001B0130 __attribute__((sda));
+/* One table: [0] is a bare small symbol ($gp), [1] and [2] are symbol + offset: two-word tied absolute loads. */
+extern int D_L02_001B0138[] __attribute__((sda));
 extern float D_L02_001B0134 __attribute__((sda));
-extern int D_L02_001B013C, D_L02_001B0140;
 extern float func_002A89A8(void *, int, float), func_00282E48(void *, void *), func_00283B98(float, float), func_002AA340(int *, int, int);
 extern void func_L01_0031AB20(char *, void *, int, float, float, float), func_002A7750(u8 *, int, int), func_L02_003D0238(char *), func_L02_003D02F0(char *);
 extern int func_00283CF0(float), func_002B3868(u8 *), func_002B38B8(u8 *), func_00282948(int *), func_002E5CF8(int, int, char *), func_002E5DA0(int, int, char *, int);
@@ -121,10 +102,10 @@ void func_L02_003CFAC8(char *self) {
     if (((u8 *)self)[0x31]) {
         *(float *)(self + 0xF4) = func_00283B98(*(float *)(self + 0xF4), 0.026179943f);
         *(float *)(self + 0xF8) = func_00283B98(*(float *)(self + 0xF4), 0.015126189216971397f);
-        if (((u8 *)self)[0x20] == 1) *(int *)(self + 0x78) = D_L02_001B0138;
+        if (((u8 *)self)[0x20] == 1) *(int *)(self + 0x78) = D_L02_001B0138[0];
         else {
-            ((PlatformState *)state)->f[0xD8 / 4] = func_00283B98(((PlatformState *)state)->f[0xD8 / 4], 0.20943955f);
-            *(int *)(self + 0x78) = func_L01_0031BC68(D_L02_001B013C, D_L02_001B0140, ((PlatformState *)state)->f[0xD8 / 4]);
+            *(float *)(state + 0xD8) = func_00283B98(*(float *)(state + 0xD8), 0.20943955f);
+            *(int *)(self + 0x78) = func_L01_0031BC68(D_L02_001B0138[1], D_L02_001B0138[2], *(float *)(state + 0xD8));
         }
     }
     ++*(u16 *)(self + 0x96);

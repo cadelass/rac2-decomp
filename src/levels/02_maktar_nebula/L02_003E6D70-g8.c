@@ -1,25 +1,16 @@
-/* func_L02_003E6D70 (1 place, 1,536 bytes): slot-machine actor update.
- * Opus pass (big38), 2026-10-26; not linked. Profile: -O2 -G8 -ffunction-sections.
- * 382/384 words, ~50 opcodes off (was 55). Changes: a plain switch with an empty case 1 instead of
- * the computed goto (same 6-entry table); D_L02_001AEC78, D_001A79F8, D_L02_001B0A18/1C and
- * D_L02_001B093C/094C are plain sized scalars (gp only in delay slots, lui/lw elsewhere);
- * D_L02_001A8F20 is an address (array, not sda); D_00139647 is byte 0x8F of D_001395B8 through a
- * union view (retail keeps the base in s0); hero XY through the Hero view.
- * Left: retail stores the three float zeroes from $f0 (mtc1 $zero) and does not use s2 for the
- * rate loop; store order of the hit packet bytes; the sound-slot index tests (a1 vs a2).
- */
 #include "common.h"
-extern float D_L02_001B0A18, D_L02_001B0A1C;
+extern float D_L02_001B0A18[] __attribute__((sda));
 typedef union { u8 b[0x200]; u32 w[0x80]; } GameFlags;
 extern u8 D_001395B8[];
 #define FLAG (((GameFlags *)D_001395B8)->b[0x8F])
-extern int D_L02_001B093C, D_L02_001B094C;
+/* The six weights the machine rolls its mode against (func_L02_003E79F8). Each constant index is
+   one two-word assembler macro, so neither update can sit in a delay slot, as in retail. */
+extern int D_L02_001B0938[] __attribute__((sda));
 extern char D_L02_001B0978[], D_L02_001B09A8[];
 extern char D_00188660[];
-typedef int TI128 __attribute__((mode(TI)));
 typedef union { u8 b[0x2600]; f32 f[0x980]; } Hero;
 extern u8 D_00189E20[];
-extern char D_L02_001A8F20[];
+extern char D_L02_001A8F20[] __attribute__((sda));
 extern int D_L02_001AEC78, D_001A79F8;
 extern void func_L00_002E6CF0(void (*)(char *), void *);
 extern void func_L02_003E7B58(char *);
@@ -36,37 +27,52 @@ extern void func_002A7398(void *, int, int);
 extern void func_L02_003E7370(void *);
 extern void func_L01_0031A278(void *, void *, float, float, float);
 extern void func_002A8BD0(void *, void *, int, float);
-extern void func_00277F48(void *, int, void *, void *, float);
-extern void func_0032C700(void *, int, int, int, int, int, int, int, int, int, int, int, float, float);
+extern int func_00277F48(void *, int, void *, void *, float);
+extern char *func_0032C700(void *, int, int, int, int, int, int, int, int, int, int, int, float, float);
 extern char *func_L02_003CEBB8(int);
 extern void func_L02_003CED70(void *, void *, void *);
 extern float func_00283248(float, float);
 extern void func_0029F338(void *);
 extern char *func_002A9640(void *, int, int);
 extern void func_L02_003E79F8(void *);
-/* Updates the slot-machine actor, including a triggered prize or destruction. */
+typedef struct { char pad[0x18]; u8 kind; u8 flags; short sourceClass; char tail[0x14]; } Hit003E6D70;
+typedef struct { char pad[0xAA]; short classId; } SlotActor003E6D70;
+typedef struct {
+    char pad0[0x20]; float health; short count; char pad26[10];
+    float multiplier; char pad34[0x2C]; float reel[3];
+    char pad6c[0x38]; int destroyed;
+} SlotState003E6D70;
+/* Updates the slot-machine actor. State 0 sets it up and rolls the three reel rates; 2 counts the
+   spin (past the 36th, moving 40 of weight 1's share to weight 5) and waits for its animation; 3
+   and 4 hand over to their own updates; 5 destroys it, with a blast and two prizes when the word at
+   +0xA4 is set. Every state but 5 then takes a hit: a hard one from a class other than 0 and 0x47
+   destroys it, and in state 1 one from class 0x47 spends ten bolts and starts a spin. */
 void func_L02_003E6D70(char *actor) {
     char *state = *(char **)(actor + 0x68);
-    float point[4], prizePoint[4];
-    char hit[48];
+    float point[4];
+    Hit003E6D70 hit;
+    float prizePoint[4];
     char *contact, *other;
     int i, index;
     float *rate;
+    float zero;
+    SlotState003E6D70 *setup = (SlotState003E6D70 *)state;
     if (*(unsigned char *)(actor + 0x31)) func_L00_002E6CF0(func_L02_003E7B58, actor);
     switch (*(unsigned char *)(actor + 0x20)) {
     case 0:
     func_002A7750(actor, 1, -1);
-    *(float *)(state + 0x20) = 3.0f;
-    *(short *)(state + 0x24) = 3;
-    *(float *)(state + 0x30) = 1.0f;
-    *(float *)(state + 0x60) = 0.0f;
-    *(int *)(state + 0xA4) = 0;
-    *(float *)(state + 0x68) = 0.0f;
-    *(float *)(state + 0x64) = 0.0f;
+    setup->health = 3.0f;
+    setup->count = 3;
+    setup->multiplier = 1.0f;
+    zero = 0.0f;
+    setup->destroyed = 0;
+    setup->reel[2] = zero;
+    setup->reel[1] = zero;
+    setup->reel[0] = zero;
     rate = (float *)(state + 0x84);
-    for (i = 2; i >= 0; i--) *rate++ = func_002A7878(D_L02_001B0A18, D_L02_001B0A1C) * 0.016666668f;
-    if (func_002A77E0(2) == 0) *(unsigned short *)(actor + 0x34) &= 0x7FFF;
-    else *(unsigned short *)(actor + 0x34) |= 0x8000;
+    for (i = 2; i >= 0; i--) *rate++ = func_002A7878(D_L02_001B0A18[0], D_L02_001B0A18[1]) * 0.016666668f;
+    if (func_002A77E0(2)) *(unsigned short *)(actor + 0x34) |= 0x8000;
+    else *(unsigned short *)(actor + 0x34) &= 0x7FFF;
     *(unsigned short *)(actor + 0x34) |= 0x4000;
         break;
     case 2:
@@ -74,9 +80,9 @@ void func_L02_003E6D70(char *actor) {
         if (*(unsigned char *)(actor + 0x43) != 1) func_002A7470(actor, 1, 0, 1);
         func_L00_0030C710(0xF0);
         if (FLAG < 0x7F) FLAG++;
-        if (FLAG > 0x24 && D_L02_001B094C < 30) {
-            D_L02_001B093C -= 40;
-            D_L02_001B094C += 40;
+        if (FLAG > 0x24 && D_L02_001B0938[5] < 30) {
+            D_L02_001B0938[5] += 40;
+            D_L02_001B0938[1] -= 40;
             func_0026FEB8(D_L02_001B0978);
         }
         func_0026FEB8(D_L02_001B09A8, FLAG);
@@ -101,8 +107,10 @@ void func_L02_003E6D70(char *actor) {
         char *slot;
         index = *(int *)(state + 0x54);
         *(int *)(state + 0x50) = 60;
-        slot = D_00188660 + index * 0x70;
-        if (index != -1 && *(char **)(slot + 0x88) == actor && *(unsigned char *)(slot + 0x74)) func_002E59F8(index);
+        if (index != -1) {
+            slot = D_00188660 + index * 0x70;
+            if (*(char **)(slot + 0x88) == actor && *(unsigned char *)(slot + 0x74)) func_002E59F8(index);
+        }
         *(int *)(state + 0x54) = -1;
     }
     func_L02_003E77E0(actor);
@@ -111,8 +119,10 @@ void func_L02_003E6D70(char *actor) {
     {
         char *slot;
         index = *(int *)(state + 0x54);
-        slot = D_00188660 + index * 0x70;
-        if (index != -1 && *(char **)(slot + 0x88) == actor && *(unsigned char *)(slot + 0x74)) func_002E59F8(index);
+        if (index != -1) {
+            slot = D_00188660 + index * 0x70;
+            if (*(char **)(slot + 0x88) == actor && *(unsigned char *)(slot + 0x74)) func_002E59F8(index);
+        }
     }
     *(int *)(state + 0x54) = -1;
     func_002A7398(actor, 0, 0);
@@ -121,11 +131,11 @@ void func_L02_003E6D70(char *actor) {
     *(unsigned short *)(actor + 0x34) = (*(unsigned short *)(actor + 0x34) & 0xBFFF) | 2;
     if (*(int *)(state + 0xA4)) {
         func_L01_0031A278(actor, point, 0.0f, 0.0f, 1.5f);
-        func_002A8BD0(hit, actor, 0x810001, 2.0f);
-        *(short *)(hit + 0x1A) = *(short *)(actor + 0xAA);
-        *(unsigned char *)(hit + 0x19) = 1;
-        *(unsigned char *)(hit + 0x18) = 2;
-        func_00277F48(point, 16, actor, hit, 4.0f);
+        func_002A8BD0(&hit, actor, 0x810001, 2.0f);
+        hit.kind = 2;
+        hit.flags = 1;
+        hit.sourceClass = ((SlotActor003E6D70 *)actor)->classId;
+        func_00277F48(point, 16, actor, &hit, 4.0f);
         func_0032C700(actor + 0x10, 1, 25, 20, 20, 20, 45, 0, 1, 1, 0, 0, 1.5f, 20.0f);
         if (*(int *)(state + 0x58)) {
             for (i = 0; i < 2; i++) {
