@@ -647,7 +647,7 @@ void func_002BD500(char *a)
 
 /* func_002BE278 uses the quadword-copy profile in 002BE278-qcopy.c. */
 
-INCLUDE_ASM("asm/game", func_002BE400);
+/* func_002BE400 uses the no-gcse profile in 002BE400.c. */
 
 /* func_002BE7E8 uses the quadword-copy profile in 002BE7E8-qcopy.c. */
 
@@ -696,7 +696,7 @@ void func_002BE9B8(char *p)
 /* func_002BEBC0 is in 002BEBC0-hazard-labels.c (retail keeps a branch label on its
    mtc1 hazard nop, which only a -frac2-hazard-labels unit reproduces). */
 
-INCLUDE_ASM("asm/game", func_002BEE70);
+/* func_002BEE70 is in 002BEE70-g.c (it needs -g for its line notes' pre-division nops). */
 
 void func_002BF518(char *o)
 {

@@ -1,12 +1,7 @@
-/* M21 2026-10-26: 784 of 784 bytes with -O2 -G8 -ffunction-sections (us, level 00 placement).
-   Three words off, register only: in the per-row draw setup retail loads the scroll (lhu) into
-   $v0 and x+16 into $v1; here the other way round. What closed the rest: iconX = x + 4 set
-   inside the loop (loop.c hoists it to a stack slot), the scratchpad list as a pointer local
-   indexed by i (strength-reduced to retail's $s7), iconY = y + 10 at the loop top with
-   `iconY += 6` for two rows and a separate scrolled value, `int *base = D_001C4FA0` inside the
-   loop (lui/addiu/lw 0x230, rebuilt each pass), y = 4 before x = 4, and the 64-bit colour
-   argument of func_0027F538. Tried: draw.y/x order, temps, casts. Permuter queued. */
-
+/* Menu list page: draws a title, then one text row per entry of the scratchpad list. The selected
+ * row is highlighted and scrolled into view; a check box beside each row shows its mask bit.
+ * `limit` is one local for both the text's x and the top bound: being set twice sends it to
+ * global-alloc, which is what gives the local scroll value $v0 and leaves it $v1. */
 #include "common.h"
 
 typedef struct { u16 top, bottom, left, right, x, y, width, height, line, flags, extra0, extra1; } TextBox_002D99E8;
@@ -38,7 +33,7 @@ int func_002D99E8(Menu_002D99E8 *menu)
     TextBox_002D99E8 draw, initial;
     int mask;
     int x, y, count, i, selected, color, rows, iconY;
-    int iconX, iconTop;
+    int iconX, iconTop, limit;
     int *list;
     int *base;
 
@@ -73,11 +68,12 @@ int func_002D99E8(Menu_002D99E8 *menu)
         color = selected ? 0x8020FFFF : 0x80FFA888;
         if (selected)
             func_0027F120();
-        draw.x = x + 16;
+        limit = x + 16;
+        draw.x = limit;
         draw.y = y - menu->scroll;
         func_00280200(&draw, color, (signed char *)func_00288FB8(list[i]), -1);
         if (selected) {
-            if ((s16)draw.y < (s16)draw.top + 4)
+            if ((s16)draw.y < (limit = (s16)draw.top + 4))
                 menu->scroll -= 4;
             if ((s16)draw.bottom - (s16)draw.height - 4 < (s16)draw.y)
                 menu->scroll += 4;

@@ -456,8 +456,6 @@ check:
     return (unsigned int)(*(unsigned short *)(object + 0xAA) - 500) < 41;
 }
 
-INCLUDE_ASM("asm/game", func_002ABBB8);
-
 void func_002AC728(unsigned char *object, void *position, int sound, float scale, float radius)
 {
     float zero[4];
@@ -686,7 +684,34 @@ int func_002AD5F8(char *unused, char *obj, char *arg2, char *arg3, char *arg4, c
 
 /* func_002AD6F0 uses the quadword-copy profile in 002AA800-qcopy.c. */
 
-INCLUDE_ASM("asm/game", func_002AD7B8);
+extern u8 D_001A7BC8[] __attribute__((sda));
+extern int D_00139948[];
+
+/* Sets the byte flag of `index` once and, for indices below 0x15 and index 24, appends it to
+   the 28-entry list. The sum over the set flags is never read: flow deletes it after the
+   loop pass, which leaves retail's empty ascending loop. */
+void func_002AD7B8(int index)
+{
+    int i;
+    int j;
+    int sum;
+    int count;
+
+    if (D_001A7BC8[index] != 0)
+        return;
+    sum = 0;
+    for (j = 0; j < 28; j++)
+        if (D_001A7BC8[j] != 0)
+            sum += j;
+    D_001A7BC8[index] = 1;
+    if (index >= 0x15 && index != 24)
+        return;
+    count = 0;
+    for (i = 0; i < 28; i++)
+        if (D_00139948[i] != 0)
+            count++;
+    D_00139948[count] = index;
+}
 
 /* func_002AD860 is in 002AD860.c. */
 
@@ -956,7 +981,7 @@ float func_002AF2E8(char *a0, char *a1, int *a2,
 }
 
 /* func_002AF460 is in 002AA800-nearest.c. */
-INCLUDE_ASM("asm/game", func_002AF580);
+/* func_002AF580 is matched in its own unit, src/game/002AF580-qcopy.c. */
 
 
 void func_002AFD88(float x, float y, float z, char *a0, char *a1)

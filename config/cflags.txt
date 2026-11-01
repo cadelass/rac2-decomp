@@ -1943,20 +1943,32 @@ src/game/002977A8.c	-O2 -G0 -ffunction-sections -fno-strength-reduce
 src/levels/shared/L00_003E7E40-trails.c	-O2 -G0 -ffunction-sections -mno-split-addresses
 src/levels/shared/L22_002A8B98-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy
 src/levels/01_oozla/L01_002BEB90-nsa-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/game/002BF6F0-c5120-g8.c	-O2 -G8 -ffunction-sections -g
+src/game/002D0568-rc2.c	-O2 -G8 -fno-expensive-optimizations -ffunction-sections -fno-builtin
+src/game/002B50E0.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+src/game/002B41A8.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/core/0011BEE0-kputchar.c	sdk -O2 -G2 -ffunction-sections -Wa,--r5900-swap-branch-slots
 src/game/0027BD70-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
 src/core/00132318-g8.c	-O2 -G8 -ffunction-sections -fno-gcse -fno-cse-follow-jumps
 src/game/0027F128-glow.c	-O2 -G0 -ffunction-sections -fno-rerun-loop-opt
 src/game/0027F128-quad.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/game/0026EA00-target.c	-O2 -G0 -ffunction-sections -g
+src/game/002E35E0-g8.c	-O2 -G8 -ffunction-sections -fmove-all-movables
+src/game/002E64A0.c	-O2 -G32 -Wa,-G32 -ffunction-sections
 src/core/0011B140.c	sdk -O2 -G2 -ffunction-sections
+src/game/002BE400.c	-O2 -G0 -ffunction-sections -fno-gcse
 src/core/001334B8-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
+src/game/002BEE70-g.c	-O2 -G0 -ffunction-sections -g
 src/game/0029DDC0.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
 src/game/0029DD30.c	-O2 -G0 -ffunction-sections -frac2-gcse-unsplit-edges
 src/game/00294BC8-nosched.c	-O2 -G0 -ffunction-sections -fno-schedule-insns
 src/core/00119BF8.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
+src/game/002AA800-blast.c	-O2 -G0 -ffunction-sections -g
 src/core/00118D98.c	-O2 -G2 -ffunction-sections -mastra-quad-saves -frac2-keep-block-order -frac2-gcse-unsplit-edges
 src/game/00295F60-map-g8.c	-O2 -G8 -Wa,-G64 -ffunction-sections -ffast-math -g
 src/game/00286738-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
+src/game/002B1C20-gravity.c	-O2 -G0 -ffunction-sections -g -frac2-hazard-labels
+src/game/002E9268.c	-O2 -G0 -ffunction-sections -g
 src/game/00294988-g8.c	-O2 -G8 -ffunction-sections -Wa,-G32
 src/game/0028BE00-g8.c	-O2 -G8 -ffunction-sections -g
+src/game/002AF580-qcopy.c	-O2 -G0 -ffunction-sections -g -ffast-math -frac2-qcopy -frac2-qcopy-barrier
