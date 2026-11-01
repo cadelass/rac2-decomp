@@ -47,7 +47,7 @@ extern void func_32AF78(void *a0);
 /* func_L10_00424028 is defined in L10_00424028-g8.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L10_00424528);
+/* func_L10_00424528 is defined in L10_00424528-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L10_00424CD0);
 
@@ -56,7 +56,7 @@ INCLUDE_ASM("asm/levels", func_L10_00424CD0);
 
 /* func_L10_00424448 is defined in L10_00424448-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L10_0042B500);
+/* func_L10_0042B500 is defined in L10_00424028-cloud-g8.c. */
 
 extern u8 *func_0029EFD0(s32);
 extern f32 func_00283B98(f32, f32);

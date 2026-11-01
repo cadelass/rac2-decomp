@@ -666,7 +666,35 @@ int func_L09_003FB650(unsigned char *object, unsigned char *partner, int third, 
    handles are given back. */
 
 
-INCLUDE_ASM("asm/levels", func_L09_003FB908);
+extern Quad D_L09_00255F10[][4];
+extern Quad D_L09_00256310[];
+extern void func_00282B50(void *, void *, int);
+
+/* Stores a new record for the link that holds object, copies both end positions and moves its
+   state on (1 to 2, 4 to 3). Returns 1, or 0 when no link holds object. */
+int func_L09_003FB908(unsigned char *object, void *src)
+{
+    Quad (*blocks)[4] = D_L09_00255F10;
+    int i;
+
+    for (i = 0; i < 16; i++) {
+        if (D_L09_00255E90[i][0] == object || D_L09_00255E90[i][1] == object) {
+            unsigned char **row;
+            Quad *position;
+            if (D_L09_001B35E0[i] == 1)
+                D_L09_001B35E0[i] = 2;
+            else if (D_L09_001B35E0[i] == 4)
+                D_L09_001B35E0[i] = 3;
+            func_00282B50(blocks[i], src, 0x40);
+            position = &blocks[i][3];
+            row = D_L09_00255E90[i];
+            qcopy(position, row[0] + 0x10);
+            qcopy(&D_L09_00256310[i], row[1] + 0x10);
+            return 1;
+        }
+    }
+    return 0;
+}
 
 INCLUDE_ASM("asm/levels", func_L09_003FB9F8);
 
@@ -714,13 +742,15 @@ void func_L09_003FBF98(char *moby)
     func_L08_00389B68(2, 0x47, 0x5340BUL, 0x42, 0x8000000044UL);
 }
 
-INCLUDE_ASM("asm/levels", func_L09_003FC1E8);
+/* func_L09_003FC1E8 is defined in L09_003FC1E8-g64.c. */
 
 /* func_L09_003FCA58 is defined in L09_003FCA58-g64.c. */
 
 /* func_L09_003FCF68 is defined in L09_002F8BA0-beam-g64.c. */
 
 /* func_L09_003FD128 is in L09_003FD128-g8.c. */
+
+/* func_L09_003FD128 is defined in L09_003FD128-g8.c. */
 
 /* func_L09_003FD460 is defined in L09_002F8BA0-beam-g64.c (a 64-byte table read through $gp). */
 
@@ -786,7 +816,7 @@ void func_L09_003FDED8(unsigned char *a0) {
 
 /* func_L09_003FDFF0 is defined in L09_003FDFF0-helpers.c. */
 
-INCLUDE_ASM("asm/levels", func_L09_003FE0C0);
+/* func_L09_003FE0C0 is defined in L09_003FE0C0.c. */
 
 INCLUDE_ASM("asm/levels", func_L09_003FE2D8);
 
@@ -796,7 +826,7 @@ INCLUDE_ASM("asm/levels", func_L09_003FE2D8);
 INCLUDE_ASM("asm/levels", func_L09_003FE3B0);
 
 
-INCLUDE_ASM("asm/levels", func_L09_003FE4D0);
+/* func_L09_003FE4D0 is defined in L09_003FE4D0.c. */
 
 /* Number of leading non-negative halfwords of the track the record's byte 0x21
    selects, counting the first negative one. The pointer has to walk itself

@@ -172,7 +172,7 @@ void func_L10_003F6110(u8 *arg0) {
 
 INCLUDE_ASM("asm/levels", func_L10_00415A50);
 
-INCLUDE_ASM("asm/levels", func_L10_004166E8);
+/* func_L10_004166E8 is in L10_004166E8-g8-dbg.c. */
 
 void func_L10_00417040(u8 *arg0) {
     u8 *s1 = *(u8 **)(arg0 + 0x68);
