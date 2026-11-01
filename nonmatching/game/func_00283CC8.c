@@ -14,7 +14,15 @@
    subtraction, so it is farther from the 24-byte retail body. A 29 October
    write-then-read probe (`*a0 = (f32)(int)a1; return a1 - *a0;`) also remains
    32 bytes, 0/28. The compiler still sinks `swc1` into the `jr $ra` delay
-   slot, retaining the GPR round trip and `$f1` allocation. */
+   slot, retaining the GPR round trip and `$f1` allocation.
+
+   31 October 2026 (Opus 5.5): cc1's only `cvt.s.w` templates are
+   `mtc1 %1,%0 ; cvt.s.w %0,%0` and `l.s %0,%1 ; cvt.s.w %0,%0` (floatsisf2; strings of
+   build/compiler/tools/cc1 and build/compiler/sdk/cc1), so a `cvt.s.w` directly
+   after `cvt.w.s` cannot come from this compiler.  Same catalogue identity
+   (e32b219f6c6b1ac1, 24 bytes) as RAC1 func_L00_002001D8, which RAC1 marks ASM_FUNC;
+   retail also leaves `jr $ra` unfilled after `sub.s`.  Recompiled: 32/24 bytes, 0/28.
+   Reported as HANDWRITTEN. */
 typedef float f32;
 
 f32 func_00283CC8(f32 *a0, f32 a1) { f32 b = (f32)(int)a1; *a0 = b; return a1 - b; }

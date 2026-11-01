@@ -1,78 +1,53 @@
-/* from src/core/00131780-g8.c: the catalogue row is eight bytes too long.
- *
- * func_001325E0's row (0x001325E0, 244 bytes) opens with
- *
- *     addiu $sp,$sp,0x20 ; nop
- *
- * that belongs to no function: a linker remnant of the 989snd unit, the kind
- * rac1-decomp splits off as core_text/func_0012E1B8, right before its
- * cmd-0x57 wrapper func_0012E1C8 (rac1-decomp src/core/989snd.c), which is
- * the function this row is. The remnant is dead-stripped code, not part of
- * the function, and no C emits a stack-pointer increase at function entry, so
- * the row as it stands cannot be matched from C. A tools/levels.py split (the
- * row starts at 0x001325E8, 236 bytes) unblocks it.
- *
- * The C below is the function itself: 228 bytes against retail's 236. What
- * agrees is the whole shape - the 0x20 frame, the $s0 and $ra saves, the
- * branch out of the "pending" path, the four stores into D_001A71C0,
- * D_001A74D0, D_001A7180 and D_001A74D8, the -1 sentinel materialised as
- * `lui 0xFFFF` + `ori 0xFFFF`, the wait loop (the busy flag loaded into the
- * back edge's delay slot, the pump and the message under it, then
- * func_00111D810), the ninth argument of func_00111D620 on the stack at
- * 0x0($sp), and the epilogue. What is left is two instructions of scheduling:
- * retail keeps the four stores (and three `lui $at`) before the branch into
- * the loop, this cc1 sinks the last store into the branch's delay slot and
- * reuses $at, and the two stores after the loop come out in the other order.
- *
- * Unit: the -g8 sibling (the game compiler at -O2 -G8 -ffunction-sections);
- * the small globals need __attribute__((sda)) to come out $gp-relative.
- * GP is 0x001AEFF0: -0x7B28 is D_001A74C8, -0x7B68 is D_001A7488, -0x7AF8
- * is D_001A74F8 and -0x7B20 is D_001A74D0.
- *
- * Verified: compiled with the unit's own flags and compared with retail at
- * 0x001325E8: 228 of 236 bytes, the first difference at +0x1c (the $gp
- * offsets, which the linker fills in).
+/* sol-low v0268: rechecked with the pinned v2 toolchain, 0/1 boot places.
+ * -fno-schedule-insns is byte-neutral. Giving the message a complete extent
+ * removes s0 and changes the loop; retain the closest 236/236-byte form below.
  */
-
-extern int D_001A74C8 __attribute__((sda));   /* gp - 0x7B28 */
-extern int D_001A7488 __attribute__((sda));   /* gp - 0x7B68 */
-extern int D_001A74F8 __attribute__((sda));   /* gp - 0x7AF8 */
-extern int D_001A74D0 __attribute__((sda));   /* gp - 0x7B20 */
-extern int D_001A71C0;
-extern unsigned int D_001A7180;
-extern long long D_001A74D8;
-extern int D_001A7140;
-extern char D_001A76F8[];
-extern char D_001A7578[];
-
-extern void func_001115D48(char *);
-extern void func_001132028(void);
-extern void func_00111AEA0(int);
-extern int func_00111D810(int);
-extern void func_00111D620(int, int, int, int, int, int, int, int, int);
-
-void func_001325E0(int arg0, int arg1, long long arg2) {
+/* sol-high, b0264: USA v1.01 boot, game -O2 -G8 -ffunction-sections.
+ * 236/236 bytes, 0/1 places. The entry correction to 0x001325E8 is
+ * already in the current catalogue. This replaces the stale 228-byte draft.
+ * The callback-data scalar is volatile, as in current RAC1 989snd, which
+ * keeps its absolute doubleword store out of the branch delay slot.
+ * Remaining: the message-address LUI is hoisted before that store instead
+ * of occupying the branch delay slot. The rest of the body agrees.
+ * Volatile sentinel, -fno-sched-spec, and sharing the matched BankLoadAsync
+ * unit do not close this scheduling difference. SDK changes frame/GP/calls.
+ * Reopen with a qualified address-lifetime/scheduling remedy.
+ * All required declarations are below. Compile in a -g8.c sibling.
+ */
+#include "common.h"
+extern int D_001A74C8 __attribute__((sda));
+extern int D_001A7488 __attribute__((sda));
+extern int D_001A74F8 __attribute__((sda));
+extern int D_001A74D0 __attribute__((sda));
+extern int D_001A71C0 MACRO_ADDR;
+extern unsigned int D_001A7180 MACRO_ADDR;
+extern volatile long D_001A74D8 MACRO_ADDR;
+extern int D_001A7140 MACRO_ADDR;
+extern char D_001A76F8[], D_001A7578[];
+extern void func_00115D48(const void *, ...);
+extern void func_00132028(void);
+extern void func_0011AEA0(int);
+extern int func_0011D810(const void *);
+extern int func_0011D620(const void *, int, int, int *, int, unsigned int *, int, int, int);
+extern int D_001A71C4 MACRO_ADDR;
+extern char D_001A7600[], D_001A7630[];
+extern int func_00133580(int);
+void func_001325E0(int a, int c, long d) {
     D_001A7488 = 0;
     if (D_001A74C8 != 0) {
-        if (D_001A74F8 != 0) {
-            return;
-        }
-        func_001115D48(D_001A76F8);
+        if (D_001A74F8 != 0) return;
+        func_00115D48(D_001A76F8);
         return;
-    } else {
-        D_001A71C0 = arg0;
-        D_001A74D0 = arg1;
-        D_001A7180 = 0xFFFFFFFFu;
-        D_001A74D8 = arg2;
-        while (func_00111D810(D_001A7140) != 0) {
-            if (D_001A74F8 != 0) {
-                func_001132028();
-            } else {
-                func_001115D48(D_001A7578);
-            }
-            func_00111AEA0(0);
-        }
-        D_001A74C8 = 1;
-        func_00111D620(D_001A7140, 0x57, 1, D_001A71C0, 4, D_001A7180, 4, 0, 0);
     }
+    D_001A71C0 = a;
+    D_001A74D0 = c;
+    D_001A7180 = -1u;
+    D_001A74D8 = d;
+    while (func_0011D810(&D_001A7140)) {
+        if (D_001A74F8 == 0) func_00115D48(D_001A7578);
+        func_00132028();
+        func_0011AEA0(0);
+    }
+    D_001A74C8 = 1;
+    func_0011D620(&D_001A7140, 0x57, 1, &D_001A71C0, 4, &D_001A7180, 4, 0, 0);
 }
