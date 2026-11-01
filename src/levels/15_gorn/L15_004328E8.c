@@ -181,8 +181,6 @@ void func_L15_00434100(unsigned char *object) {
     func_00282948(state + 0x450);
 }
 
-INCLUDE_ASM("asm/levels", func_L15_00434610);
-
 extern s32 D_L15_001AEE20[] __attribute__((sda));
 extern s32 D_L15_001B1780[] SDATA(D_L15_001B1780);
 extern s32 D_L15_001B17B0[] SDATA(D_L15_001B17B0);
@@ -377,7 +375,7 @@ void func_L15_00435838(char *object) {
 }
 
 
-INCLUDE_ASM("asm/levels", func_L15_00435E80);
+/* func_L15_00435E80 is in L15_00435E80.c. */
 
 void func_L15_00436090(char *a0) {
     char *v1 = *(char **)(a0 + 0x68);
@@ -391,7 +389,7 @@ void func_L15_00436090(char *a0) {
     *(int *)(a0 + 0x98) = 0;
 }
 
-INCLUDE_ASM("asm/levels", func_L15_004360D8);
+/* func_L15_004360D8 is in L15_004360D8.c. */
 
 extern int func_002E5CF8(int, int, void *);
 extern void func_L05_00379FA0(void *, int, int, float, int, float, float, float,

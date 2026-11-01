@@ -48,15 +48,15 @@ void func_L12_0041E8F8(u8 *a0) {
 
 /* func_L12_00420838 is defined in L12_00420838-flags-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L12_00420950);
+/* func_L12_00420950 is defined in L12_00420950-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L12_00420B78);
+/* func_L12_00420B78 is defined in L12_00420950-g8.c. */
 
 /* func_L12_00421110 is defined in L12_0041E3E8-g8.c. */
 
 /* func_L12_004212C0 is defined in L12_004212C0-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L12_00424370);
+/* func_L12_00424370 is defined in L12_00424370-g8.c. */
 
 extern s32 *D_L12_001FEAC0[];
 typedef int L12_25070Quad __attribute__((mode(TI)));
@@ -134,7 +134,7 @@ void func_L12_004254A8(u8 *arg0) {
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L12_004285A8);
+/* func_L12_004285A8 is defined in L12_004285A8-g32.c. */
 
 extern s32 func_002A77E0(s32);
 extern s32 func_00283CF0(f32);

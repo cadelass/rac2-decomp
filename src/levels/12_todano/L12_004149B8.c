@@ -176,13 +176,13 @@ INCLUDE_ASM("asm/levels", func_L12_004163E8);
 
 INCLUDE_ASM("asm/levels", func_L12_00417690);
 
-INCLUDE_ASM("asm/levels", func_L12_00417CA8);
+/* func_L12_00417CA8 is in L12_00417CA8-g16.c. */
 
 INCLUDE_ASM("asm/levels", func_L12_00418418);
 
 /* func_L12_00418D20 is in L12_00418D20-g16.c. */
 
-INCLUDE_ASM("asm/levels", func_L12_004190A8);
+/* func_L12_004190A8 is in L12_004190A8-g8.c. */
 
 /* func_L12_00419D68 is matched in its own unit, L12_00419D68.c. */
 
@@ -208,7 +208,7 @@ void func_L12_0041A5F8(u8 *self)
 
 /* func_L12_0041AEF0 is in L12_0041AEF0-g8.c. */
 
-INCLUDE_ASM("asm/levels", func_L12_0041B2A8);
+/* func_L12_0041B2A8 is in L12_0041B2A8-g8.c. */
 
 /* --- func_L12_0041BED8 (176 B) ----------------------------------------------------- */
 

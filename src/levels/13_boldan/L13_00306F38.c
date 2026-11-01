@@ -135,7 +135,7 @@ void func_L13_003E12F8(u8 *a0) {
     *(f32 *)(a0 + 0xF4) = func_2F9748(*(f32 *)(a0 + 0xF4), 0.017453296f);
 }
 
-INCLUDE_ASM("asm/levels", func_L13_003E8850);
+/* func_L13_003E8850 is in L13_003E8850.c. */
 
 /* func_L13_003EFD58 is in L13_003EFD58.c. */
 
@@ -280,7 +280,7 @@ void func_L13_0041B260(u8 *a0) {
     if (func_32A4D0(base, ptr[1]) != 0) D_L13_001B2568 = 95.0f;
 }
 
-INCLUDE_ASM("asm/levels", func_L13_0041BDA8);
+/* func_L13_0041BDA8 is in L13_0041BDA8.c. */
 
 INCLUDE_ASM("asm/levels", func_L13_0041CD18);
 

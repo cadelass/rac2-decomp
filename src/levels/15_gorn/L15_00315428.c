@@ -80,7 +80,7 @@ INCLUDE_ASM("asm/levels", func_L15_004307E0);
 /* func_L15_00430B30 is defined in L15_00430B30-g8.c. */
 
 
-INCLUDE_ASM("asm/levels", func_L15_00430DF0);
+/* func_L15_00430DF0 is defined in L15_00430DF0-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L15_00431590);
 
@@ -110,4 +110,4 @@ void func_L15_004321A8(char *p)
     }
 }
 
-INCLUDE_ASM("asm/levels", func_L15_00432210);
+/* func_L15_00432210 is defined in L15_00432210-g8.c. */
