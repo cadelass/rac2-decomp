@@ -1,23 +1,27 @@
 /*
- * Retained complete manual reconstruction; not linked or counted.
- * Profile: -O2 -G8 -ffunction-sections
- * Retail: 1092 bytes; compiled: 1080 bytes.
- * Final coverage: us: 0/1; us2: 0/1; pal: catalogue absent.
- * Residual: 1080/1092 bytes. A full 64-byte joint matrix and 48-byte rotation output are
- * retained;83678 writes three rows and AB028 touches only their 3x3 components. Full
- * vector transfers use qcopy. The trajectory table has an unknown full extent, replacing
- * scalar-based out-of-object indexing. Float allocation, interpolation and copy
- * schedules remain different.
- * Reopen: Independent trajectory-table extent/layout and interpolation lifetime
- * evidence. Keep the canonical particle constructor with 12 GPR/two FP inputs and real
- * caller stack words at 0,8,0x10,0x18. Do not restore a scalar masquerading as the
- * table.
+ * GPT-6.1 Sol (high), worker v0984; retained near miss, not linked.
+ * Profile: -O2 -G8 -ffunction-sections -g
+ * USA v1.01: 1084/1092 bytes, 0/1 places match (check.py --diff).
+ * SDATA preserves the unknown trajectory-table extent and emits retail's GP base.
+ * An explicit byte offset reproduces the independent fp induction variable;
+ * it also leaves the joint-dependent six as an immediate and produces movn.
+ * -g restores the two FP hazard nops missing from the default profile.
+ * Remaining: zero clamp is loop-local f1/bc1tl/mov.s rather than hoisted
+ * f22/bc1f/mtc1, shifting the saved FP registers; initialization ordering,
+ * timer/rounding allocation and particle argument scheduling still differ.
+ * Inline clamp, preinitialized result and duplicated vector-call forms do not
+ * solve the zero lifetime. GCSE unsplit edges ties; move-all-movables expands
+ * to 1144 bytes and a 0x1A0 frame. Other releases and linking not checked.
+ * Preserve the complete 64-byte joint matrix, 48-byte rotation, approved qcopy
+ * transfers and the particle constructor's real 12 GPR/two FP input ABI.
+ * Reopen with independent clamp/constant-lifetime or source grouping evidence.
+ * Required declarations follow below; no volatile casts or register pins.
  */
 #include "common.h"
 
 typedef int Vector __attribute__((mode(TI)));
 /* The trajectory table has at least the five observed entries; full extent unknown. */
-extern float D_L02_001B0190[] __attribute__((sda));
+extern float D_L02_001B0190[] SDATA(D_L02_001B0190);
 extern float D_L02_001B01E4 __attribute__((sda));
 extern float D_L02_001B01E8 __attribute__((sda));
 extern float D_L02_001B01B8;
@@ -34,8 +38,8 @@ extern void func_002A10E8(char *);
 extern void func_L02_003D5DF8(char *);
 extern char *func_L02_003D5CF0(void *, void *, float);
 extern int func_00283CF0(float);
-extern void *func_0032C700(void *, int, int, int, int, int, int, int, int, int, int, int, float, float);
-extern void func_002A8C28(char *, void *, int, int, float, float, float, int, int);
+extern void *func_0032C700(void *, int, int, int, int, int, int, int, float, float, int, int, int, int);
+extern int func_002A8C28(void *, void *, int, int, int, int, float, float, float);
 
 int func_L02_003D5748(char *self, int joint) {
     float origin[4] __attribute__((aligned(16)));
@@ -54,6 +58,7 @@ int func_L02_003D5748(char *self, int joint) {
     float phase;
     float time;
     int i;
+    int trajectoryOffset;
     int rounded;
     int timer;
     func_0029FCC0(self, joint, (char *)origin);
@@ -68,9 +73,9 @@ int func_L02_003D5748(char *self, int joint) {
     outbound = travel * 0.8571428f;
     inbound = travel * 0.6666666f;
     slots = (char **)(state + 0x2A0);
-    for (i = 0; i < 5; i++, slots++) {
+    for (i = 0, trajectoryOffset = 0; i < 5; i++, slots++, trajectoryOffset += sizeof(float)) {
         if (*slots) {
-            func_002AF1D0(self, *slots, joint, joint == 1 ? 6 : 0);
+            func_002AF1D0(self, *slots, joint, joint != 1 ? 0 : 6);
             time = (float)*(short *)(state + 0x31E);
             if (time < outbound)
                 phase = (time - outbound * (4.0f - (float)i) * 0.25f) * 1.1666667f;
@@ -79,7 +84,7 @@ int func_L02_003D5748(char *self, int joint) {
             else
                 phase = outbound * ((float)i * 0.2916667f) - (time - (outbound + 5.0f)) * 1.5000001f;
             if (phase < 0.0f) phase = 0.0f;
-            func_00282F20(delta, direction, phase + D_L02_001B0190[i]);
+            func_00282F20(delta, direction, phase + *(float *)((char *)D_L02_001B0190 + trajectoryOffset));
             func_00282CC0(*slots + 0x10, origin, delta);
             func_002A10E8(*slots);
             if (*(char **)(state + 0x300)) func_L02_003D5DF8(*(char **)(state + 0x300));
@@ -91,16 +96,17 @@ int func_L02_003D5748(char *self, int joint) {
             *(char **)(state + 0x300) = func_L02_003D5CF0(origin, end, 0.2f);
         }
     }
-    timer = (short)(*(unsigned short *)(state + 0x31E) + 1);
+    timer = *(unsigned short *)(state + 0x31E) + 1;
     *(short *)(state + 0x31E) = timer;
+    timer = (short)timer;
     rounded = func_00283CF0(outbound);
     if (timer > func_00283CF0(inbound) + rounded + 7) return 2;
     timer = *(short *)(state + 0x31E);
     if (timer > func_00283CF0(outbound) + 6) return 1;
     timer = *(short *)(state + 0x31E);
     if (timer > func_00283CF0(outbound) + 1 && *(short *)(state + 0x320) == 0) {
-        func_0032C700(impact, 0, 25, 20, 20, 20, 45, 0, 1, 0, 0, 0, 0.5f, 20.0f);
-        func_002A8C28(self, impact, 0x10001, 0, 0.5f, (float)*(unsigned char *)(state + 0x35), 1.0f, 1, 0);
+        func_0032C700(impact, 0, 25, 20, 20, 20, 45, 0, 0.5f, 20.0f, 1, 0, 0, 0);
+        func_002A8C28(self, impact, 0x10001, 0, 1, 0, 0.5f, (float)*(unsigned char *)(state + 0x35), 1.0f);
         *(short *)(state + 0x320) = 1;
     }
     return 0;
