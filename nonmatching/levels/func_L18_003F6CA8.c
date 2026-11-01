@@ -1,10 +1,17 @@
-/* Manual reconstruction, wave8 (2026-10-25). Nonmatching; no linked or runtime credit.
- * Profile: -O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
- * Final checks: US 0/3; US2 0/3; PAL absent from catalogue.
- * The complete aligned velocity snapshot precedes the movement call; scale is saved and restored.
- * State setters take three integer-bank inputs. Floating guards preserve retail comparison polarity.
- * Selector lowering, branch scheduling and vector-address allocation still differ; text 1232/1260 bytes.
- * Reopen with a new control-flow or allocator explanation; the historical byte-versus-minus-one test is unchanged.
+/* sol-high, 2026-10-29; retained near miss, no linked-build credit.
+ * Current compiler profile: -O2 -G0 -ffunction-sections -frac2-qcopy
+ * -frac2-qcopy-barrier, in an isolated movement unit.
+ * check.py --diff: 1256/1260 bytes, USA v1.01 0/3 places (levels 18, 19, 20).
+ * This task did not check other releases or run a linked build.
+ * Signed int mode read after clearing the flag restores the retail -1 test.
+ * Separate phase locals, case 5 before case 4, and creating the rotation pointer
+ * after vector subtraction restore the entry frame, FP registers and case order.
+ * Branch-local scale assignments restore retail's split load/control-flow sequence.
+ * Remaining: snapshot address is saved directly in s3 rather than copied v1->s4,
+ * displacement takes s4 rather than s3, one object-scale load fills a likely slot
+ * rather than occurring after it, and the velocity arm is one instruction short.
+ * Three equivalent pointer/lifetime wordings tie at this output; reopen with an
+ * explanation for the snapshot pointer's separate live ranges. Declarations below.
  */
 #include "common.h"
 typedef int Vector128 __attribute__((mode(TI)));
@@ -28,14 +35,15 @@ void func_L18_003F6CA8(char *object)
 {
     Vector128 local[1];
     char *state=*(char **)(object+0x68);
-    unsigned int mode=*(unsigned char *)(object+0x42);
-    float phase,scale,heading;
+    int mode;
+    float scale,heading;
     *(int *)(state+0x138)&=~2;
-    if(mode==(unsigned int)-1) mode=*(unsigned char *)(object+0x43);
+    mode=*(unsigned char *)(object+0x42);
+    if(mode==-1) mode=*(unsigned char *)(object+0x43);
     switch(mode) {
     case 0: case 1: case 2: case 3: case 6: case 7: case 8: case 10:
         if(*(unsigned char *)(object+0x20)==16 && *(unsigned char *)(object+0x42)==2) {
-            phase=func_0029F530(object);
+            float phase=func_0029F530(object);
             if(phase>4.0f && phase<22.0f) {
                 func_L07_00321D68(object,state+0x1a0);
                 *(float *)(state+0x1a8)-=*(float *)(state+0x12c);
@@ -46,11 +54,13 @@ void func_L18_003F6CA8(char *object)
             return;
         }
         if(*(unsigned char *)(object+0x20)==14) {
+            float *rotation;
             if(*(unsigned char *)(object+0xbc)==0) return;
             func_00282CF0(local,state+0x230,object+0x10);
+            rotation=(float *)(object+0xf8);
             func_00282F20(local,local,*(float *)(state+0x274)*0.016666668f);
             heading=func_00283248(*(float *)(state+0x230)-*(float *)(object+0x10),*(float *)(state+0x234)-*(float *)(object+0x14));
-            func_002AAA00((float *)(object+0xf8),(float *)(state+0x1b4),0,heading,*(float *)(state+0x114),*(float *)(state+0x118),*(float *)(state+0x11c));
+            func_002AAA00(rotation,(float *)(state+0x1b4),0,heading,*(float *)(state+0x114),*(float *)(state+0x118),*(float *)(state+0x11c));
             func_L07_00321D68(object,local);
             return;
         }
@@ -58,15 +68,8 @@ void func_L18_003F6CA8(char *object)
         if(*(short *)(state+0x290)!=0) func_002B5278((unsigned char *)object,*(float *)(state+0x264));
         else func_002B5258(object);
         return;
-    case 4:
-        func_002B4FF0(object,(float *)(state+0x230),*(float *)(state+0x24c));
-        if(*(float *)(state+0x190)<=*(float *)(object+0x18) && *(float *)(state+0x1a8)>0.003333333647f) *(float *)(state+0x1a8)=0.003333333647f;
-        if((unsigned int)(*(unsigned char *)(object+0x20)-11)>1) return;
-        if(*(int *)(state+0x180)<16) return;
-        if(*(float *)(state+0x1a8)<0.001f && *(int *)(state+0x184)==0) func_002A7750((unsigned char *)object,16,-1);
-        return;
-    case 5:
-        phase=func_0029F530(object);
+    case 5: {
+        float phase=func_0029F530(object);
         if(phase>10.0f && phase<17.0f && (*(unsigned int *)(state+0x194)&15)==0 && *(int *)(state+0x180)==0 && *(short *)(state+0x1c2)==0) {
 
             func_00282D30(local,object+0xc0,10.0f);
@@ -79,14 +82,26 @@ void func_L18_003F6CA8(char *object)
         if(*(short *)(state+0x290)!=0) func_002B5278((unsigned char *)object,*(float *)(state+0x264));
         else func_002B5258(object);
         return;
+    }
+    case 4:
+        func_002B4FF0(object,(float *)(state+0x230),*(float *)(state+0x24c));
+        if(*(float *)(state+0x190)<=*(float *)(object+0x18) && *(float *)(state+0x1a8)>0.003333333647f) *(float *)(state+0x1a8)=0.003333333647f;
+        if((unsigned int)(*(unsigned char *)(object+0x20)-11)>1) return;
+        if(*(int *)(state+0x180)<16) return;
+        if(*(float *)(state+0x1a8)<0.001f && *(int *)(state+0x184)==0) func_002A7750((unsigned char *)object,16,-1);
+        return;
     case 9: {
         char *velocity=state+0x1a0;
         char *position;
         if(*(unsigned char *)(object+0x20)==2) return;
         scale=*(float *)(state+0x100);
-        qcopy(local,velocity);
-        if(*(short *)(state+0x2a6)==0) *(int *)(state+0x138)|=2;
-        *(float *)(state+0x100)=(scale*(*(float *)(object+0x2c)))/(*(float *)(state+0x268));
+        local[0]=*(Vector128 *)velocity;
+        if(*(short *)(state+0x2a6)==0) {
+            *(int *)(state+0x138)|=2;
+            *(float *)(state+0x100)=(scale*(*(float *)(object+0x2c)))/(*(float *)(state+0x268));
+        } else {
+            *(float *)(state+0x100)=(scale*(*(float *)(object+0x2c)))/(*(float *)(state+0x268));
+        }
         func_L07_00321D68(object,velocity);
         *(float *)(state+0x100)=scale;
         if(func_L00_002EE290(state+0x170)>0.0f && *(int *)(state+0x184)==0) {

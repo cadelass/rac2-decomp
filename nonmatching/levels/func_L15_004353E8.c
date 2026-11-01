@@ -1,22 +1,32 @@
-/* 28 October 2026: 1104/1104 bytes with the default -O2 -G0
- * -ffunction-sections profile. Nine compiles reduce the residual to
- * two initialization stores, the -1 temporary register and the final
- * integer timer store versus six FP stores near the penultimate call.
- * Float/int prefix views tie. -g ties; disabling second scheduling
- * worsens. Return interfaces follow actual existing definitions.
- * No strict/local match. Reopen with source scheduling evidence. */
+/* func_L15_004353E8 - opus-1, Claude Opus 5.5 (xhigh), 31 October 2026.
+ * Best check.py: 1104/1104 bytes, 0/1 places, 4 lines differ (default -O2 -G0 -ffunction-sections).
+ *
+ * Still differs: -1 for state+0x458 is in $v1 where retail has $a3, and because of that sched2
+ * issues the 0x2C store before the 0x32 store (retail: 0x32, then 0x2C).
+ *
+ * Closed here: the timer store in the call's delay slot. GI(0x444) has to come after the six
+ * final vector stores in the source and before GI(0x440): as the last use of `state` it would
+ * carry a second REG_DEAD, which lowers its weight in rank_for_schedule and puts it ahead of them.
+ *
+ * Ties (same bytes): setup store orders 2C/32/34, 34/32/2C and 0x458 last; -fstrict-aliasing.
+ * Worse: `int unset = -1` before the first call (gets $s3, moves the prologue).
+ * No gain: `unset = -1` right after func_L05_0037AEC0 (cse/rank leave it at the same place).
+ * Next: local-alloc gives $v1 because the constant is born after 0x1FF's store. $a3 needs it to
+ * overlap $v1, or to have no hard register and be reloaded. Its rank is low because the 0x458 store
+ * only has an anti dependence on the next call.
+ *
+ * Needs: func_002ED688, func_00283CF0, func_L05_0037AEC0, func_0029FC20, func_00282CF0,
+ * func_00282D30, func_L05_00379C68 as declared in L15_004328E8.c.
+ */
 #include "common.h"
 
 extern int func_002ED688(unsigned char *);
 extern int func_00283CF0(float);
 extern void func_L05_0037AEC0(char *, int);
-extern void func_0029FC20(char *, int, char *);
+extern void func_0029FC20(void *, int, void *);
 extern void func_00282CF0(void *, void *, void *);
 extern void func_00282D30(void *, void *, float);
-extern void func_0029F978(unsigned char *, unsigned int, unsigned char *);
 extern void func_L05_00379C68(int, int);
-extern void func_L15_003804B8(int, void *);
-
 #define GF(offset) (((GornState *)state)->f[(offset) / 4])
 #define GI(offset) (((GornState *)state)->i[(offset) / 4])
 
@@ -40,11 +50,11 @@ void func_L15_004353E8(char *object)
     *(int *)(record + 0x148) = func_00283CF0(150.0f);
     func_L05_0037AEC0(object, 1);
     GF(0x180) = 150.0f;
-    fields->h[0x32 / 2] = 0x1FF;
-    fields->f[0x2C / 4] = 0.675f;
-    fields->h[0x34 / 2] |= 0x100;
+    *(unsigned short *)(object + 0x32) = 0x1FF;
+    *(float *)(object + 0x2C) = 0.675f;
+    *(unsigned short *)(object + 0x34) |= 0x100;
     object[0x20] = 1;
-    fields->b[0x30] = 255;
+    *(unsigned char *)(object + 0x30) = 255;
     *(unsigned short *)(object + 0x7C) = 63;
     GI(0x458) = -1;
     GI(0x268) = 1;
@@ -106,7 +116,6 @@ void func_L15_004353E8(char *object)
     GF(0x5D8) = GF(0x3B8) * 1024.0f;
     GF(0x5DC) = 1.0f;
     *(unsigned char *)(state + 0x5E3) = 1;
-    GI(0x444) = 300;
     GF(0x610) = GF(0x330) * 1024.0f;
     GF(0x614) = GF(0x334) * 1024.0f;
     GF(0x618) = GF(0x338) * 1024.0f;
@@ -118,6 +127,7 @@ void func_L15_004353E8(char *object)
     GF(0x61C) = 1.0f;
     GF(0x62C) = 1.0f;
     GF(0x65C) = 1.0f;
+    GI(0x444) = 300;
     GI(0x440) = 0;
     func_L05_00379C68((int)object, 0xFFFF);
     func_L15_003804B8((int)object, (void *)1);

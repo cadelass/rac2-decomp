@@ -1,10 +1,20 @@
-/* Manual reconstruction, wave8 (2026-10-25). Nonmatching; no linked or runtime credit.
- * Profile: -O2 -G32 -Wa,-G32 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -mno-split-addresses
- * Final checks: US 0/3; US2 0/3; PAL 0/3.
- * Eleven endpoints, full 144-byte draw packets, and both complete four-vertex passes are retained.
- * External captures and next-to-start handoff use clobbering qcopy; stack vertex copies remain ordinary C.
- * Color shifts use unsigned words; alpha converts a known 0..255 value through int before float.
- * Packet cursors, color lifetimes and scheduling still differ; text 1232/1208 bytes. Reopen with allocator evidence.
+/* GPT-6.1 Sol (high), task v1028, 29 October 2026. Nonmatching.
+ * Pinned upstream profile: -O2 -G32 -Wa,-G32 -ffunction-sections.
+ * USA v1.01: 1208/1208 bytes, 0 of 3 places match; first mismatch +0x50.
+ * Replaces the previous 1216-byte draft. All declarations are retained below.
+ * Compute RGB from the faded color inside the segment loop: this prevents the
+ * outer mask hoist and recovers the inner loop's saved-register assignments.
+ * Snapshot the original color separately, then update the named faded value.
+ * V coordinates use the actual overlapping D_L18_001B0534 view with nosda;
+ * U coordinates retain the gp-relative D_L18_001B0530 view.
+ * Incrementing segment before the second draw recovers its earlier reload.
+ * Remaining: next-vector/segment spill slots are exchanged (0x110/0x114),
+ * absolute f13 load setup, UV cursor allocation, and the first end-cap bc1fl.
+ * Ordinary initial vector copy, explicit vector pointers and UV cursors worsen
+ * the instruction match; no-gcse/strength-reduce/loop-pass changes do not fix it.
+ * The previous -mno-split-addresses profile improves UV allocation but worsens
+ * endpoint address scheduling. Reopen with lifetime evidence for those cursors.
+ * No linked build or runtime validation; US2/PAL not checked in this task.
  */
 #include "common.h"
 typedef int Vector128 __attribute__((mode(TI)));
@@ -15,6 +25,7 @@ typedef union { QuadPacket raw; QuadPayload view; } BeamPacket;
 typedef struct { Vector128 start,next,ray,firstSide,secondSide,step; BeamPacket packet; Vector128 scratch; } BeamWorkspace;
 extern Vector128 D_L18_002A08C0[11],D_L18_002A0970[11];
 extern char D_L18_001B97C0[];
+extern float D_L18_001B0534[7] __attribute__((nosda));
 extern float D_L18_001B0530[4][2] __attribute__((sda));
 extern unsigned int D_L18_001B0550 __attribute__((sda)),D_L18_001B0554 __attribute__((sda));
 extern float D_L18_001B0558 __attribute__((sda)),D_L18_001B0560 __attribute__((sda)),D_L18_001B0564 __attribute__((nosda));
@@ -33,6 +44,7 @@ void func_L18_003FAE50(char *object)
     char *state=*(char **)(object+0x68);
     unsigned int faded,rgb,endColor;
     float alpha;
+    unsigned int alphaByte,sourceColor;
     int beam,segment,i;
     for(beam=0;beam<11;beam++) {
         qcopy(&local.start,&D_L18_002A08C0[beam]);
@@ -40,9 +52,12 @@ void func_L18_003FAE50(char *object)
         func_00282D30(&local.step,&local.step,1.0f/D_L18_001B0570);
         func_00282CC0(&local.next,&local.start,&local.step);
         alpha=func_002A7878(D_L18_001B0560,D_L18_001B0564);
-        rgb=D_L18_001B0550&0xffffff;
-        faded=rgb|((unsigned int)(int)(alpha*(float)(int)(D_L18_001B0550>>24))<<24);
-        for(segment=0;(float)segment<D_L18_001B0570;segment++) {
+        sourceColor=D_L18_001B0550;
+        alphaByte=sourceColor>>24;
+        faded=sourceColor&0xffffffu;
+        faded|=(unsigned int)(int)(alpha*(float)(int)alphaByte)<<24;
+        for(segment=0;(float)segment<D_L18_001B0570;) {
+            rgb=faded&0xffffffu;
             func_00282CF0(&local.ray,&local.start,&local.next);
             func_00282CF0(&local.firstSide,&local.start,D_L18_001B97C0);
             func_00282CF0(&local.secondSide,&local.next,D_L18_001B97C0);
@@ -64,7 +79,7 @@ void func_L18_003FAE50(char *object)
             }
             for(i=0;i<4;i++) {
                 local.packet.view.uv[i][0]=D_L18_001B0530[i][0]+*(float *)(state+0x8c);
-                local.packet.view.uv[i][1]=D_L18_001B0530[i][1];
+                local.packet.view.uv[i][1]=D_L18_001B0534[i*2];
             }
             func_00282CF0(&local.scratch,&local.start,&local.firstSide);
             local.packet.view.vertices[0]=local.scratch;
@@ -92,12 +107,13 @@ void func_L18_003FAE50(char *object)
             local.packet.view.colors[1]=endColor;
             local.packet.view.colors[0]=endColor;
             if(segment==0) {
-                local.packet.view.colors[1]=endColor&0xffffffu;
                 local.packet.view.colors[0]=endColor&0xffffffu;
+                local.packet.view.colors[1]=endColor&0xffffffu;
             } else if((float)segment==D_L18_001B0570-1.0f) {
-                local.packet.view.colors[3]=endColor&0xffffffu;
                 local.packet.view.colors[2]=endColor&0xffffffu;
+                local.packet.view.colors[3]=endColor&0xffffffu;
             }
+            segment++;
             func_00280B90(&local.packet.raw,0,0);
             qcopy(&local.start,&local.next);
             func_00282CC0(&local.next,&local.next,&local.step);

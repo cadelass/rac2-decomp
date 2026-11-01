@@ -1,23 +1,43 @@
-/* Manual reconstruction, wave8 (2026-10-25). Nonmatching; no linked or runtime credit.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier -mno-split-addresses
- * Final checks: US 0/2; US2 0/2; PAL absent from catalogue.
- * Real qcopy transfers preserve the position history and both sixteen-byte D0 captures.
- * The shared transform retains its actual three-float interface. Resident addresses are scoped by use.
- * Address construction, branch scheduling and saved-register allocation still differ; text 1904/2016 bytes.
- * Reopen with evidence for the resident data views and timer/history control flow, not arbitrary padding.
+/* GPT-6.1 Sol high, v1304, 2026-10-29. Nonmatching; never linked.
+ * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
+ * USA v1.01: 2016/2016 bytes, 0/2 placements. check.py first rejects +0x3AC.
+ * Four instruction-shape differences when relocation values are excluded for
+ * diagnosis: +0x3AC (beqz versus beql, different destination), +0x418,
+ * +0x42C and +0x430 (player/object position-address scheduling). Relocation
+ * consistency after the first rejected instruction remains unqualified.
+ * This improves the prior 1904-byte draft; US2 and PAL were not checked here.
+ * Neighboring hero union practices, a controller view based at D_00138180,
+ * MACRO_ADDR scalar declarations, embedded position history, and the explicit
+ * n8 divisor recover the frame, saved registers, timers and remaining tail.
+ * D_001A7AF8[7] uses the existing equipment flags array identity.
+ * Retail's initial object read is from D_L18_001FB6E0; subsequent reads use
+ * D_L18_0025B6E0, not the same table as the old draft assumed.
+ * The latter table and D_L18_002653E0 share retail's high address word:
+ * its empty-object branch skips the timer loop's high-half load and reuses
+ * the word loaded in its delay slot. The C keeps those symbols independent.
+ * Next: establish their actual containing data layout/address relationship;
+ * do not manufacture a common object or a dependency merely to force reuse.
+ * RAC1 counterpart: src/overlays/shared/hero_update_ledge_grab.c,
+ * update_hero_timers_and_spatial_state (same timer/history/reach phases).
+ * All required declarations are included below; use a dedicated G8 unit.
  */
 #include "common.h"
 typedef int Vector128 __attribute__((mode(TI)));
 typedef struct { float x,y,z; } FamilyC94396F4Vector_Fc94396f4;
 typedef struct { int timer; unsigned char fields[0x6c]; } TimedRecord;
 extern char D_00189E20[];
+typedef union { unsigned char b[0x2600]; short h[0x1300]; int i[0x980]; unsigned int u[0x980]; float f[0x980]; char *p[0x980]; Vector128 q[0x260]; } HeroTimerView;
+#define HERO ((HeroTimerView *)D_00189E20)
+extern int D_00138180[];
+
 extern unsigned int D_00138320 __attribute__((nosda)),D_00138324 __attribute__((nosda));
 extern int D_00138354 __attribute__((nosda));
-extern unsigned char D_001A7AFF __attribute__((nosda));
-extern int D_L18_001A8F00 __attribute__((nosda));
-extern float D_L18_001B2260 __attribute__((nosda)),D_L18_001B2264 __attribute__((sda));
-extern unsigned int D_L18_001B2348 __attribute__((sda));
-extern char *D_L18_001FB6E0[];
+extern unsigned char D_001A7AF8[] MACRO_ADDR;
+extern int D_L18_001A8F00 MACRO_ADDR;
+extern float D_L18_001B2260 MACRO_ADDR,D_L18_001B2264 MACRO_ADDR;
+extern unsigned int D_L18_001B2348 MACRO_ADDR;
+extern char *D_L18_001FB6E0[] __attribute__((nosda));
+extern char *D_L18_0025B6E0[];
 extern TimedRecord D_L18_002653E0[4];
 extern Vector128 D_0018BBB0[32];
 extern void func_L00_002B9380(void);
@@ -44,9 +64,8 @@ void func_L18_002DEFF8(void)
 {
     Vector128 sum[1],delta[1];
     char **entry;
-    char *object;
-    unsigned int frame;
-    int i,index,previous;
+        unsigned int frame;
+    int i,index,previous,n8;
     {
     char *player=D_00189E20;
     if(*(unsigned char *)(player+0x22bd)==0) func_L00_002B9380();
@@ -85,73 +104,81 @@ void func_L18_002DEFF8(void)
     func_00282978((short *)(player+0x222));
     func_00282978((short *)(player+0x224));
     func_00282978((short *)(player+0x226));
-    if((D_00138320&4)==0) *(short *)(player+0x20c)=0;
-    if(*(short *)(player+0x21c)!=0) func_L00_002A7A10();
-    if(*(unsigned char *)(player+0x22b8)==0) *(int *)(player+0x1d8)=0;
-    else (*(int *)(player+0x1d8))++;
-    if(D_00138354==0) { *(int *)(player+0x1cc)=0; (*(int *)(player+0x1c8))++; }
-    else { *(int *)(player+0x1c8)=0; (*(int *)(player+0x1cc))++; }
-    if(*(unsigned char *)(player+0x22c3)!=0 && *(int *)(player+0x229c)==0 && *(int *)(player+0x340)!=0 && *(float *)(player+0x170)<0.001666666824f && *(float *)(player+0x184)<0.001666666824f) qcopy(player+0x80,player+0x2030);
-    if(*(short *)(player+0x1454)==0) (*(int *)(player+0x1e8))++; else *(int *)(player+0x1e8)=0;
-    if(*(int *)(player+0x24cc)==0 || D_L18_001A8F00==0) {
-        if(*(int *)(player+0x24cc)!=0 && *(unsigned char *)(player+0x22b4)==4 && *(int *)(player+0x2294)!=0x6f && (D_00138324&0x10)!=0) {
-            *(int *)(player+0x24cc)=0; *(short *)(player+0x1e0)=0; ref_L18_002DEFF8_00(0x91,1);
+    if((D_00138180[0x1a0/4]&4)==0) HERO->h[0x20c / 2]=0;
+    if(HERO->h[0x21c / 2]!=0) func_L00_002A7A10();
+    if(HERO->b[0x22b8 / 1]!=0) (HERO->i[0x1d8 / 4])++;
+    else HERO->i[0x1d8 / 4]=0;
+    if(D_00138180[0x1d4/4]!=0) { HERO->i[0x1c8 / 4]=0; (HERO->i[0x1cc / 4])++; }
+    else { HERO->i[0x1cc / 4]=0; (HERO->i[0x1c8 / 4])++; }
+    if(HERO->b[0x22c3 / 1]!=0 && HERO->i[0x229c / 4]==0 && HERO->i[0x340 / 4]!=0 && HERO->f[0x170 / 4]<0.001666666824f && HERO->f[0x184 / 4]<0.001666666824f) qcopy(&HERO->q[0x80/16],&HERO->q[0x2030/16]);
+    if(HERO->h[0x1454 / 2]!=0) HERO->i[0x1e8 / 4]=0; else (HERO->i[0x1e8 / 4])++;
+    if(HERO->i[0x24cc / 4]==0 || D_L18_001A8F00==0) {
+        if(HERO->i[0x24cc / 4]!=0 && HERO->b[0x22b4 / 1]==4 && HERO->i[0x2294 / 4]!=0x6f && (D_00138180[0x1a4/4]&0x10)!=0) {
+            HERO->h[0x1e0 / 2]=0; HERO->i[0x24cc / 4]=0; ref_L18_002DEFF8_00(0x91,1);
         }
         if(D_L18_001A8F00==0) {
-            if(D_L18_001B2260>0.0f) (*(short *)(player+0x22a))++; else *(short *)(player+0x22a)=0;
-            if(*(short *)(player+0x22a)>120) { D_L18_001B2260=0.0f; *(short *)(player+0x22a)=0; }
-            if(D_L18_001B2264>0.0f) (*(short *)(player+0x228))++; else *(short *)(player+0x228)=0;
-            if(*(short *)(player+0x228)>120) { *(short *)(player+0x228)=0; D_L18_001B2264=0.0f; }
+            if(D_L18_001B2260>0.0f) (HERO->h[0x22a / 2])++; else HERO->h[0x22a / 2]=0;
+            if(HERO->h[0x22a / 2]>120) { D_L18_001B2260=0.0f; HERO->h[0x22a / 2]=0; }
+            if(D_L18_001B2264>0.0f) (HERO->h[0x228 / 2])++; else HERO->h[0x228 / 2]=0;
+            if(HERO->h[0x228 / 2]>120) { HERO->h[0x228 / 2]=0; D_L18_001B2264=0.0f; }
         }
     }
     }
     {
     char *player=D_00189E20;
-    if(*(short *)(player+0x224)!=0) {
-        for(entry=D_L18_001FB6E0;(object=*entry)!=0;entry++) {
-            if((func_002ABB78(object)!=0 || (*(void **)(object+0x24)!=0 && *(short *)(*(char **)(object+0x24)+0x46)==0x16)) && ((D_L18_001B2348&7)==((unsigned int)object>>8&7) || func_002A77E0(4)==0)) {
-                if(func_00282E48(player+0x80,object+0x10)<15.37f) {
-                    func_00282CF0(sum,object+0x10,player+0x80);
+    if(HERO->h[0x224 / 2]!=0) {
+        char *position;
+        char *object;
+        int j;
+        object=D_L18_001FB6E0[0];
+        for(j=0;object!=0;object=D_L18_0025B6E0[++j]) {
+            if((func_002ABB78(object)!=0 || (object!=0 && *(void **)(object+0x24)!=0 && *(short *)(*(char **)(object+0x24)+0x46)==0x16)) && ((D_L18_001B2348&7)==((int)object>>8&7) || func_002A77E0(4)==0)) {
+                position=object+0x10;
+                if(func_00282E48(&HERO->q[0x80/16],position)<15.37f) {
+                    func_00282CF0(sum,position,&HERO->q[0x80/16]);
                     func_00282F20(sum,sum,1.7f);
-                    func_002A8F70(object,*(void **)(player+0x2290),0x4000000u,player+0x80,sum,1.0f);
+                    func_002A8F70(object,HERO->p[0x2290/4],0x4000000u,&HERO->q[0x80/16],sum,1.0f);
                 }
             }
         }
     }
     for(i=0;i<4;i++) func_00282948(&D_L18_002653E0[i].timer);
-    *(float *)(player+0x24dc)=9999.0f;
-    if(*(short *)(player+0x34e)!=0 && func_L00_002D3B00(player+0xf0)<0.0f) {
-        if(*(int *)(player+0x23c8)==32) {
+    HERO->f[0x24dc / 4]=9999.0f;
+    if(HERO->h[0x34e / 2]!=0 && func_L00_002D3B00(&HERO->q[0xf0/16])<0.0f) {
+        if(HERO->i[0x23c8 / 4]==32) {
             func_00282C88(sum);
-            for(i=0;i<8;i++) {
-                index=(*(int *)(player+0x23c4)-i+31)%32;
-                previous=(*(int *)(player+0x23c4)-i+30)%32;
-                func_00282CF0(delta,&D_0018BBB0[index],&D_0018BBB0[previous]);
+            n8=8;
+            for(i=0;i<n8;i++) {
+                index=(HERO->i[0x23c4 / 4]-i+31)%32;
+                previous=(HERO->i[0x23c4 / 4]-i+30)%32;
+                func_00282CF0(delta,&HERO->q[0x1d90/16+index],&HERO->q[0x1d90/16+previous]);
                 func_00282CC0(sum,sum,delta);
             }
-            func_00282D30(sum,sum,0.125f);
-            if(func_00282DF0(sum)<0.016666668f) (*(short *)(player+0x202))++;
-            else *(short *)(player+0x202)=0;
+            func_00282D30(sum,sum,1.0f/n8);
+            if(func_00282DF0(sum)<0.016666668f) (HERO->h[0x202 / 2])++;
+            else HERO->h[0x202 / 2]=0;
         }
-    } else *(short *)(player+0x202)=0;
+    } else HERO->h[0x202 / 2]=0;
     func_L00_002C3838();
-    if(*(unsigned char *)(player+0x22b4)==4) func_L00_002D36E0((float *)(player+0xe0),1,0.0f,0.0f,0.4f);
-    else func_L00_002D36E0((float *)(player+0xe0),1,0.0f,0.0f,0.7f);
+    if(HERO->b[0x22b4 / 1]==4) func_L00_002D36E0((float *)(&HERO->q[0xe0/16]),1,0.0f,0.0f,0.4f);
+    else func_L00_002D36E0((float *)(&HERO->q[0xe0/16]),1,0.0f,0.0f,0.7f);
     frame=D_L18_001B2348;
     if((frame&3)==0) {
-        if(*(unsigned char *)(player+0x22b4)==4) { *(float *)(player+0x24a8)=1.25f; *(float *)(player+0x24a4)=2.125f; }
-        else if(D_001A7AFF==0) { *(float *)(player+0x24a8)=2.25f; *(float *)(player+0x24a4)=4.25f; }
-        else { *(float *)(player+0x24a8)=4.5f; *(float *)(player+0x24a4)=14.0f; }
+        if(HERO->b[0x22b4 / 1]==4) { HERO->f[0x24a4 / 4]=2.125f; HERO->f[0x24a8 / 4]=1.25f; }
+        else if(D_001A7AF8[7]!=0) { HERO->f[0x24a4 / 4]=14.0f; HERO->f[0x24a8 / 4]=4.5f; }
+        else { HERO->f[0x24a4 / 4]=4.25f; HERO->f[0x24a8 / 4]=2.25f; }
     }
-    if(*(float *)(player+0x31c)<4.0f) {
-        qcopy(player+0xd0,player+0x2d0);
-        func_L00_002D3778((FamilyC94396F4Vector_Fc94396f4 *)(player+0xd0),(FamilyC94396F4Vector_Fc94396f4 *)(player+0xd0),0.5f);
-    } else qcopy(player+0xd0,player+0xe0);
-    object=*(char **)(player+0x5c0);
-    if(object!=0) {
-        if((*(unsigned short *)(object+0x34)&0x1000)==0 || object==*(char **)(player+0x33c)) *(void **)(player+0x5c0)=0;
-        if(*(void **)(player+0x5c0)!=0 && *(int *)(player+0x1248)!=0x2e) *(void **)(player+0x5c0)=0;
+    if(HERO->f[0x31c / 4]<4.0f) {
+        qcopy(&HERO->q[0xd0/16],&HERO->q[0x2d0/16]);
+        func_L00_002D3778((FamilyC94396F4Vector_Fc94396f4 *)(&HERO->q[0xd0/16]),(FamilyC94396F4Vector_Fc94396f4 *)(&HERO->q[0xd0/16]),0.5f);
+    } else qcopy(&HERO->q[0xd0/16],&HERO->q[0xe0/16]);
+    {
+    char *target=HERO->p[0x5c0/4];
+    if(target!=0) {
+        if((*(unsigned short *)(target+0x34)&0x1000)==0 || target==HERO->p[0x33c/4]) HERO->p[0x5c0/4]=0;
+        if(HERO->p[0x5c0/4]!=0 && HERO->i[0x1248 / 4]!=0x2e) HERO->p[0x5c0/4]=0;
     }
-    if(*(float *)(player+0x88)<1.0f) func_L00_002B30E8();
+    }
+    if(HERO->f[0x88 / 4]<1.0f) func_L00_002B30E8();
     }
 }
