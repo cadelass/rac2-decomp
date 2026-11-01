@@ -1,28 +1,30 @@
-/* Retained C reconstruction; not linked or counted.
- * Profile: -O2 -G8 -ffunction-sections.
- * 840/872 bytes. us: 0/19 places; us2: absent; pal: absent.
- * Remaining: Real qcopy reproduces the complete local trigger-position transfer; current
- * live flag/height and float ground-height contracts are retained. The 0x30
- * frame agrees, but boolean/control-flow and field-load allocation still differ.
- * Reopen with: Independent trigger-state branch/lifetime evidence; the helper gives
- * the same 840-byte extent, not an exact match.
- */
-
-/* M12, 2026-10-26: 852/872 bytes (-O2 -G8). D_001A79F0 is a plain scalar ($gp in delay slots,
- * lui/lw elsewhere); D_0019B2E8/D_0019B4A8 are MACRO_ADDR; the two flag tables are la'd at
- * 0x21D140 and 0x21DDB0 with the field offset 0x464 left in the load (this cc1 folds it into the
- * la in every spelling tried: struct field, [id + 0x464], local struct pointer). The inactive test
- * branches directly as retail. Residual: that fold, the flags copy register and a few schedules.
+/* GPT-6.1 Sol (high), 29 October 2026: retained near miss, not linked.
+ * USA v1.01, -O2 -G8 -ffunction-sections: 872/872 bytes, 0/19 places.
+ * First difference +0x188; three non-relocation instruction differences remain:
+ * +0x188 addu v0,v1,v0, +0x284 addu v0,a0,v0, +0x2A4 addu v1,v0,v1.
+ * Retail has the two source operands reversed in each of those additions.
+ * All required declarations are below. Ordinary array declarations preserve
+ * the table field displacement 0x464; separate local table pointers recover
+ * destination allocation. Ordinary resident arrays restore split scheduling.
+ * Explicit activation/inactive branches recover the odd/even control flow.
+ * A signed 32-bit flag load widened to a 64-bit local retains the real flag
+ * copy; an unsigned-byte local does not express that contract.
+ * Mask into an int local, conditionally replace it, then store: this gives
+ * retail's movn rather than conditional byte stores. Scope the first trigger
+ * ID separately from the post-activation ID to recover allocation.
+ * Pointer +=, explicit 32-bit integer addition and widened integer addition
+ * tie at the same three reversed operands. MACRO_ADDR on the level tables
+ * worsens scheduling. Stop on this tie; reopen with a new address-expansion
+ * mechanism, not instruction rewriting or another equivalent addition.
  */
 #include "common.h"
-typedef int Quad __attribute__((mode(TI)));
 extern int D_L00_001B19C8;
 extern unsigned char D_0018C0D4 NOT_SDA;
 extern u32 D_0018C0BC NOT_SDA;
 extern int D_0018C0B4 NOT_SDA;
 extern int D_001A79F0;
-extern unsigned char D_0019B2E8[] MACRO_ADDR, D_0019B4A8[] MACRO_ADDR;
-extern u8 D_L00_0021D140[] MACRO_ADDR, D_L00_0021DDB0[] MACRO_ADDR;
+extern unsigned char D_0019B2E8[], D_0019B4A8[];
+extern u8 D_L00_0021D140[], D_L00_0021DDB0[];
 extern float D_00189EA0[4];
 extern char *D_L00_001AF440 __attribute__((sda));
 extern void func_L00_0042A500(int arg0);
@@ -33,7 +35,7 @@ extern void func_002DF3F8(void *, void *), func_002B0A18(int, int);
 /* Applies a regional activation trigger and records its checkpoint flags. */
 void func_L00_0039E7A8(char *actor) {
     int *state = *(int **)(actor + 0x68);
-    unsigned int flags;
+    unsigned long long flags;
     unsigned short id;
     unsigned char *packed;
     int bits;
@@ -41,8 +43,12 @@ void func_L00_0039E7A8(char *actor) {
     float point[4];
     if (*(u8 *)(actor + 0x30) < 0x20) *(u8 *)(actor + 0x30) = 0x20;
     if (D_L00_001B19C8 == 0 && state[5] != -1) func_L00_0042A500(state[5]);
-    flags = state[2];
-    if (flags & 8) return;
+    {
+        int currentFlags = state[2];
+        int disabled = currentFlags & 8;
+        flags = currentFlags;
+        if (disabled) return;
+    }
     if (*(u8 *)(actor + 0xBC) == 0) {
         *(u8 *)(actor + 0xBC) = 1;
         state[7] = 0;
@@ -56,16 +62,20 @@ void func_L00_0039E7A8(char *actor) {
     if ((flags & 32) && D_0018C0B4 == 49) return;
     if (state[3] == 2 && func_00282948(state + 8)) state[3] = 0;
     active = func_002ACBC8(D_00189EA0, state[0]);
-    if (!active) {
-        id = *(u16 *)(actor + 0xB2);
-        if (!D_L00_0021DDB0[(short)id + 0x464]) {
-            bits = D_0019B4A8[((short)id >> 1) + D_001A79F0 * 0x400];
-            if (id & 1 ? !((bits >> 4) & 7) : !(bits & 7)) {
-                if (state[3]) state[3] = 2;
-                goto finish;
-            }
+    if (active) goto activate;
+    {
+        unsigned short triggerId = *(u16 *)(actor + 0xB2);
+        u8 *triggerTable = D_L00_0021DDB0;
+        triggerTable += (short)triggerId;
+        if (triggerTable[0x464]) goto activate;
+        bits = D_0019B4A8[((short)triggerId >> 1) + D_001A79F0 * 0x400];
+        if (triggerId & 1) {
+            if ((bits >> 4) & 7) goto activate;
+            goto inactive;
         }
+        if (!(bits & 7)) goto inactive;
     }
+activate:
     {
         if (state[3] && (state[4] == 0 || state[8] != 0)) goto finish;
         state[3] = 1;
@@ -74,18 +84,37 @@ void func_L00_0039E7A8(char *actor) {
         point[2] = func_002A89A8(point, 0, 0.5f);
         if (func_00282C48(*(float *)(actor + 0x18) - point[2]) > 2.0f) point[2] = *(float *)(actor + 0x18);
         func_002DF3F8(point, actor + 0xF0);
-        D_L00_0021D140[*(short *)(actor + 0xB2) + 0x464] = 0;
-        D_L00_0021DDB0[*(short *)(actor + 0xB2) + 0x464] = 0;
-        packed = D_0019B4A8 + ((*(short *)(actor + 0xB2)) >> 1) + D_001A79F0 * 0x400;
+        {
+            u8 *table = D_L00_0021D140;
+            table += *(short *)(actor + 0xB2);
+            table[0x464] = 0;
+        }
+        {
+            u8 *table = D_L00_0021DDB0;
+            table += *(short *)(actor + 0xB2);
+            table[0x464] = 0;
+        }
+        id = *(u16 *)(actor + 0xB2);
+        {
+            int index = (short)id >> 1;
+            index += D_001A79F0 * 0x400;
+            packed = D_0019B4A8 + index;
+        }
         bits = *packed;
-        if (*(u16 *)(actor + 0xB2) & 1) *packed = bits & 0x8F;
-        else *packed = bits & 0xF8;
+        {
+            int value = bits & 0xF8;
+            if (id & 1) value = bits & 0x8F;
+            *packed = value;
+        }
         if (state[9] && D_L00_001AF440 != actor) {
             func_002B0A18(0x2F36, 90);
             D_L00_001AF440 = actor;
         }
         state[8] = 900;
+        goto finish;
     }
+inactive:
+    if (state[3]) state[3] = 2;
 finish:
     if (*(u8 *)(actor + 0x20) == 0 && (D_0019B2E8[*(u8 *)(actor + 0xB0) + D_001A79F0 * 16] & 0x80)) *(u8 *)(actor + 0x20) = 1;
 }

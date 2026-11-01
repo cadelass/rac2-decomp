@@ -1,9 +1,20 @@
-/* 26 October 2026 (M24): -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier (no -mno-split-addresses: retail keeps the hero %hi in a saved register and adds %lo at each use), 1104/1104 bytes, 96 lines off: retail hoists 0.5f out of the first fragment loop as well as 2.0f and 0.05f; store order and a fragment struct view do not move it. */
-/* Complete nonmatching reconstruction: 1112/1104 bytes.
- * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * Placement checks: US: 0/27; US2: 0/27; PAL absent from catalogue.
- * The fragment and particle loops preserve all RNG calls and particle inputs. Seven complete16-byte-aligned vectors remain. Retail clears drift unconditionally at+0x250 before its conditional scale; the older draft omitted it. jitter W remains subject to the measured caller pre-initialization constraint. Real origin-to-fragment+0x20 and direction snapshots use clobbering helpers. Capturing fragment+0x30 before the helper calls follows the observed field access but remains1112/1104 bytes, with the retail0xf0 frame. Scalar/vector live ranges, table bases and particle-call setup still differ; the semantically incomplete older1096-byte form is not substituted.
- * Reopen with independent effect-state ownership and actual phase-local pointer/FP lifetimes. Preserve the measured drift clear and RNG order; no unconditional jitter-W initialization is justified by this caller.
+/* GPT-6.1 Sol high, 29 October 2026; retained near miss.
+ * USA v1.01: 1104/1104 bytes, 0/27 places; nine checker runs plus regalloc.
+ * Profile: -O2 -G8 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
+ *          -fno-force-mem -fno-rerun-loop-opt.
+ * Initializing all three fragment constants immediately after the direction
+ * snapshot and disabling the second loop pass retains retail's 2.0f/f23,
+ * 0.05f/f21 and 0.5f/f20 hoists without also hoisting the epsilon threshold.
+ * The baseline had no 0.5f hoist. First difference is now +0xE4: the spill,
+ * constant setup and vector-pointer setup interleave differently. Fragment/tail
+ * GPR allocation, store order, branch setup and second-phase hero-base formation
+ * also differ. Both loops and all RNG calls, seven complete vectors, and the
+ * unconditional drift clear are preserved. Jitter W is not newly initialized.
+ * Separating the phase angles changed allocation without improving it; explicit
+ * constants with both loop passes enabled grew to 1108 bytes and hoisted epsilon.
+ * Next: actual fragment/tail pointer and hero-base lifetimes. All declarations
+ * are below. This task checked only USA v1.01; earlier release claims are not
+ * measurements of this revised source. No linked build was run for this miss.
  */
 #include "common.h"
 typedef int HeroQ __attribute__((mode(TI)));
@@ -46,6 +57,7 @@ void func_L00_003A4480(char *moby)
     Vector rotation, direction, base, origin, velocity, jitter, drift;
     float angle = 0.0f;
     int count;
+    float fragmentDuration, fragmentRate, fragmentScale;
     *(VectorBits *)base = 0;
     base[0] = 0.3f;
     base[1] = -1.0f;
@@ -55,6 +67,9 @@ void func_L00_003A4480(char *moby)
     *(unsigned char *)(moby + 0xBC) = 6;
     func_002ACEC0(base, (&H->f[460]), (&H->f[464]), 0.34906590f);
     qcopy(direction, base);
+    fragmentDuration = 2.0f;
+    fragmentRate = 0.05f;
+    fragmentScale = 0.5f;
     for (count = 19; count >= 0; count--) {
         char *fragment;
         angle = func_00283B98(angle, func_002A7878(0.0f, 0.6283186078f));
@@ -65,10 +80,10 @@ void func_L00_003A4480(char *moby)
             func_00282D30(velocity, direction, 0.75f);
             func_00282CC0(fragment + 0x10, origin, velocity);
             qcopy((fragment + 0x20), origin);
-            *(float *)(tail + 0xC) = 2.0f;
+            *(float *)(tail + 0xC) = fragmentDuration;
             *(int *)(fragment + 0xC) = 0x307F7F7F;
-            *(float *)(fragment + 0x1C) = 0.05f;
-            *(float *)(fragment + 0x2C) = 0.5f;
+            *(float *)(fragment + 0x1C) = fragmentRate;
+            *(float *)(fragment + 0x2C) = fragmentScale;
             *(int *)(fragment + 4) = 0x307F7F7F;
         }
         if (func_00282C48(angle) > 0.00001f) {

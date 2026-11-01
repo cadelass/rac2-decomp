@@ -1,23 +1,26 @@
-/* Retained C reconstruction; not linked or counted.
- * Profile: -O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier.
- * 948/940 bytes. us: 0/2 places; us2: 0/2 places; pal: absent.
- * Remaining: The indexed rail-length reconstruction remains at 948 bytes with its
- * existing TI-copy profile. Real qcopy also gives 948; a truthful 16-byte
- * XYZ/length rail-point view gives 956. The 0xB0 frame agrees, but pointer
- * allocation and loop scheduling remain different.
- * Reopen with: Independent path-count or saved-point lifetime evidence; do not repeat
- * the typed rail-point or advancing-pointer forms without changed input.
+/* GPT-6.1 Sol (high), 29 October 2026: retained near miss, not linked.
+ * Pinned default -O2 -G0 -ffunction-sections: 940/940 bytes, 0/2 USA v1.01
+ * places. Only +0xFC differs: emitted addu s0,s0,s1; retail addu s0,s1,s0.
+ * Separate initialization/search curve variables and a separate advance result
+ * recover saved-register allocation. An explicitly guarded do-while with three
+ * advancing pointers reproduces the entire segment-length loop. Parenthesizing
+ * the closing-call offset recovers its argument and store scheduling.
+ * Pointer addition in either order and unsigned-address addition retain the
+ * final commuted addu. Further algebraic rewording is tied; reopen with new
+ * evidence for the closing-segment address model. No other releases or linked
+ * builds tested. Required declarations are included below.
  */
-
 #include "common.h"
 typedef int Quad __attribute__((mode(TI)));
 typedef struct { float heading, pitch; int unused; float speed; } RailAngles;
 extern char *D_L00_001FDA80[];
-extern int D_0018C0BC;
-extern float D_00189EA0[4], D_00189F20[4];
-extern int D_00189FD8;
-extern short D_0018A020;
-extern RailAngles D_0018A960;
+typedef struct { int paths[20]; float velocity[4]; float speed, radius; int initialized, pad6C, count; } RailState;
+typedef struct {
+    char pad00[0x80]; float point[4]; char pad90[0x70]; float velocity[4];
+    char pad110[0xA8]; int advanceState; char pad1BC[0x44]; short timer;
+    char pad202[0x93E]; RailAngles angles; char padB50[0x174C]; int state;
+} RailHero;
+extern RailHero D_00189E20;
 extern float func_00282E48(void *, void *);
 extern int func_L00_00341FA8(void *, void *, void *, int *, float *, int, float, float, float);
 extern int func_L00_00341820(void *, void *, int *, float *, int, float);
@@ -26,59 +29,72 @@ extern float func_00282E20(void *), func_00283248(float, float), func_002AA2E8(f
 extern void func_00282F20(void *, void *, float), func_00282D30(void *, void *, float);
 /* Precomputes path segment lengths and steers the hero along the nearest active path. */
 void func_L00_0039E158(char *actor) {
-    char *state = *(char **)(actor + 0x68);
+    RailState *state = *(RailState **)(actor + 0x68);
     float previous[4], point[4], delta[4], step[4];
     int segment, bestSegment;
     float t, bestT;
     char *curve, *bestCurve;
-    int i, j;
+    int i, j, path;
     float distance, bestDistance, advance, length;
-    if (!state || *(int *)state == -1 || *(int *)(state + 0x70) == 0) return;
-    if (*(int *)(state + 0x68) == 0) {
-        *(int *)(state + 0x68) = 1;
-        for (i = 0; i < *(int *)(state + 0x70); i++) {
-            curve = D_L00_001FDA80[((int *)state)[i]];
-            for (j = 0; j < *(int *)curve - 1; j++)
-                *(float *)(curve + j * 16 + 0x1C) = func_00282E48(curve + j * 16 + 0x10, curve + j * 16 + 0x20);
-            *(float *)(curve + j * 16 + 0x1C) = func_00282E48(curve + j * 16 + 0x10, curve + 0x10);
+    if (!state || state->paths[0] == -1 || state->count == 0) return;
+    if (state->initialized == 0) {
+        state->initialized = 1;
+        for (path = 0; path < state->count; path++) {
+            char *initCurve = D_L00_001FDA80[state->paths[path]];
+            j = 0;
+            if (j < *(int *)initCurve - 1) {
+                float *lengths = (float *)(initCurve + 0x1C);
+                char *next = initCurve + 0x20;
+                char *current = initCurve + 0x10;
+                do {
+                    *lengths = func_00282E48(current, next);
+                    j++;
+                    next += 16;
+                    lengths += 4;
+                    current += 16;
+                } while (j < *(int *)initCurve - 1);
+            }
+            *(float *)(j * 16 + initCurve + 0x1C) = func_00282E48(initCurve + (j * 16 + 0x10), initCurve + 0x10);
         }
         *(u8 *)(actor + 0x30) = 0xFF;
     }
-    if (D_0018C0BC != 16) return;
+    if (D_00189E20.state != 16) return;
     bestCurve = 0;
     bestDistance = 9999.0f;
-    for (i = 0; i < *(int *)(state + 0x70); i++) {
-        curve = D_L00_001FDA80[((int *)state)[i]];
-        func_L00_00341FA8(curve, D_00189EA0, point, &segment, &t, 0, 999.0f, 5.0f, 0.0f);
-        distance = func_00282E48(D_00189EA0, point);
+    for (i = 0; i < state->count; i++) {
+        curve = D_L00_001FDA80[state->paths[i]];
+        func_L00_00341FA8(curve, D_00189E20.point, point, &segment, &t, 0, 999.0f, 5.0f, 0.0f);
+        distance = func_00282E48(D_00189E20.point, point);
         if (distance < bestDistance) {
-            *(Quad *)previous = *(Quad *)point;
+            bestCurve = curve;
+            qcopy(previous, point);
+            bestDistance = distance;
             bestSegment = segment;
             bestT = t;
-            bestCurve = curve;
-            bestDistance = distance;
         }
     }
     if (!bestCurve) return;
-    advance = 3.7f - (float)D_00189FD8 * 0.02f;
+    advance = 3.7f - (float)D_00189E20.advanceState * 0.02f;
     if (advance < 0.7f) advance = 0.7f;
-    i = func_L00_00341820(bestCurve, point, &bestSegment, &bestT, 0, advance);
-    if (*(float *)(state + 0x64) < bestDistance) return;
-    if (!i) {
-        func_00282CF0(step, point, previous);
-        func_00282CF0(delta, point, D_00189EA0);
-        D_0018A960.pitch = func_00283248(func_00282E20(step), step[2]);
-        D_0018A960.heading = func_00283248(delta[0], delta[1]);
-        delta[2] = 0;
-        func_002AA2E8(&D_0018A960.speed, *(float *)(state + 0x60), 0.0036111111f);
-        length = func_00282DF0(delta);
-        if (length > 0.001f) func_00282F20(D_00189F20, delta, D_0018A960.speed);
-        D_00189F20[3] = 0;
-        *(Quad *)(state + 0x50) = *(Quad *)D_00189F20;
-        if (D_0018A020 < 30) D_0018A020 = 30;
-    } else {
-        func_00282D30(state + 0x50, state + 0x50, 0.99f);
-        *(Quad *)D_00189F20 = *(Quad *)(state + 0x50);
-        D_00189F20[3] = 0;
+    {
+        int result = func_L00_00341820(bestCurve, point, &bestSegment, &bestT, 0, advance);
+        if (state->radius < bestDistance) return;
+        if (!result) {
+            func_00282CF0(step, point, previous);
+            func_00282CF0(delta, point, D_00189E20.point);
+            D_00189E20.angles.pitch = func_00283248(func_00282E20(step), step[2]);
+            D_00189E20.angles.heading = func_00283248(delta[0], delta[1]);
+            delta[2] = 0;
+            func_002AA2E8(&D_00189E20.angles.speed, state->speed, 0.0036111111f);
+            length = func_00282DF0(delta);
+            if (length > 0.001f) func_00282F20(D_00189E20.velocity, delta, D_00189E20.angles.speed);
+            D_00189E20.velocity[3] = 0;
+            qcopy(state->velocity, D_00189E20.velocity);
+            if (D_00189E20.timer < 30) D_00189E20.timer = 30;
+        } else {
+            func_00282D30(state->velocity, state->velocity, 0.99f);
+            qcopy(D_00189E20.velocity, state->velocity);
+            D_00189E20.velocity[3] = 0;
+        }
     }
 }

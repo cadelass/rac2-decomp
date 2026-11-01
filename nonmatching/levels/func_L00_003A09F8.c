@@ -1,12 +1,30 @@
-/* Near miss (M38): 516/520 bytes, us 0/17, us2 0/17, absent from PAL. Profile -O2 -G0
- * -ffunction-sections -mno-split-addresses (retail's tied lui/lw loads that never fill a call
- * slot; sda or MACRO_ADDR spellings move the first one into the jal slot as $gp).
- * Solved: frame 0xB0 and the f20-f23 saves: the two setup conversions are stored into a
- * float[2] stack array (retail's sw f0,0x10/0x14), and the row/column positions are a float[2]
- * stack array whose elements are reloaded for the subtractions.
- * Left: the phase global is read `la v0; lwc1 f21,0(v0)` in retail ($at form here; incomplete,
- * sda, MACRO_ADDR and NOT_SDA spellings tie); the colour is `sll; addu` in retail where combine
- * makes it `or`; the 0xFF7F7F and 127.5f invariants sit after the inner-loop guard in retail. */
+/* Claude Opus 5.5 (opus-1), 29 October 2026: retained near miss, not linked.
+ * Profile: own unit, -O2 -G0 -ffunction-sections -mno-split-addresses.
+ * USA v1.01: 516/520 bytes, 0/17 places. Aligned against retail, the only
+ * difference is the phase load: retail `lui v0; addiu v0,v0,%lo; lwc1 f21,0(v0)`
+ * (then `lw v0,0x30(sp)`), this body `lw v0,0x30(sp); l.s f21,D` (gas: lui at).
+ * Fixed here: the 0xFF7F7F and 127.5f invariants now sit in the inner-loop
+ * pre-header after `blez s6`, as in retail. loop.c (pass 1, inner loop, 54 real
+ * insns) moves at most three movables with life 1: the threshold (60-61) drops
+ * by 3 per move. Setting the base colour in its own local between the opacity
+ * and the colour makes its life span the float-to-int call, so it qualifies
+ * last; once moved into the pre-header it is used in another block after the
+ * inner guard, so the outer loop cannot hoist it (scan_loop maybe_never rule).
+ * The phase: a plain scalar global keeps `(mem (symbol_ref))` from expand, and
+ * combine folds any `la` pseudo into floatsisf2's "m" alternative; volatile
+ * loads to a GPR + mtc1. Measured: WITHOUT -mno-split-addresses, with the
+ * viewport words as incomplete sda arrays read as [0] and the phase read
+ * through `int *phaseSource = &D_L00_001AF5A8;` set at function entry, the
+ * phase sequence is exactly retail's (the spilled pointer's constant is not a
+ * valid split-mode address, so reload loads it with lui/addiu into v0 after the
+ * frame-reload order retail shows), but the first viewport load then fills the
+ * first jal slot as $gp (512 bytes). With -mno-split-addresses the same pointer
+ * is folded back to the symbol ($at form). Retail needs both behaviours: reopen
+ * with a declaration that keeps the viewport loads two-word macros in split
+ * mode, or a no-split shape whose phase address survives reload.
+ * RAC1 counterpart: draw_visibomb_outside_zone_overlay
+ * (src/overlays/shared/gold_bolts_and_teleporters.c).
+ */
 #include "common.h"
 extern int D_001A7340, D_001A7344, D_001A7348, D_001A734C;
 extern int D_L00_001AF5A8;
@@ -19,10 +37,11 @@ extern void func_0027E018(int, int, int, int, int, int, int, int, s64, u64);
 void func_L00_003A09F8(void *actor) {
     char *state = *(char **)((char *)actor + 0x68);
     u64 texture;
-    s64 color;
+    int color;
     int columns, rows, row, column, nextRow;
     int u, v, x, y;
-    float tick, limit, phase;
+    float tick, limit, phase, opacity;
+    int base;
     float scale[2];
     float pos[2];
 
@@ -38,7 +57,9 @@ void func_L00_003A09F8(void *actor) {
             phase = (float)D_L00_001AF5A8;
             tick = func_00283CE0(*(int *)(state + 0x140));
             limit = func_00283CE0(90);
-            color = (func_00283CF0((tick * 127.5f) / limit) << 24) + 0x00FF7F7F;
+            opacity = (tick * 127.5f) / limit;
+            base = 0x00FF7F7F;
+            color = (func_00283CF0(opacity) << 24) + base;
             u = func_002A77E0(32);
             v = func_002A77E0(32);
             x = func_00283CF0(pos[0] - phase);
