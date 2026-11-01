@@ -58,6 +58,34 @@ extern void F7242f0a4_FUN_00282D30(char *out, void *source, float value);
 
 extern void F7242f0a4_FUN_00334730(char *buffer, int mode);
 
+extern f32 func_002A78D8(f32 low, f32 high);
+extern f32 D_001A8BD0[] __attribute__((sda));
+
+typedef union { TI128 quad; float v[4]; } EffectVector;
+
+extern unsigned char *D_001F2540[];                     /* the texture table */
+extern void func_00282D30(void *, void *, float);
+extern void func_00282CC0(void *, void *, void *);
+extern int func_002A77E0(int);
+extern unsigned char *func_002C65A0(void *, void *, int, unsigned int, int, int, int, float, float, float, int);
+
+typedef struct {
+    TI128 position;
+    int f10;
+    int f14;
+    int f18;
+    int f1C;
+    int f20;
+} State_332440;
+
+/* The EE assigns the integer and FP banks independently: this is func_002FED90(obj, src, x, y, z)
+   with its FP arguments set up first, as retail does. */
+extern int func_002FED90(void *obj, f32 x, f32 y, f32 z, void *src);
+extern void func_00282DD8(void *, void *, void *);
+extern void func_00282F20(void *, void *, f32);
+extern void func_002AFFD8(void *, void *, int);
+extern char *func_0029EFD0(int);
+
 extern void F7242f0a4_FUN_00334710(int value, char *buffer);
 
 extern void F7242f0a4_FUN_00282CC0(char *first, char *second, char *third);
@@ -155,7 +183,7 @@ extern char D_001ADA38[] __attribute__((sda));
 #ifndef RAC2_T_OBJ_F7B2F1854
 #endif
 
-INCLUDE_ASM("asm/game", func_0032EB28);
+/* func_0032EB28 uses small data in 0032EB28-update-g8.c. */
 
 INCLUDE_ASM("asm/game", func_0032F3D0);
 
@@ -177,20 +205,47 @@ INCLUDE_ASM("asm/game", func_00330150);
 
 /* func_00330BC0 uses small data in 0032EB28-g8.c. */
 
-INCLUDE_ASM("asm/game", func_00330CA0);
+/* func_00330CA0 is in 0032EB28-damage-g8.c. */
+
 
 /* func_00330E48 is in 0032EB28-g8.c. */
 
 /* func_00330EC0 is in 0032EB28-ring-g8.c. */
 
-INCLUDE_ASM("asm/game", func_00331238);
+/* func_00331238 is in 0032EB28-spark.c. */
 
-INCLUDE_ASM("asm/game", func_003313E0);
 
-extern f32 func_002A78D8(f32 low, f32 high);
+void func_003313E0(TI128 *a0, void *dir)
+{
+    EffectVector base;
+    float vel[4];
+    float pos[3];
+    float size = 84000.0f;
+    int i;
+    int rnd;
+    unsigned char *p;
+
+    qcopy(&base, a0);
+    func_00282D30(vel, dir, 0.5f);
+    func_00282CC0(&base, &base, vel);
+    i = 8;
+    do {
+        i--;
+        pos[0] = base.v[0] + func_002A78D8(0.0f, 0.1f);
+        pos[1] = base.v[1] + func_002A78D8(0.0f, 0.1f);
+        pos[2] = base.v[2] + func_002A78D8(0.0f, 0.1f);
+        rnd = func_002A77E0(0xFF);
+        p = func_002C65A0(pos, D_001A8BD0, 10, 0x407FFF, rnd, 0x7F, 0, size, size, 0.0f, 1);
+        if (p != 0)
+            p[2] = D_001F2540[92][5];
+        p = func_002C65A0(pos, D_001A8BD0, 10, 0x406080, rnd, 0x7F, 0, size, size, 0.0f, 1);
+        if (p != 0)
+            p[2] = D_001F2540[53][0];
+    } while (i >= 0);
+}
+
 extern s32 func_00283CF0(f32 value);
 extern u8 *func_002C16C0(f32 *pos, f32 *sym, s32 a2, s32 a3, u32 color, s32 alpha, f32 f12, f32 f13, f32 f14, f32 f15, f32 f16);
-extern f32 D_001A8BD0[] __attribute__((sda));
 extern u8 *D_001F26B0;
 void func_00331580(f32 *pos, f32 scale)
 {
@@ -212,8 +267,6 @@ void func_00331580(f32 *pos, f32 scale)
 
 /* func_00331718 uses small data in 0032EB28-g8.c. */
 
-INCLUDE_ASM("asm/game", func_00331800);
-
 
 
 void func_003323F0(int a0) {
@@ -228,19 +281,47 @@ void func_003323F0(int a0) {
     func_0026FEB8(D_001B0A88);
 }
 
-/* func_00332440 is a near miss in nonmatching/game/func_00332440.c (328 bytes against 324). */
+char *func_00332440(void *a0, void *a1, void *a2)
+{
+    TI128 localA;
+    TI128 localB;
+    char *object;
+    State_332440 *state;
+    int result;
 
-INCLUDE_ASM("asm/game", func_00332440);
+    func_002AFFD8(a1, &localA, 1);
+    object = func_0029EFD0(0xEAA);
+    if (object != 0) {
+        state = *(State_332440 **)(object + 0x68);
+        state->f10 = 0x50;
+        *(unsigned char *)(object + 0x30) = 0xFF;
+        *(short *)(object + 0x32) = 0xFF;
+        *(unsigned char *)(object + 0x20) = 0;
+        qcopy(object + 0x10, a1);
+        qcopy(state, a2);
+        state->f18 = 0;
+        state->f14 = 0;
+        func_00282F20(&localB, a2, 1.0f);
+        qcopy(object + 0xC0, &localB);
+        func_00282DD8(object + 0xD0, object + 0xC0, &localA);
+        func_00282F20(object + 0xD0, object + 0xD0, 1.0f);
+        func_00282DD8(object + 0xE0, object + 0xD0, object + 0xC0);
+        *(float *)(object + 0xCC) = *(float *)(object + 0xDC) = *(float *)(object + 0xEC) = 0.0f;
+        result = func_002FED90(object, 1.0f, 1.0f, 1.0f, 0);
+        state->f1C = result;
+        state->f20 = (int)a0;
+    }
+    return object;
+}
 
 
-
-INCLUDE_ASM("asm/game", func_00332658);
 
 INCLUDE_ASM("asm/game", func_00333048);
 
 INCLUDE_ASM("asm/game", func_003334B0);
 
-INCLUDE_ASM("asm/game", func_00333AF8);
+/* func_00333AF8 is in 0032EB28-beam.c. */
+
 
 void func_00334050(int index, int value)
 {

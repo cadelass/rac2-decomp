@@ -200,7 +200,7 @@ INCLUDE_ASM("asm/game", func_00345B78);
 
 INCLUDE_ASM("asm/game", func_00345D58);
 
-INCLUDE_ASM("asm/game", func_00345F70);
+/* func_00345F70 is built from 00345358-layout-g8.c. */
 
 /* func_003462A8 is built from 00345358-descriptor-g8.c for small-data access. */
 
@@ -252,7 +252,45 @@ void *func_00346670(char *p)
 
 INCLUDE_ASM("asm/game", func_00346C60);
 
-INCLUDE_ASM("asm/game", func_003472B8);
+/* The two menu labels at +0x2E8 and +0x330: shown according to the flags of the highlighted
+   grid entry, and placed relative to the owner's position record. */
+typedef struct { int x; int y; } MenuLabelOffset;
+typedef struct { short a, b, c, id, e; } MenuGridEntry;
+extern MenuGridEntry D_00259F58[];
+extern u8 D_001A7AF8[] __attribute__((section(".sdata")));
+extern u8 D_001A7A80[] __attribute__((section(".sdata")));
+extern MenuLabelOffset ref_003472B8_00;
+extern void func_00335E68(void *, int);
+
+void func_003472B8(char *obj)
+{
+    MenuLabelOffset pad;
+    char *a;
+    char *b;
+    float x, y, x2, y2;
+    u8 *flags;
+    int bits;
+    int index = D_00259F58[*(int *)(obj + 0x4FC) + *(int *)(obj + 0x500) * 4].id;
+
+    if (D_001A7AF8[index] == 0)
+        return;
+    a = obj + 0x2E8;
+    pad = ref_003472B8_00;
+    flags = &D_001A7A80[index];
+    b = obj + 0x330;
+    bits = flags[0] & 4;
+    func_00335E68(a, (flags[0] & 1) | (bits != 0));
+    {
+        int b2 = flags[0] & 0x10;
+        func_00335E68(b, b2 != 0);
+    }
+    x = (*(float **)(obj + 0x498))[0] + func_00335E10(a)[0] + (float)pad.x;
+    y = (*(float **)(obj + 0x498))[1] + func_00335E10(a)[1] + (float)pad.y;
+    func_00335E38(a, x, y, 0.0f, 0.0f);
+    x2 = (*(float **)(obj + 0x498))[0] + func_00335E10(b)[0] + (float)pad.x;
+    y2 = (*(float **)(obj + 0x498))[1] + func_00335E10(b)[1] + (float)pad.y;
+    func_00335E38(b, x2, y2, 0.0f, 0.0f);
+}
 
 /* func_00347468 is built from 00345358-selection-g8.c. */
 
@@ -291,7 +329,7 @@ void func_00347EC8(char *object, void *data)
     *(int *)(object + 0xBC) = -1;
 }
 
-INCLUDE_ASM("asm/game", func_00347F80);
+/* func_00347F80 is built from 00345358-wrap.c. */
 
 
 void func_00348068(u8 *a0,f32 *a1) {
@@ -407,7 +445,7 @@ void func_00349150(s32 *a0) {
  a0[0x54]=0;a0[0x55]=0;
 }
 
-INCLUDE_ASM("asm/game", func_00349190);
+/* func_00349190 is built from 00345358-input-g8.c. */
 
 void func_00349488(int *param_1)
 {

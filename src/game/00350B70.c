@@ -39,5 +39,53 @@ void func_00350B70(u8 *a0, s32 a1) {
     *(long *)(a0+0x48) = (long)a1 + *(long *)(a0+0x48);
     func_0011AC40(*(s32 *)(a0+0x40));
 }
+int func_00350BC8(ViBuf *vb) {
+    int ok = 0;
+    unsigned int chcr;
+    int idx;
+    int done;
+    int n;
+    int i;
+    int rd;
+    int pos;
 
-INCLUDE_ASM("asm/game", func_00350BC8);
+    func_0011AC60(vb->sema);
+    if (vb->f44 == 0) {
+        func_0034F780(D_001AE848);
+        return 0;
+    }
+    func_00350808(5);
+    chcr = *(volatile unsigned int *)0x1000B400;
+    rd = func_00350750(vb, *(volatile unsigned int *)0x1000B410);
+    done = (rd + vb->count - vb->fC) % vb->count;
+    vb->fC = (vb->fC + done) % vb->count;
+    vb->f10 -= done;
+    pos = (vb->fC + vb->f10) % vb->count;
+
+    n = vb->f14 / 0x800;
+    vb->f14 -= n << 11;
+    if (n > 0) {
+        int last = vb->count - 1;
+        int prev = (vb->fC + vb->f10 + last) % vb->count;
+        func_00350878((unsigned long *)(vb->tags + prev * 16), vb->base + (prev << 11), 3, 0x80);
+        ok = 1;
+    }
+    idx = pos;
+    for (i = 0; i < n; i++) {
+        int t = 0;
+        if (i != n - 1) {
+            t = 3;
+        }
+        func_00350878((unsigned long *)(vb->tags + idx * 16), vb->base + (idx << 11), t, 0x80);
+        idx = (idx + 1) % vb->count;
+    }
+    vb->f10 += n;
+    if (vb->f10 != 0) {
+        if (ok) {
+            chcr = (chcr & 0x0FFFFFFF) | 0x30000000;
+        }
+        func_00350808(chcr | 0x100);
+    }
+    func_0011AC40(vb->sema);
+    return 1;
+}

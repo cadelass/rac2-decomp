@@ -302,7 +302,7 @@ void func_00328D98(char *pos, int a1, int a2, char *a3, int t0,
 
 /* func_00328F18 follows func_0032B3E0 below, after the helpers it declares. */
 
-INCLUDE_ASM("asm/game", func_003290D0);
+/* func_003290D0 is in 003290D0-particle.c. */
 
 typedef struct {
     float v[4];
@@ -681,9 +681,9 @@ void func_0032BDC8(Vec16_Fc936841d *object, int index)
 INCLUDE_ASM("asm/game", func_0032C2E8);
 
 
-INCLUDE_ASM("asm/game", func_0032C700);
+/* func_0032C700 is in 0032C700-explosion.c. */
 
-INCLUDE_ASM("asm/game", func_0032CA40);
+/* func_0032CA40 uses small data in 00327038-explosion-g8.c. */
 
 
 /* finds the first matching object pointer in thirty resident32-byte records or returns-1 */

@@ -24,6 +24,26 @@ extern void func_00347EA0_1(u8 *);
 
 typedef int s32;
 
+/* a slot of a ring of eight chosen items: 0x1C bytes, the item's label first and the item last */
+typedef struct {
+    unsigned int label;
+    int state;
+    char reserved08[16];
+    int item;
+} RecentSlot;
+
+/* an item's definition: 0xE0 bytes, the label at 0x3C */
+typedef struct {
+    char reserved00[0x3C];
+    unsigned short label;
+    char reserved3E[0xA2];
+} ItemDefinition;
+
+extern unsigned char D_001A7AF8[] __attribute__((sda));
+extern unsigned char D_00139568[];
+extern ItemDefinition D_00239BA0[];
+extern RecentSlot **D_001B18D4[] __attribute__((sda));
+
 /* Forwards one object pointer, eight pointer-plus-constant arguments and a null to ten calls in a fixed order. */
 void func_0033F030(char *p)
 {
@@ -82,9 +102,7 @@ char *func_0033F0A0(char *object)
     return object;
 }
 
-
-
-INCLUDE_ASM("asm/game", func_0033F218);
+/* func_0033F218 is in 0033F030-radial-g8.c. */
 
 INCLUDE_ASM("asm/game", func_0033FB98);
 
@@ -93,7 +111,7 @@ INCLUDE_ASM("asm/game", func_00340498);
 
 INCLUDE_ASM("asm/game", func_00340638);
 
-INCLUDE_ASM("asm/game", func_003407F8);
+/* func_003407F8 follows the menu types below. */
 
 
 /* a menu's table entry: ten bytes, the value a signed short at offset six */
@@ -119,6 +137,39 @@ extern int func_002E5E58(int, unsigned int, void *);
 extern void func_003407F8(MenuState *, MenuEntry *, int);
 extern void *func_00115484(void *, int, unsigned int);
 extern void func_00335E38(void *, float, float, float, float);
+
+/* Puts the selected entry's item in the next slot of a ring of eight, first clearing a slot
+   that already holds it, and calls func_002E5E58 with 4. An item that is 0, has no flag in
+   D_001A7AF8 or whose definition's label is 0xEA7E only calls it with 5. Either way the ring
+   index at 0x7CC moves on, wrapping after 7. The global's first read falls in a branch slot,
+   where the assembler makes it $gp-relative; its other reads are absolute macro loads. */
+void func_003407F8(MenuState *self, MenuEntry *table, int columns)
+{
+    int item = table[self->column + self->page * columns].value;
+
+    if (item && D_001A7AF8[item] && (D_00139568[item] + D_00239BA0)->label != 0xEA7E) {
+        int next = *(int *)((char *)self + 0x7CC) == 7 ? 0 : *(int *)((char *)self + 0x7CC) + 1;
+        int i;
+        for (i = 0; i < 8; i++) if ((*D_001B18D4[0])[i].item == item) break;
+        if (i < 8) {
+            RecentSlot **list = D_001B18D4[0];
+            (*list)[i].item = 0;
+            (*list)[i].label = (D_00139568[(*list)[i].item] + D_00239BA0)->label;
+        }
+        {
+            RecentSlot **list = D_001B18D4[0];
+            (*list)[next].label = (D_00139568[item] + D_00239BA0)->label;
+            (*list)[next].item = item;
+            (*list)[next].state = 0;
+        }
+        func_002E5E58(4, 0, 0);
+    } else func_002E5E58(5, 0, 0);
+    {
+        int n = *(int *)((char *)self + 0x7CC) + 1;
+        int limit = 7;
+        *(int *)((char *)self + 0x7CC) = n > limit ? 0 : n;
+    }
+}
 
 /* Moves the selection of a menu's table: the buttons 0x1000 and 0x4000 move the page,
    0x8000 and 0x2000 the column and 0x40 asks for the entry's value, which is then kept
