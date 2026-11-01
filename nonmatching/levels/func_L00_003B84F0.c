@@ -1,4 +1,25 @@
-/* func_L00_003B84F0 - 2404 bytes, 27 places. M17 (26 October 2026): written from the retail listing; the 0x700014A9 word is a `por` zero (-frac2-zero-ti-por), not MMI. Flags: -O2 -G8 -ffunction-sections -g -frac2-zero-ti-por. 2404/2404 bytes, 601/601 instructions; about 21 differ in shape and the rest are register choices: global alloc puts the loop scale w in f22 (retail f20; t f21, x f22 there) and the r/g/b/alpha and hoisted address pseudos in a different s-register order; the spill reloads of the flag and &vx land above the four colour stores (retail after, on v0/a0); two prologue stores (col[0], uv[5]) and the 0xD04 load sit one slot off. Permuter candidate. */
+/* GPT-6.1 Sol high, worker v1441, 29 October 2026.
+ * Pinned toolchain: -O2 -G8 -ffunction-sections -g -frac2-zero-ti-por
+ * -frac2-hazard-labels (dedicated unit required).
+ * Best check.py: 2404/2404 bytes, 0/27 USA placements; first reported
+ * instruction mismatch +0x70. Required declarations follow.
+ * Improved over v1233: retail clears on when hero +0x340 is zero;
+ * the previous && condition incorrectly preserved on along that edge.
+ * Grouping all four initial colour stores fixes their scheduling, and the
+ * reviewed hazard-label option fixes the branch onto divide padding.
+ * Remaining: prologue GPR allocation, loop colour/vector-pointer allocation,
+ * packed-colour scheduling, flag/pointer spill reloads and final alpha reloads.
+ * Timer addressing already follows retail's mixed gp/absolute paths with
+ * MACRO_ADDR. A first-use SDATA alias gives 2400 bytes and is worse.
+ * Long RGB locals give 2420 bytes; iterative assignments directly to the
+ * long-lived alpha words give 2444 bytes through repeated spill stores.
+ * Plain register RGB locals and a three-vector offset array each give the
+ * same code as this draft: stop on that tie; seek independent lifetime evidence.
+ * Earlier useful result: distinct phase and width variables recover the
+ * retail f20/f21/f22 allocation. Flattening alpha expressions and chained
+ * colour stores did not help. All-sda timer access previously gave 2388 bytes.
+ * 0x700014A9 is compiler-reachable por v0,zero,zero, not handwritten proof.
+ */
 #include "include_asm.h"
 #include "common.h"
 
@@ -135,6 +156,7 @@ void func_L00_003B84F0(Moby_L00_003B84F0 *obj)
     float w;
     float u;
     float s;
+    float phase;
     float inset;
     float range;
 
@@ -146,15 +168,14 @@ void func_L00_003B84F0(Moby_L00_003B84F0 *obj)
     { long long v; v = (long long)D_L00_001AFD00 | ((long long)D_L00_001AFCFC << 2); v |= (long long)D_L00_001AFD04 << 4; v |= (long long)D_L00_001AFD08 << 6; v |= (long long)D_L00_001AFD0C << 32; alpha1 = v; }
     { long long v; v = (long long)D_L00_001AFCFC | ((long long)D_L00_001AFD00 << 2); v |= (long long)D_L00_001AFD04 << 4; v |= (long long)D_L00_001AFD08 << 6; v |= (long long)D_L00_001AFD0C << 32; alpha0 = v; }
     pkt.col[3] = D_L00_001AFD10;
-    dist = D_L00_001AFCF4;
     pkt.col[2] = D_L00_001AFD10;
+    pkt.col[1] = D_L00_001AFD10;
     on = (D_00138180[0x1A0 / 4] & D_00189E20.f1230) != 0;
     pkt.col[0] = D_L00_001AFD10;
     pkt.q88 = alpha0;
     pkt.uv[0] = D_L00_001AFD34;
     pkt.uv[4] = D_L00_001AFD34;
     pkt.q80 = 0xFF9000000260LL;
-    pkt.col[1] = D_L00_001AFD10;
     pkt.uv[2] = 1.0f - D_L00_001AFD34;
     pkt.uv[6] = 1.0f - D_L00_001AFD34;
     pkt.uv[1] = D_L00_001AFD34;
@@ -163,7 +184,8 @@ void func_L00_003B84F0(Moby_L00_003B84F0 *obj)
     pkt.uv[5] = 1.0f - D_L00_001AFD34;
     pkt.uv[7] = 1.0f - D_L00_001AFD34;
 
-    if (D_00189E20.f340 != 0 && (D_00189E20.f34E != 0 || D_L00_001AFCE0 != 0 || D_00189E20.f1E0 != 0)) {
+    dist = D_L00_001AFCF4;
+    if (D_00189E20.f340 == 0 || D_00189E20.f34E != 0 || D_L00_001AFCE0 != 0 || D_00189E20.f1E0 != 0) {
         on = 0;
     }
     if (ctl->moby != 0 && ctl->moby->f31 != 0) {
@@ -219,8 +241,8 @@ void func_L00_003B84F0(Moby_L00_003B84F0 *obj)
                 } else if (t < 0.0f) {
                     t = 0.0f;
                 }
-                w = x * D_L00_001AFD68;
-                u = (func_00283198(func_002ABB18(w + func_00283CE0(D_L00_001B19C8) * D_L00_001AFD6C)) + 1.0f) * 0.5f;
+                phase = x * D_L00_001AFD68;
+                u = (func_00283198(func_002ABB18(phase + func_00283CE0(D_L00_001B19C8) * D_L00_001AFD6C)) + 1.0f) * 0.5f;
                 if (u > 0.99999f) {
                     u = 0.99999f;
                 } else if (u < 0.01f) {
@@ -255,11 +277,11 @@ void func_L00_003B84F0(Moby_L00_003B84F0 *obj)
             col = r | (g << 8);
             col = col | (bl << 16);
             col = col | (alpha << 24);
-            pkt.col[2] = col;
-            flag ^= 1;
-            pkt.col[1] = col;
             pkt.col[0] = col;
             pkt.col[3] = col;
+            pkt.col[2] = col;
+            pkt.col[1] = col;
+            flag ^= 1;
 
             func_00282F20(&vx, &b, x);
             func_00282F20(&vy, &a, w);
