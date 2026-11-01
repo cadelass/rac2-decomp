@@ -1,20 +1,46 @@
-/* func_002D4948: near miss, 1,208 of 1,220 bytes at its 28 places (src/game/002D3390-g8.c).
+/* func_002D4948: near miss. Opus 5.5 xhigh (opus-2), 31 October 2026. Unit: a -G8 sibling such as
+   src/game/002D3390-002D4948-g8.c, default flags (it needs $gp for D_001ABA74). Remove the marker
+   from src/game/002D3390.c when trying it.
 
-   Everything up to the end of the line-building calls and the whole styling loop
-   matches. Two differences remain:
-   - retail rematerialises the kind constants 3 and 4 (`addiu v1,3`/`addiu v0,4`
-     before each `sb`); cc1 keeps each in a callee-saved register (s1/s2) across the
-     calls, two words fewer. 8 and 1 are held in s5/s4 in both. Separating `n++`,
-     indexing the lines as an array and other spellings of the stores do not change it.
-   - the preset search: writing it with the global D_001ABA74 as the counter gives
-     retail's unreduced `mult` loop (loop.c's load_mems keeps the global in a register
-     and stores it once at the end) and its `nop` before the head. A `for` puts the
-     index-0 test before the hoisted invariants and uses no copy register (retail
-     hoists flags/table/table+4/20 above the peeled test and keeps i in a2 and a copy
-     in a3); `do`/`while` forms hoist correctly but do not peel the index-0 test.
-   Next: find the loop shape that both peels the first test and hoists above it, and
-   what makes cc1 rematerialise constants 3/4 (a register-pressure difference earlier
-   in the function is a candidate). */
+   Best check.py: 1220/1220 bytes, 0 of 28 USA places, PAL 0 of 28; not in the v2.00 catalogue. Two
+   words differ once relocations are masked: +0xD0 and +0xD8, $v0 where retail has $v1. The final
+   search and everything else are retail's. NOT LANDABLE as written: the search below holds an
+   always-false test (`if (D_001ABA74 >= 21) D_001ABA74 = 0;`), a form the guide forbids. Without
+   that test: 1216/1220 bytes, retail's search shape is lost.
+
+   Established by measurement and by reading ee/gcc (jump.c, stmt.c, haifa-sched.c, alias.c):
+   - Retail's search is the plain `for`, with the copy of its exit test made on the jump pass AFTER
+     the loop passes (toplev.c runs a JUMP_AFTER_REGSCAN pass before cse2), not at jump1. Evidence:
+     $a3, a copy live across the back edge, needs cse1 to follow that edge, which it does only past
+     the BARRIER of the entry jump; so the entry jump still existed at cse1. Invariants then land
+     above the peeled test, T+8 is the first address, and all of it reproduces here.
+   - duplicate_loop_exit_test refuses on a CODE_LABEL, CALL_INSN, LOOP_BEG or LOOP_CONT note, a
+     libcall note, an asm, or over 30 insns. Length cannot refuse it here: stmt.c rolls an exit only
+     within those same 30, and jump.c retries after merging the jump-over-jump. What works is a label
+     inside the rolled test that survives jump1 and that cse1 removes. It must leave the match test's
+     jump within the 30: the arm plus its test can add at most 4 insns (jump dump ordinal 28; at 29
+     the match test is not rolled and nothing peels). An arm of one register set is if-converted at
+     jump1 and has no label, so it copies at jump1; a one-insn store (`sw $zero`) works.
+   - `const` on D_0026CFD0 is real, not a trick: unchanging reads have no anti-dependences on later
+     stores, which is what puts `addiu $t1` before `lw $v1` as in retail. The text tables are not
+     const: const on them changes the bytes (+16), and retail rereads them across the call.
+   - +0xD0: retail's `items` load is before `addu $s0,$s0,$v0` in sched1's order, so T overlaps it and
+     it takes $v1. Here sched1 issues kind-9 li and sll at 15, sb and la at 16, addu at 17, and the load
+     only at 18 (store then load, latency 2). So the address path needs one cycle more, or the store
+     one cycle less.
+
+   Tried for +0xD0, same or worse: `D_001A8C28[]` incomplete (right register, but lui/addiu split, 3
+   words); kind 9 as a first-block local (doubled live length still wins it $s5 over kind 8; kinds 8
+   and 1 as locals swap $s4/$s5, so those two are literals); a separate `first` variable (+8 bytes);
+   passing the expression directly to the call; `if (a != 0) line = X; else line = X;` after the
+   kind-9 store (1228 bytes, all allocation moves). Earlier notes on `found` flags and early-return
+   predicates: those refuse the copy too, but keep a real branch. A `break` arm with a dead store does
+   nothing: its label falls at the end of the moved code, outside the exit test.
+   Next: a real construct in the search that leaves a label until cse1 (func_002D3D88's match shows
+   real tests can vanish with no trace when they test a register already live, but that form lasts to
+   jump2 and is too late here); then the extra cycle at +0xD0.
+
+   Needs only the declarations below. */
 
 typedef struct {
     char reserved00[0x14];
@@ -54,9 +80,11 @@ typedef struct {
 } MenuLine_002D4948;
 
 typedef struct {
+    int a;
+    int b;
     unsigned int mask;
     unsigned int value;
-    int data[3];
+    int data;
 } OptionPreset_002D4948;
 
 typedef struct {
@@ -74,18 +102,20 @@ extern short D_001A8C48[4];
 extern short D_001A8C50[4];
 extern short D_001A8C58[4];
 
-extern OptionPreset_002D4948 D_0026CFD8[21];
+extern const OptionPreset_002D4948 D_0026CFD0[21];
 extern Layout_002D4948 D_0025D478;
 extern int D_001ABA74 __attribute__((sda));
 extern char *func_002DE550(int);
 extern void func_0029F0C8(MenuLine_002D4948 *, int);
 extern void func_002A0468(MenuLine_002D4948 *, int, int, int, int);
-extern int func_002A0F48(MenuLine_002D4948 *);
+extern void func_002A0F48(MenuLine_002D4948 *);
 
 /* Builds the options menu from the settings word D_001A7AF0, then finds the preset
    matching the settings. */
 int func_002D4948(void)
 {
+    int kind3 = 3;
+    int kind4 = 4;
     unsigned int settings = D_001A7AF0;
     int a = (settings >> 2) & 3;
     int b = (settings >> 4) & 1;
@@ -128,17 +158,17 @@ int func_002D4948(void)
     }
     line = (MenuLine_002D4948 *)(D_001F2840.items + n++ * 0x100);
     func_0029F0C8(line, D_001A8C48[e]);
-    line->kind = 3;
+    line->kind = kind3;
     line = (MenuLine_002D4948 *)(D_001F2840.items + n++ * 0x100);
     func_0029F0C8(line, D_001A8C48[e]);
-    line->kind = 3;
+    line->kind = kind3;
     line->style |= 0x8000;
     line = (MenuLine_002D4948 *)(D_001F2840.items + n++ * 0x100);
     func_0029F0C8(line, D_001A8C50[f]);
-    line->kind = 4;
+    line->kind = kind4;
     line = (MenuLine_002D4948 *)(D_001F2840.items + n++ * 0x100);
     func_0029F0C8(line, D_001A8C50[f]);
-    line->kind = 4;
+    line->kind = kind4;
     line->style |= 0x8000;
     if ((D_001A7AF0 >> 12) & 1) {
         line = (MenuLine_002D4948 *)(D_001F2840.items + n++ * 0x100);
@@ -176,10 +206,13 @@ int func_002D4948(void)
     D_001F2840.count = n;
     D_001F2840.timer = 300;
     for (D_001ABA74 = 0; D_001ABA74 < 21; D_001ABA74++) {
-        if ((D_001A7AF0 & D_0026CFD8[D_001ABA74].mask) == D_0026CFD8[D_001ABA74].value) {
+        if (D_001ABA74 >= 21)
+            D_001ABA74 = 0;
+        if ((D_001A7AF0 & D_0026CFD0[D_001ABA74].mask) == D_0026CFD0[D_001ABA74].value) {
             break;
         }
     }
     D_0025D478.w3C = -0x244;
     return 0;
 }
+

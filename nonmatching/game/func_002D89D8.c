@@ -1,21 +1,16 @@
-/* M13, 26 October 2026: 1252/1252 B under -O2 -G0 -ffunction-sections, 7 words off,
- * all in the initial-rectangle setup (+0x174..+0x198): retail forms obj[0x1C] - 4 in
- * its own register and adds obj[0x24] to it; this draft reassociates the -4 after the
- * add and swaps a1/a3. Everything else matches, using the func_002D84B0 forms
- * (exact): rectangle declared before initial, active before font, rows reread
- * through the list base, int colour, macro-addressed check-box globals, if/else
- * spacing and the field stores in this order. us: 0/28; us2/pal absent.
- * Reopen: a source form for fields[1] that keeps (x - 4) + w unreassociated.
+/* GPT-6.1 Sol (high), 29 October 2026: retained near miss.
+ * Profile: -O2 -G0 -ffunction-sections; USA v1.01: 1252/1252 bytes,
+ * 0/28 placements. Final check.py first mismatch: +0x174.
+ * Four opcode/register words differ at +0x174, +0x180, +0x188 and +0x190:
+ * the rectangle inset and scroll offset use a2/a3 in the opposite roles.
+ * Widening the completed y - 4 subtraction and computing fields[1] before
+ * fields[0] preserves retail's arithmetic and store order without conversions.
+ * Moving/caching the scroll load worsens scheduling; wide and negated scroll
+ * expressions tie the retained bytes. Reopen with an inset/scroll lifetime
+ * hypothesis that changes the local allocation. Other releases were not run.
+ * Required declarations are included below. No linked-build claim.
  */
 #include "common.h"
-/* Complete manual reconstruction; not linked.
- * Profile: -O2 -G0 -ffunction-sections.
- * us: 0/28 placements; exit 1.
- * us2: catalogue absent (no credit).
- * pal: 0/28 placements; exit 1.
- * USA compiled 1216 bytes; retail 1252 bytes.
- * Entry allocation and later row/colour lifetimes differ. Reopen with a measured allocator/source-lifetime hypothesis; the signed 64-bit colour and texture word must remain intact.
- */
 
 typedef struct { short fields[12]; } MenuTextRectangle;
 extern char *D_001F2854;
@@ -63,10 +58,10 @@ int func_002D89D8(char *object)
     top = spacing - height / 2 + *(int *)(object + 0x1C);
     func_00115484(&initial, 0, 24);
     initial.fields[2] = *(int *)(object + 0x18);
+    initial.fields[1] = (long)(*(int *)(object + 0x1C) - 4) + *(int *)(object + 0x24);
     initial.fields[0] = *(int *)(object + 0x1C) + 4;
     initial.fields[3] = *(int *)(object + 0x18) + *(int *)(object + 0x20) - 2;
     initial.fields[5] = top - *(int *)(object + 0x44);
-    initial.fields[1] = *(int *)(object + 0x24) + *(int *)(object + 0x1C) - 4;
     initial.fields[8] = lineHeight;
     rectangle = initial;
     textureWord = func_0027C878(texture);
