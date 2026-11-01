@@ -1,7 +1,3 @@
-src/core/00130428.c	sdk -O2 -G2 -ffunction-sections
-src/levels/shared/L05_003CD280-flags-g8.c	-O2 -G8 -ffunction-sections
-src/levels/shared/L02_004004D0-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
-src/levels/shared/L00_002BA138-qcopy.c	-O2 -G0 -ffunction-sections -frac2-qcopy -frac2-qcopy-barrier
 src/levels/12_todano/L12_00429610.c	-O2 -G0 -ffunction-sections -frac2-hazard-labels
 src/levels/shared/L04_0043BEE8-g8.c	-O2 -G8 -ffunction-sections -mno-split-addresses
 src/levels/shared/L03_003CC238.c	-O2 -G0 -ffunction-sections -frac2-zero-ti-por -g
@@ -1949,6 +1945,7 @@ src/levels/shared/L00_003A2EE0-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/03_endako/L03_0041BE50-g8.c	-O2 -G8 -ffunction-sections -frac2-zero-ti-por
 src/levels/06_notak/L06_00419CA8-g8.c	-O2 -G8 -ffunction-sections -g -frac2-hazard-labels
 src/levels/01_oozla/L01_003C0408-g8.c	-O2 -G8 -ffunction-sections -frac2-hazard-labels
+
 src/game/00300F58-g8.c	-O2 -G8 -ffunction-sections -g -frac2-keep-block-order
 src/game/002BF6F0-c5120-g8.c	-O2 -G8 -ffunction-sections -g
 src/levels/11_joba/L11_00454F18-g8.c	-O2 -G8 -ffunction-sections -frac2-gcse-unsplit-edges -fno-cse-follow-jumps
