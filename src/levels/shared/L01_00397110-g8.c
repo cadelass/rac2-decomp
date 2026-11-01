@@ -56,14 +56,75 @@ extern void func_L01_00397A28(char *);
 
 
 
-extern void func_002E3CB8(char *, char *);
+extern void func_002833F0(void *, void *);
 
-extern void func_002E3738(void *, char *, float);
+extern void func_00282F20(void *, void *, float);
 
-extern void func_00308938(char *);
+extern void func_002A0F48(void *);
 
 /* turns each of the three carried objects with a swinging pitch */
-INCLUDE_ASM("asm/levels", func_L01_00398938);
+typedef struct {
+    float x;
+    float y;
+    float z;
+    float w;
+} Vec4;
+
+struct Carrier_00398938;
+
+typedef struct {
+    char pad0[0x10];
+    Vec4 pos;
+    char pad20[0x48];
+    struct Carrier_00398938 *vars;
+    char pad6C[0x54];
+    Vec4 mtx;
+    char padD0[0x20];
+    Vec4 rot;
+} Moby_00398938;
+
+typedef struct Carrier_00398938 {
+    char pad0[0x14];
+    Moby_00398938 *list[3];
+    float swing;
+    float t;
+} Carrier_00398938;
+
+extern void func_00282CC0(void *, void *, void *);
+
+/* The level's per-frame lift and heading: they sit at another address in every level. */
+extern float ref_L01_00398938_00 __attribute__((sda));
+
+extern float ref_L01_00398938_01 __attribute__((sda));
+
+void func_L01_00398938(Moby_00398938 *a0)
+{
+    Carrier_00398938 *d = a0->vars;
+    Moby_00398938 **list = d->list;
+    Vec4 *src = &a0->pos;
+    Vec4 v;
+    float pitch;
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        if (list[i] != 0) {
+            Vec4 *rot;
+
+            qcopy_nc(&list[i]->pos, src);
+            list[i]->pos.z = list[i]->pos.z + ref_L01_00398938_00;
+            rot = &list[i]->rot;
+            rot->y = ref_L01_00398938_01 * 0.017453294f;
+            pitch = d->swing * 2.4f - 1.2f;
+            func_002833F0(&list[i]->mtx, &list[i]->rot);
+            func_00282F20(&v, &list[i]->mtx, pitch);
+            func_00282CC0(&list[i]->pos, &list[i]->pos, &v);
+            rot = &list[i]->rot;
+            rot->y = d->t * -1.0471977f - 0.3490659f;
+            func_002833F0(&list[i]->mtx, &list[i]->rot);
+            func_002A0F48(list[i]);
+        }
+    }
+}
 
 extern float D_L01_001B1A9C __attribute__((sda));
 
@@ -178,18 +239,60 @@ extern float func_002E35D0(char *);
 extern float func_002E35A0(float *);
 
 
-extern char *D_001B326C __attribute__((nosda));
+extern char *ref_L01_003E9CF8_00 MACRO_ADDR;
 
-extern int D_001B3270 __attribute__((nosda));
+extern int ref_L01_003E9CF8_01 MACRO_ADDR;
 
-extern int D_L01_001B3270 __attribute__((sda));
 
-extern char *func_00305EE8(int);
+extern char *func_0029EFD0(int);
 
-extern void func_00307EF8(char *, int *, int *, int *);
+extern void func_002A04B8(char *, int *, int *, int *);
 
-/* registers a new particle slot of class 0xC41, up to 0x40 of them */
-INCLUDE_ASM("asm/levels", func_L01_003E9CF8);
+/* makes sure a live moby of class 0xC41 exists, then queues this moby in one of its 0x40 slots
+   with its colour and a callback; with the queue full it runs the callback or deletes the moby */
+typedef struct {
+    char *obj;
+    int rgb;
+    int arg;
+    float scale;
+    void (*cb)(char *);
+    int pad[3];
+} Ent_3E9CF8;
+extern Ent_3E9CF8 ref_L01_003E9CF8_02[];
+extern void func_0029F338(void *);
+void func_L01_003E9CF8(char *a0, int a1, void (*a2)(char *))
+{
+    char *p = ref_L01_003E9CF8_00;
+    int x;
+    int y;
+    int z;
+    int count;
+    if (p == 0 || *(short *)(p + 0xAA) != 0xC41 ||
+        *(unsigned char *)(p + 0x20) == 0xFE || *(unsigned char *)(p + 0x20) == 0xFD) {
+        char *q = func_0029EFD0(0xC41);
+        ref_L01_003E9CF8_00 = q;
+        *(unsigned char *)(q + 0x30) = 0xFF;
+    }
+    count = ref_L01_003E9CF8_01;
+    *(unsigned short *)(a0 + 0x34) |= 2;
+    *(int *)(a0 + 0x48) = 0;
+    *(int *)(a0 + 0x44) = 0;
+    if (count < 0x40) {
+        int n;
+        func_002A04B8(a0, &x, &y, &z);
+        n = ref_L01_003E9CF8_01;
+        ref_L01_003E9CF8_02[n].obj = a0;
+        ref_L01_003E9CF8_02[n].rgb = (z << 16) | (y << 8) | x;
+        ref_L01_003E9CF8_02[n].arg = a1;
+        ref_L01_003E9CF8_02[n].scale = 1.0f;
+        ref_L01_003E9CF8_02[n].cb = a2;
+        ref_L01_003E9CF8_01 = n + 1;
+    } else if (a2 != 0) {
+        a2(a0);
+    } else {
+        func_0029F338(a0);
+    }
+}
 
 
 extern void func_L01_003EE8E0(char *);

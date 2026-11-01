@@ -367,7 +367,7 @@ void func_L00_0041E4A8(void *arg0)
 }
 
 
-INCLUDE_ASM("asm/levels", func_L00_0041EB38);
+/* func_L00_0041EB38 is in L00_0041ABB8-shot-g8.c. */
 
 INCLUDE_ASM("asm/levels", func_L00_0041EE58);
 

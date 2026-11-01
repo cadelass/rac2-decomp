@@ -107,6 +107,43 @@ extern int r1_D_L01_00160058_m __asm__("r1_D_L01_00160058") MACRO_ADDR;
 
 extern char *D_L01_001FE180[];
 
+typedef struct {
+    int path;
+    float radius;
+    int volumes[6];
+    int lists[12];
+    int mobys[11];
+    signed char switches[4];
+} SpatialTriggerSettings;
+
+typedef struct { char prefix[0x2290]; void *moby; } ProbeHero;
+typedef struct { char pad[0x18]; void *moby; int count; char gap[0x20]; float normal[4]; } ProbeResult;
+extern ProbeResult D_L01_001BF900;
+
+extern char D_L01_00189F10[];
+
+extern int D_L01_001BF91C;
+
+extern float func_L00_002D3A58(void *);
+
+extern void func_L00_002D36E0(void *, float, float, float, int);
+
+extern float func_00282E20(void *);
+
+extern void func_L00_002D3B58(void *, void *, float);
+
+extern void func_00282D30(void *, void *, float);
+
+extern int func_002761F8(void *, void *, int, void *, int);
+
+extern int func_00278E78(void);
+
+extern float func_L00_002D3EA8(void *);
+
+extern char D_L01_001B94C0[];
+
+extern char D_00189EA0[];
+
 extern int func_311B48(char *a0, void *a1, int a2);
 
 extern int func_3163C8(char *a0, void *a1);
@@ -434,7 +471,69 @@ void func_L01_002B3458(int a0, int a1, int a2) {
 
 
 
-INCLUDE_ASM("asm/levels", func_L01_002B4DA0);
+/* Stops the hero against a wall: casts two rays along the movement direction (or the vector at
+   the start of the hero's data when forced or nearly still), keeps the moby it hit and takes the
+   velocity component into the wall's flattened normal away. */
+void func_L01_002B4DA0(int force)
+{
+    float origin[4] __attribute__((aligned(16)));
+    float endpoint[4] __attribute__((aligned(16)));
+    float lowOrigin[4] __attribute__((aligned(16)));
+    float farEndpoint[4] __attribute__((aligned(16)));
+    float height, radius, slope;
+    int material;
+    char *base;
+    char *velocity = D_L01_00189F10;
+
+    if (func_L00_002D3A58(velocity) < 0.0016666668f)
+        return;
+    base = velocity - 0xF0;
+    height = 0.37f;
+    radius = 0.5f;
+    if ((unsigned)(*(int *)(base + 0x229C) - 17) < 2) {
+        height = 0;
+        radius = 0.7f;
+    }
+    func_L00_002D36E0(origin, 0, 0, height, 1);
+    func_L00_002D36E0(lowOrigin, 0, 0, height * 0.3f, 1);
+    if (force || func_00282E20(velocity) < 0.01f) {
+        func_00282F20(endpoint, base, radius);
+        func_00282F20(farEndpoint, base, radius * 1.4f);
+    } else {
+        func_L00_002D3B58(endpoint, velocity, 0);
+        func_00282F20(endpoint, endpoint, radius);
+        func_00282D30(farEndpoint, endpoint, 1.4f);
+    }
+    func_00282CC0(endpoint, endpoint, origin);
+    material = -1;
+    func_00282CC0(farEndpoint, farEndpoint, lowOrigin);
+    {
+        char *hero = D_L01_00189E20;
+
+        if (func_002761F8(lowOrigin, farEndpoint, 2, ((ProbeHero *)hero)->moby, 0) && D_L01_001BF91C > 0)
+            material = func_00278E78();
+    }
+    slope = 0;
+    {
+        char *hero = D_L01_00189E20;
+
+        if (func_002761F8(origin, endpoint, 2, ((ProbeHero *)hero)->moby, 0) && D_L01_001BF900.count > 0)
+            slope = func_L00_002D3EA8(D_L01_001BF900.normal);
+    }
+    if (slope >= 0.8726647f || material == 8 || material == 12) {
+        float dot;
+        char *hero = D_L01_00189E20;
+
+        *(void **)(hero + 0x270) = D_L01_001BF900.moby;
+        func_L00_002D3B58(D_L01_001BF900.normal, D_L01_001BF900.normal, 0);
+        func_00282F20(D_L01_001BF900.normal, D_L01_001BF900.normal, 1);
+        dot = func_00282DB0(D_L01_001BF900.normal, hero + 0xF0);
+        if (dot < 0) {
+            func_00282D30(D_L01_001BF900.normal, D_L01_001BF900.normal, -dot);
+            func_00282CC0(hero + 0xF0, hero + 0xF0, D_L01_001BF900.normal);
+        }
+    }
+}
 
 INCLUDE_ASM("asm/levels", func_L01_002B5EA0);
 
@@ -1041,7 +1140,7 @@ INCLUDE_ASM("asm/levels", func_L01_003801B8);
 
 /* func_L01_003808C0 is in L01_003808C0-g8.c for its GP accesses. */
 
-INCLUDE_ASM("asm/levels", func_L01_0038EF40);
+/* func_L01_0038EF40 is in L01_0038EF40.c: its unit needs -g. */
 
 /* A model with kind 0x12 is exempt from the trigger's visibility switches. */
 #define SPATIAL_TRIGGER_EXEMPT(p) \
